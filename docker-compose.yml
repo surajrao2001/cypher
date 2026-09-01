@@ -8,7 +8,8 @@ services:
       POSTGRES_PASSWORD: cypher
       POSTGRES_DB: cypher
     ports:
-      - "5432:5432"
+      # 5433 on the host: Windows often already runs PostgreSQL on 5432
+      - "5433:5432"
     volumes:
       - cypher_pg_data:/var/lib/postgresql/data
     healthcheck:
