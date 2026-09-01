@@ -1,4 +1,4 @@
-import { Suspense } from 'react';
+import { type ReactNode, Suspense } from 'react';
 
 import { NotificationBell } from '@/features/discovery/NotificationBell';
 import { SearchBar } from '@/features/discovery/SearchBar';
@@ -9,7 +9,7 @@ function SearchBarFallback() {
   return <div className="h-11 min-w-0 flex-1 rounded-md border border-border bg-surface" />;
 }
 
-export default function AppShellLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default function AppShellLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <TooltipProvider delayDuration={200}>
       <div className="flex min-h-dvh bg-bg">
