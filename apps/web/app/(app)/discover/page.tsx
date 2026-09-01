@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 
 import { EventCard } from '@/features/discovery/EventCard';
 import { EventTypeTabs } from '@/features/discovery/EventTypeTabs';
@@ -46,12 +47,16 @@ export default async function DiscoverPage({ searchParams }: DiscoverPageProps) 
               Deccan Rockers. Spots are live — confirmed vs capacity, not a vanity counter.
             </p>
           </div>
-          <EventTypeTabs />
+          <Suspense fallback={<div className="h-10 w-80 rounded-md border border-border bg-surface" />}>
+            <EventTypeTabs />
+          </Suspense>
         </div>
 
         <HeroCarousel events={featured.length > 0 ? featured : filtered.slice(0, 3)} />
 
-        <ForYouTags />
+        <Suspense fallback={<div className="h-8 rounded-md bg-surface" />}>
+          <ForYouTags />
+        </Suspense>
 
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_20rem]">
           <section>
