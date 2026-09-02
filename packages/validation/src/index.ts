@@ -35,6 +35,8 @@ export const paginationQuerySchema = z.object({
 export const eventDiscoveryQuerySchema = paginationQuerySchema.extend({
   city: z.string().min(1).max(80).optional(),
   style: z.string().min(1).max(40).optional(),
+  tag: z.string().min(1).max(40).optional(),
+  type: z.string().min(1).max(40).optional(),
   q: z.string().min(1).max(80).optional(),
 });
 

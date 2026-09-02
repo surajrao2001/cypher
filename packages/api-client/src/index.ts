@@ -1,4 +1,11 @@
-import type { CurrentUserDto, HealthResponse, OtpRequestResponse, OtpVerifyResponse } from '@cypher/contracts';
+import type {
+  CurrentUserDto,
+  EventDetailDto,
+  EventListResponse,
+  HealthResponse,
+  OtpRequestResponse,
+  OtpVerifyResponse,
+} from '@cypher/contracts';
 
 export interface ApiClientOptions {
   baseUrl: string;
@@ -28,6 +35,43 @@ export class CypherApiClient {
 
   async me(): Promise<CurrentUserDto> {
     return this.request<CurrentUserDto>('/v1/me');
+  }
+
+  async listEvents(query: {
+    q?: string;
+    city?: string;
+    tag?: string;
+    style?: string;
+    type?: string;
+    page?: number;
+    pageSize?: number;
+  } = {}): Promise<EventListResponse> {
+    const params = new URLSearchParams();
+    for (const [key, value] of Object.entries(query)) {
+      if (value === undefined || value === '' || value === 'all') {
+        continue;
+      }
+      params.set(key, String(value));
+    }
+    const suffix = params.size > 0 ? `?${params.toString()}` : '';
+    return this.request<EventListResponse>(`/v1/events${suffix}`);
+  }
+
+  async getEvent(slugOrId: string): Promise<EventDetailDto | null> {
+    const token = await this.options.getAccessToken?.();
+    const headers = new Headers();
+    headers.set('Accept', 'application/json');
+    if (token) {
+      headers.set('Authorization', `Bearer ${token}`);
+    }
+    const response = await fetch(`${this.options.baseUrl}/v1/events/${encodeURIComponent(slugOrId)}`, { headers });
+    if (response.status === 404) {
+      return null;
+    }
+    if (!response.ok) {
+      throw new Error(`API ${response.status}`);
+    }
+    return (await response.json()) as EventDetailDto;
   }
 
   async completeOnboarding(body: {

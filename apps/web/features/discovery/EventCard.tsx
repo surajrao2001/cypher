@@ -1,5 +1,6 @@
 'use client';
 
+import type { EventCardDto } from '@cypher/contracts';
 import { formatEventDate } from '@cypher/utils';
 import { motion, useReducedMotion } from 'framer-motion';
 import { Calendar, MapPin } from 'lucide-react';
@@ -7,10 +8,10 @@ import Link from 'next/link';
 
 import { Badge } from '@/components/ui/badge';
 import { EventPoster } from '@/features/discovery/EventPoster';
-import { spotsTone, type MockEvent } from '@/features/discovery/mock-events';
+import { spotsTone } from '@/features/discovery/mock-events';
 
 interface EventCardProps {
-  event: MockEvent;
+  event: EventCardDto;
 }
 
 export function EventCard({ event }: EventCardProps) {
@@ -43,7 +44,7 @@ export function EventCard({ event }: EventCardProps) {
             <span className="font-display text-2xl leading-none text-text-primary">{day}</span>
           </div>
           <Badge variant="lime" className="absolute right-3 top-3">
-            {event.styles[0]}
+            {event.styles[0] ?? event.eventType}
           </Badge>
           <div className="absolute inset-x-0 bottom-0 p-3">
             <p className="kicker text-accent-2">{event.kicker}</p>
@@ -54,7 +55,7 @@ export function EventCard({ event }: EventCardProps) {
           <p className="flex items-start gap-1.5 font-body text-sm text-text-secondary">
             <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-text-muted" />
             <span>
-              {event.venue}
+              {event.venue ?? event.city}
               <span className="text-text-muted"> · {event.city}</span>
             </span>
           </p>

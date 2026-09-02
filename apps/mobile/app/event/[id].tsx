@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
 import { EventPoster } from '@/components/EventPoster';
@@ -9,17 +9,36 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Chip } from '@/components/ui/Chip';
 import { Text } from '@/components/ui/Text';
+import { mobileApi, toMobileDetail } from '@/lib/api';
 import { clampQuantity, formatEventDate, formatMinorUnits, spotsLeft } from '@/lib/format';
-import { getEventById } from '@/lib/mock-events';
+import { getEventById, type MockEvent } from '@/lib/mock-events';
 
 export default function EventDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const event = typeof id === 'string' ? getEventById(id) : undefined;
+  const [event, setEvent] = useState<MockEvent | undefined>(
+    typeof id === 'string' ? getEventById(id) : undefined,
+  );
   const remaining = event ? spotsLeft(event.spotsCapacity, event.spotsConfirmed) : 0;
   const soldOut = remaining === 0;
   const [quantity, setQuantity] = useState(1);
   const [notice, setNotice] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof id !== 'string') {
+      return;
+    }
+    void mobileApi()
+      .getEvent(id)
+      .then((row) => {
+        if (row) {
+          setEvent(toMobileDetail(row));
+        }
+      })
+      .catch(() => {
+        setEvent(getEventById(id));
+      });
+  }, [id]);
 
   const maxTickets = Math.max(remaining, 0);
   const safeQuantity = useMemo(
@@ -32,7 +51,7 @@ export default function EventDetailScreen() {
       <View className="flex-1 items-center justify-center bg-bg px-6">
         <Text variant="title">Event missing</Text>
         <Text variant="caption" className="mt-2 text-center">
-          That night is not in the mock lineup.
+          That night is not on the board.
         </Text>
         <Button className="mt-6" onPress={() => router.replace('/discover')}>
           Back to discover

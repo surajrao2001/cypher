@@ -20,7 +20,7 @@ export interface MockEvent {
   city: string;
   venue: string;
   startTime: string;
-  styles: DanceStyle[];
+  styles: string[];
   spotsConfirmed: number;
   spotsCapacity: number;
   priceMinor: number;
@@ -177,15 +177,21 @@ export function getFeaturedEvent(): MockEvent {
   return MOCK_EVENTS.find((event) => event.featured) ?? MOCK_EVENTS[0]!;
 }
 
-export function filterEvents(style: StyleFilter): MockEvent[] {
+export function filterEvents(style: StyleFilter, events: MockEvent[] = MOCK_EVENTS): MockEvent[] {
   if (style === 'All') {
-    return MOCK_EVENTS;
+    return events;
   }
-  return MOCK_EVENTS.filter((event) => event.styles.includes(style));
+  const needle = style.toLowerCase().replaceAll('-', ' ');
+  return events.filter((event) =>
+    event.styles.some((item) => {
+      const hay = item.toLowerCase().replaceAll('-', ' ');
+      return hay.includes(needle) || needle.includes(hay);
+    }),
+  );
 }
 
-export function upcomingEvents(): MockEvent[] {
-  return [...MOCK_EVENTS].sort(
+export function upcomingEvents(events: MockEvent[] = MOCK_EVENTS): MockEvent[] {
+  return [...events].sort(
     (a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime(),
   );
 }

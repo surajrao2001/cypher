@@ -1,5 +1,6 @@
 'use client';
 
+import type { EventCardDto } from '@cypher/contracts';
 import { formatEventDate } from '@cypher/utils';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, MapPin } from 'lucide-react';
@@ -9,10 +10,10 @@ import { useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { EventPoster } from '@/features/discovery/EventPoster';
-import { spotsTone, type MockEvent } from '@/features/discovery/mock-events';
+import { spotsTone } from '@/features/discovery/mock-events';
 
 interface HeroCarouselProps {
-  events: MockEvent[];
+  events: EventCardDto[];
 }
 
 export function HeroCarousel({ events }: HeroCarouselProps) {
@@ -69,7 +70,7 @@ export function HeroCarousel({ events }: HeroCarouselProps) {
             </div>
             <div className="relative z-10 flex min-h-[22rem] flex-col justify-end gap-4 p-5 md:min-h-[28rem] md:p-10">
               <div className="flex flex-wrap items-center gap-2">
-                <Badge variant="lime">{current.styles[0]}</Badge>
+                <Badge variant="lime">{current.styles[0] ?? current.eventType}</Badge>
                 <Badge variant="muted">{current.city}</Badge>
                 <span className={`font-body text-xs font-semibold uppercase tracking-[0.14em] ${tone.className}`}>
                   {tone.label}

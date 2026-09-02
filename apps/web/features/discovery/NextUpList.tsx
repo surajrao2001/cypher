@@ -1,14 +1,15 @@
 'use client';
 
+import type { EventCardDto } from '@cypher/contracts';
 import { formatEventDate } from '@cypher/utils';
 import { motion, useReducedMotion } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
 
-import { spotsTone, type MockEvent } from '@/features/discovery/mock-events';
+import { spotsTone } from '@/features/discovery/mock-events';
 
 interface NextUpListProps {
-  events: MockEvent[];
+  events: EventCardDto[];
 }
 
 export function NextUpList({ events }: NextUpListProps) {
@@ -32,13 +33,15 @@ export function NextUpList({ events }: NextUpListProps) {
                     className="flex gap-3 rounded-md border border-transparent p-1.5 hover:border-border hover:bg-elevated"
                   >
                     <div className="relative h-16 w-12 shrink-0 overflow-hidden rounded-sm bg-elevated">
-                      <Image
-                        src={event.posterUrl}
-                        alt=""
-                        fill
-                        sizes="48px"
-                        className="object-cover"
-                      />
+                      {event.posterUrl ? (
+                        <Image
+                          src={event.posterUrl}
+                          alt=""
+                          fill
+                          sizes="48px"
+                          className="object-cover"
+                        />
+                      ) : null}
                     </div>
                     <div className="min-w-0">
                       <p className="truncate font-display text-lg uppercase tracking-[0.04em] leading-none">

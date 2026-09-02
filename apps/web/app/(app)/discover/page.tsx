@@ -8,19 +8,16 @@ import { EmptyState } from '@/features/shell/EmptyState';
 import { EventTypeTabs } from '@/features/discovery/EventTypeTabs';
 import { ForYouTags } from '@/features/discovery/ForYouTags';
 import { HeroCarousel } from '@/features/discovery/HeroCarousel';
-import {
-  featuredEvents,
-  filterMockEvents,
-  mockEvents,
-  nextUpEvents,
-} from '@/features/discovery/mock-events';
 import { NextUpList } from '@/features/discovery/NextUpList';
 import { TrustBadgesFooter } from '@/features/discovery/TrustBadgesFooter';
+import { loadEventList } from '@/lib/api';
 
 export const metadata: Metadata = {
   title: 'Discover',
   description: 'Find battles, jams, and cyphers across Mumbai, Delhi, Bengaluru, and Pune.',
 };
+
+export const dynamic = 'force-dynamic';
 
 interface DiscoverPageProps {
   searchParams: Promise<{
@@ -33,9 +30,16 @@ interface DiscoverPageProps {
 
 export default async function DiscoverPage({ searchParams }: DiscoverPageProps) {
   const params = await searchParams;
-  const filtered = filterMockEvents(mockEvents, params);
-  const featured = featuredEvents(filterMockEvents(mockEvents, { city: params.city, q: params.q }));
-  const upcoming = nextUpEvents(filtered);
+  const catalog = await loadEventList({
+    q: params.q,
+    city: params.city,
+    tag: params.tag,
+    type: params.type,
+    pageSize: 50,
+  });
+  const filtered = catalog.items;
+  const featured = catalog.featured.length > 0 ? catalog.featured : filtered.slice(0, 3);
+  const upcoming = catalog.nextUp;
   const cityLabel = params.city && params.city !== 'all' ? params.city : 'India';
 
   return (
@@ -55,7 +59,7 @@ export default async function DiscoverPage({ searchParams }: DiscoverPageProps) 
           </Suspense>
         </div>
 
-        <HeroCarousel events={featured.length > 0 ? featured : filtered.slice(0, 3)} />
+        <HeroCarousel events={featured} />
 
         <Suspense fallback={<div className="h-8 rounded-md bg-surface" />}>
           <ForYouTags />

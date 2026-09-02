@@ -1,5 +1,6 @@
 'use client';
 
+import type { EventCardDto } from '@cypher/contracts';
 import { formatMinorUnits } from '@cypher/utils';
 
 import { Button } from '@/components/ui/button';
@@ -12,10 +13,9 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import type { MockEvent } from '@/features/discovery/mock-events';
 
 interface RegisterCtaProps {
-  event: MockEvent;
+  event: EventCardDto;
   spotsLeft: number;
 }
 
@@ -40,7 +40,7 @@ export function RegisterCta({ event, spotsLeft }: RegisterCtaProps) {
         </DialogHeader>
         <div className="rounded-md border border-border bg-elevated p-4 text-sm">
           <p className="font-display text-2xl uppercase tracking-[0.06em]">{event.title}</p>
-          <p className="mt-1 text-text-secondary">{event.venue}</p>
+          <p className="mt-1 text-text-secondary">{event.venue ?? event.city}</p>
           <p className="mt-3 text-text-primary">{price}</p>
         </div>
         <DialogFooter>
