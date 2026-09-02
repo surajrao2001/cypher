@@ -61,7 +61,16 @@ export class CypherApiClient {
     });
 
     if (!response.ok) {
-      throw new Error(`API ${response.status} ${response.statusText}`);
+      let message = `API ${response.status}`;
+      try {
+        const body = (await response.json()) as { message?: string };
+        if (typeof body.message === 'string' && body.message.length > 0) {
+          message = body.message;
+        }
+      } catch {
+        // keep status text
+      }
+      throw new Error(message);
     }
 
     return (await response.json()) as T;

@@ -1,6 +1,12 @@
 import { z } from 'zod';
 
-const emptyToUndefined = (value: unknown) => (value === '' ? undefined : value);
+const emptyToUndefined = (value: unknown) => {
+  if (typeof value !== 'string') {
+    return value === '' ? undefined : value;
+  }
+  const trimmed = value.trim().replace(/^['"]|['"]$/g, '');
+  return trimmed === '' ? undefined : trimmed;
+};
 
 export const envSchema = z
   .object({

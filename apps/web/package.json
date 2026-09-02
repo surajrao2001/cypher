@@ -11,9 +11,11 @@
     "test": "echo skip"
   },
   "dependencies": {
+    "@cypher/api-client": "workspace:*",
     "@cypher/contracts": "workspace:*",
     "@cypher/tokens": "workspace:*",
     "@cypher/utils": "workspace:*",
+    "@cypher/validation": "workspace:*",
     "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-dropdown-menu": "^2.1.16",
     "@radix-ui/react-slot": "^1.2.3",

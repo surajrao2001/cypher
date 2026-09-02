@@ -88,5 +88,6 @@ export const routes = {
   organizers: '/organizers',
   tickets: '/tickets',
   profile: '/profile',
+  login: '/login',
   saved: '/saved',
 } as const;
