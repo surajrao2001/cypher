@@ -3,10 +3,10 @@
 import { formatEventDate } from '@cypher/utils';
 import { motion, useReducedMotion } from 'framer-motion';
 import { Calendar, MapPin } from 'lucide-react';
-import Image from 'next/image';
 import Link from 'next/link';
 
 import { Badge } from '@/components/ui/badge';
+import { EventPoster } from '@/features/discovery/EventPoster';
 import { spotsTone, type MockEvent } from '@/features/discovery/mock-events';
 
 interface EventCardProps {
@@ -30,15 +30,12 @@ export function EventCard({ event }: EventCardProps) {
         href={`/events/${event.slug}`}
         className="flex h-full flex-col overflow-hidden rounded-lg border border-border bg-surface shadow-poster"
       >
-        <div className="poster-grain relative aspect-[3/4] overflow-hidden bg-elevated">
-          <Image
+        <div className="relative aspect-[3/4] overflow-hidden bg-elevated">
+          <EventPoster
+            title={event.title}
             src={event.posterUrl}
-            alt={`${event.title} poster`}
-            fill
             sizes="(max-width: 768px) 100vw, (max-width: 1280px) 33vw, 280px"
-            className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/20 to-transparent" />
           <div className="absolute left-3 top-3 flex h-14 w-12 flex-col items-center justify-center rounded-sm bg-bg/90 text-center ring-1 ring-border">
             <span className="font-body text-[9px] font-semibold uppercase tracking-[0.18em] text-accent">
               {month}

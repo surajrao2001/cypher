@@ -3,12 +3,12 @@
 import { formatEventDate } from '@cypher/utils';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, MapPin } from 'lucide-react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { EventPoster } from '@/features/discovery/EventPoster';
 import { spotsTone, type MockEvent } from '@/features/discovery/mock-events';
 
 interface HeroCarouselProps {
@@ -63,17 +63,9 @@ export function HeroCarousel({ events }: HeroCarouselProps) {
             exit={reduceMotion ? undefined : { opacity: 0 }}
             transition={{ duration: 0.35, ease: 'easeOut' }}
           >
-            <div className="poster-grain absolute inset-0">
-              <Image
-                src={current.posterUrl}
-                alt=""
-                fill
-                priority
-                sizes="100vw"
-                className="object-cover object-center"
-              />
-              <div className="absolute inset-0 bg-gradient-to-r from-bg via-bg/80 to-bg/20" />
-              <div className="absolute inset-0 bg-gradient-to-t from-bg via-transparent to-bg/30" />
+            <div className="absolute inset-0">
+              <EventPoster title={current.title} src={current.posterUrl} priority sizes="100vw" />
+              <div className="absolute inset-0 bg-gradient-to-r from-bg via-bg/75 to-bg/15" />
             </div>
             <div className="relative z-10 flex min-h-[22rem] flex-col justify-end gap-4 p-5 md:min-h-[28rem] md:p-10">
               <div className="flex flex-wrap items-center gap-2">

@@ -52,9 +52,24 @@ export default function DiscoverScreen() {
 
         <View className="mt-6 gap-3 px-4">
           <Text variant="label">For you</Text>
-          {events.map((event) => (
-            <EventCard key={event.id} event={event} />
-          ))}
+          {events.length === 0 ? (
+            <View className="rounded-2xl border border-dashed border-border bg-surface px-5 py-10">
+              <Text variant="kicker">Filters</Text>
+              <Text variant="title" className="mt-2">
+                Floor’s empty
+              </Text>
+              <Text variant="caption" className="mt-2">
+                Nothing in that style on the mock board. Clear the chip and pick another room.
+              </Text>
+              <View className="mt-5 self-start">
+                <Chip selected onPress={() => setStyle('All')}>
+                  All
+                </Chip>
+              </View>
+            </View>
+          ) : (
+            events.map((event) => <EventCard key={event.id} event={event} />)
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>

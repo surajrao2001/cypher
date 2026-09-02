@@ -1,7 +1,10 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { Suspense } from 'react';
 
+import { Button } from '@/components/ui/button';
 import { EventCard } from '@/features/discovery/EventCard';
+import { EmptyState } from '@/features/shell/EmptyState';
 import { EventTypeTabs } from '@/features/discovery/EventTypeTabs';
 import { ForYouTags } from '@/features/discovery/ForYouTags';
 import { HeroCarousel } from '@/features/discovery/HeroCarousel';
@@ -70,12 +73,15 @@ export default async function DiscoverPage({ searchParams }: DiscoverPageProps) 
               </p>
             </div>
             {filtered.length === 0 ? (
-              <div className="rounded-lg border border-dashed border-border bg-surface px-6 py-16 text-center">
-                <p className="font-display text-3xl uppercase tracking-[0.06em]">Floor’s empty</p>
-                <p className="mt-2 text-sm text-text-secondary">
-                  No events match that city, tag, or search. Clear filters or pick another crew city.
-                </p>
-              </div>
+              <EmptyState
+                kicker="Filters"
+                title="Floor’s empty"
+                body="No events match that city, tag, or search. Clear filters or pick another crew city."
+              >
+                <Button asChild variant="outline">
+                  <Link href="/discover">Clear filters</Link>
+                </Button>
+              </EmptyState>
             ) : (
               <div className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-3">
                 {filtered.map((event) => (
