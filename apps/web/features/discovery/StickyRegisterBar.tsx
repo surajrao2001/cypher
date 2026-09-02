@@ -1,12 +1,12 @@
 'use client';
 
+import type { EventCardDto } from '@cypher/contracts';
 import { formatMinorUnits } from '@cypher/utils';
 
 import { RegisterCta } from '@/features/discovery/RegisterCta';
-import type { MockEvent } from '@/features/discovery/mock-events';
 
 interface StickyRegisterBarProps {
-  event: MockEvent;
+  event: EventCardDto;
   spotsLeft: number;
 }
 

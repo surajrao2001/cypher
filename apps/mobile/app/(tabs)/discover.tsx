@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -6,15 +6,31 @@ import { EventCard } from '@/components/EventCard';
 import { FeaturedEventHero } from '@/components/FeaturedEventHero';
 import { Chip } from '@/components/ui/Chip';
 import { Text } from '@/components/ui/Text';
-import { DANCE_STYLES, filterEvents, getFeaturedEvent, type StyleFilter } from '@/lib/mock-events';
+import { mobileApi, toMobileEvent } from '@/lib/api';
+import { DANCE_STYLES, filterEvents, MOCK_EVENTS, type MockEvent, type StyleFilter } from '@/lib/mock-events';
 
 export default function DiscoverScreen() {
   const [style, setStyle] = useState<StyleFilter>('All');
-  const featured = getFeaturedEvent();
+  const [catalog, setCatalog] = useState<MockEvent[]>(MOCK_EVENTS);
+
+  useEffect(() => {
+    void mobileApi()
+      .listEvents({ pageSize: 50 })
+      .then((result) => {
+        if (result.items.length > 0) {
+          setCatalog(result.items.map((item) => toMobileEvent(item)));
+        }
+      })
+      .catch(() => {
+        // Keep the mock board if Nest is not running.
+      });
+  }, []);
+
+  const featured = catalog.find((event) => event.featured) ?? catalog[0];
   const events = useMemo(() => {
-    const list = filterEvents(style);
-    return list.filter((event) => event.id !== featured.id);
-  }, [style, featured.id]);
+    const list = filterEvents(style, catalog);
+    return featured ? list.filter((event) => event.id !== featured.id) : list;
+  }, [style, catalog, featured]);
 
   return (
     <SafeAreaView className="flex-1 bg-bg" edges={['top']}>
@@ -33,9 +49,11 @@ export default function DiscoverScreen() {
           </Text>
         </View>
 
-        <View className="mt-6 px-4">
-          <FeaturedEventHero event={featured} />
-        </View>
+        {featured ? (
+          <View className="mt-6 px-4">
+            <FeaturedEventHero event={featured} />
+          </View>
+        ) : null}
 
         <ScrollView
           horizontal
@@ -59,7 +77,7 @@ export default function DiscoverScreen() {
                 Floor’s empty
               </Text>
               <Text variant="caption" className="mt-2">
-                Nothing in that style on the mock board. Clear the chip and pick another room.
+                Nothing in that style on the board. Clear the chip and pick another room.
               </Text>
               <View className="mt-5 self-start">
                 <Chip selected onPress={() => setStyle('All')}>
