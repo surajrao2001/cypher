@@ -1,0 +1,68 @@
+import { Barlow_400Regular, Barlow_500Medium, Barlow_600SemiBold, Barlow_700Bold } from '@expo-google-fonts/barlow';
+import { BebasNeue_400Regular } from '@expo-google-fonts/bebas-neue';
+import { useFonts } from 'expo-font';
+import { Stack } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
+import { StatusBar } from 'expo-status-bar';
+import * as SystemUI from 'expo-system-ui';
+import { useEffect } from 'react';
+import { View } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+
+import { fallbackFonts, FontsProvider, loadedFonts } from '@/lib/fonts';
+import { colors } from '@/lib/theme';
+
+import '../global.css';
+
+SplashScreen.preventAutoHideAsync().catch(() => undefined);
+void SystemUI.setBackgroundColorAsync('#0A0A0A');
+
+export default function RootLayout() {
+  const [fontsLoaded, fontError] = useFonts({
+    BebasNeue_400Regular,
+    Barlow_400Regular,
+    Barlow_500Medium,
+    Barlow_600SemiBold,
+    Barlow_700Bold,
+  });
+
+  const fontsReady = fontsLoaded || Boolean(fontError);
+
+  useEffect(() => {
+    if (fontsReady) {
+      SplashScreen.hideAsync().catch(() => undefined);
+    }
+  }, [fontsReady]);
+
+  if (!fontsReady) {
+    return <View className="flex-1 bg-bg" />;
+  }
+
+  return (
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.bg }}>
+      <FontsProvider value={fontsLoaded ? loadedFonts : fallbackFonts}>
+        <StatusBar style="light" />
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            contentStyle: { backgroundColor: colors.bg },
+            animation: 'fade',
+          }}
+        >
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen
+            name="event/[id]"
+            options={{
+              headerShown: true,
+              headerTitle: '',
+              headerTransparent: true,
+              headerTintColor: colors.ink,
+              headerBackTitle: 'Back',
+              animation: 'slide_from_right',
+            }}
+          />
+        </Stack>
+      </FontsProvider>
+    </GestureHandlerRootView>
+  );
+}
