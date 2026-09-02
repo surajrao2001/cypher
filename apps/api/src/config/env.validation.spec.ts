@@ -22,6 +22,16 @@ describe('validateEnv', () => {
     });
     expect(env.SUPABASE_URL).toBeUndefined();
     expect(env.SUPABASE_JWT_SECRET).toBeUndefined();
+    expect(env.RATE_LIMIT_ENABLED).toBe(true);
+  });
+
+  it('disables rate limits in test when NODE_ENV is test', () => {
+    const env = validateEnv({ ...validEnv, NODE_ENV: 'test' });
+    expect(env.RATE_LIMIT_ENABLED).toBe(false);
+  });
+
+  it('requires a JWT secret in production', () => {
+    expect(() => validateEnv({ ...validEnv, NODE_ENV: 'production' })).toThrow(/SUPABASE_JWT_SECRET/);
   });
 
   it('rejects a missing database url', () => {

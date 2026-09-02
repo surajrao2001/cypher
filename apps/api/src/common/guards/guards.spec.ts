@@ -1,18 +1,19 @@
-import { UnauthorizedException } from '@nestjs/common';
+import { ForbiddenException, UnauthorizedException } from '@nestjs/common';
 import type { ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { OrganizerMembershipGuard } from './organizer-membership.guard';
 import { OrganizerPermissionGuard } from './organizer-permission.guard';
 import { PlatformRoleGuard } from './platform-role.guard';
-import { extractBearerToken, SupabaseJwtGuard } from './supabase-jwt.guard';
+import { extractBearerToken } from './supabase-jwt.guard';
 
-function createContext(authorization?: string): ExecutionContext {
+function createContext(auth?: { userId: string }): ExecutionContext {
   return {
     getHandler: () => ({}),
     getClass: () => ({}),
     switchToHttp: () => ({
       getRequest: () => ({
-        headers: authorization ? { authorization } : {},
+        headers: {},
+        auth,
       }),
     }),
   } as ExecutionContext;
@@ -31,28 +32,33 @@ describe('extractBearerToken', () => {
   });
 });
 
-describe('auth guards', () => {
-  const jwtGuard = new SupabaseJwtGuard();
+describe('authorization guards', () => {
   const reflector = new Reflector();
   const platformGuard = new PlatformRoleGuard(reflector);
   const membershipGuard = new OrganizerMembershipGuard(reflector);
   const permissionGuard = new OrganizerPermissionGuard(reflector);
 
   it.each([
-    ['SupabaseJwtGuard', jwtGuard],
     ['PlatformRoleGuard', platformGuard],
     ['OrganizerMembershipGuard', membershipGuard],
     ['OrganizerPermissionGuard', permissionGuard],
-  ])('%s rejects requests without a bearer token', (_name, guard) => {
+  ])('%s rejects requests without a verified principal', (_name, guard) => {
     expect(() => guard.canActivate(createContext())).toThrow(UnauthorizedException);
   });
 
   it.each([
-    ['SupabaseJwtGuard', jwtGuard],
     ['PlatformRoleGuard', platformGuard],
     ['OrganizerMembershipGuard', membershipGuard],
     ['OrganizerPermissionGuard', permissionGuard],
-  ])('%s allows a request that includes a bearer token', (_name, guard) => {
-    expect(guard.canActivate(createContext('Bearer token-value'))).toBe(true);
+  ])('%s allows a request with a verified user id', (_name, guard) => {
+    expect(guard.canActivate(createContext({ userId: 'user-1' }))).toBe(true);
+  });
+
+  it('does not invent platform roles from the JWT', () => {
+    const reflector = {
+      getAllAndOverride: () => ['admin'],
+    };
+    const guard = new PlatformRoleGuard(reflector as never);
+    expect(() => guard.canActivate(createContext({ userId: 'user-1' }))).toThrow(ForbiddenException);
   });
 });

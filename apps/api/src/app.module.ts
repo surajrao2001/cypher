@@ -2,6 +2,8 @@ import { join } from 'node:path';
 import { Module, type MiddlewareConsumer, type NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from './common/prisma.module';
+import { RedisModule } from './common/redis/redis.module';
+import { AuthModule } from './common/auth/auth.module';
 import { RequestIdMiddleware } from './common/request-id.middleware';
 import { validateEnv } from './config/env.validation';
 import { AdminModule } from './modules/admin/admin.module';
@@ -26,6 +28,8 @@ import { UsersModule } from './modules/users/users.module';
       validate: validateEnv,
     }),
     PrismaModule,
+    RedisModule,
+    AuthModule,
     HealthModule,
     IdentityModule,
     UsersModule,
