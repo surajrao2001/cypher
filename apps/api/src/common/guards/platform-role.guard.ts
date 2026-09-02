@@ -1,13 +1,14 @@
 import {
+  ForbiddenException,
   Injectable,
   SetMetadata,
-  UnauthorizedException,
   type CanActivate,
   type ExecutionContext,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import type { FastifyRequest } from 'fastify';
-import { extractBearerToken } from './supabase-jwt.guard';
+import type { AuthPrincipal } from '../auth/auth.types';
+import { getAuthUserId } from './supabase-jwt.guard';
 
 export const PLATFORM_ROLES_KEY = 'platformRoles';
 
@@ -21,16 +22,17 @@ export class PlatformRoleGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
-    const request = context.switchToHttp().getRequest<FastifyRequest>();
-    if (!extractBearerToken(request)) {
-      throw new UnauthorizedException('Missing bearer token');
-    }
+    const request = context.switchToHttp().getRequest<FastifyRequest & { auth?: AuthPrincipal }>();
+    getAuthUserId(request);
 
-    this.reflector.getAllAndOverride<PlatformRoleName[]>(PLATFORM_ROLES_KEY, [
+    const roles = this.reflector.getAllAndOverride<PlatformRoleName[]>(PLATFORM_ROLES_KEY, [
       context.getHandler(),
       context.getClass(),
     ]);
+    if (!roles || roles.length === 0) {
+      return true;
+    }
 
-    return true;
+    throw new ForbiddenException('Platform role is resolved from the profile in a later milestone');
   }
 }

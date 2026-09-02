@@ -23,10 +23,11 @@ async function bootstrap(): Promise<void> {
   const prefix = config.get('API_PREFIX', { infer: true });
   const port = config.get('API_PORT', { infer: true });
   const webOrigin = config.get('WEB_ORIGIN', { infer: true });
+  const mobileOrigin = config.get('MOBILE_ORIGIN', { infer: true });
 
   app.setGlobalPrefix(prefix);
   app.enableCors({
-    origin: [webOrigin, 'http://localhost:8081'],
+    origin: [webOrigin, mobileOrigin ?? 'http://localhost:8081'],
     credentials: true,
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
   });
@@ -41,11 +42,19 @@ async function bootstrap(): Promise<void> {
   );
   app.useGlobalFilters(new HttpExceptionFilter());
 
+  const fastify = app.getHttpAdapter().getInstance();
+  fastify.addHook('onRequest', async (_request, reply) => {
+    void reply.header('X-Content-Type-Options', 'nosniff');
+    void reply.header('X-Frame-Options', 'DENY');
+    void reply.header('Referrer-Policy', 'no-referrer');
+  });
+
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Cypher API')
     .setDescription('Dance platform API')
     .setVersion('1.0')
     .addBearerAuth()
+    .addServer('/v1', 'Versioned API')
     .build();
   SwaggerModule.setup('docs', app, SwaggerModule.createDocument(app, swaggerConfig), {
     useGlobalPrefix: false,
