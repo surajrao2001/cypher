@@ -12,6 +12,7 @@ export const envSchema = z
     MOBILE_ORIGIN: z.preprocess(emptyToUndefined, z.string().url().optional()),
     REDIS_URL: z.string().min(1),
     SUPABASE_URL: z.preprocess(emptyToUndefined, z.string().url().optional()),
+    SUPABASE_ANON_KEY: z.preprocess(emptyToUndefined, z.string().min(20).optional()),
     SUPABASE_JWT_SECRET: z.preprocess(emptyToUndefined, z.string().min(16).optional()),
     RATE_LIMIT_ENABLED: z.preprocess((value) => {
       if (value === 'false' || value === false) return false;
@@ -24,10 +25,27 @@ export const envSchema = z
     RATE_LIMIT_ENABLED: data.RATE_LIMIT_ENABLED ?? data.NODE_ENV !== 'test',
   }))
   .superRefine((data, ctx) => {
-    if (data.NODE_ENV === 'production' && !data.SUPABASE_JWT_SECRET) {
+    if (data.NODE_ENV !== 'production') {
+      return;
+    }
+    if (!data.SUPABASE_JWT_SECRET) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['SUPABASE_JWT_SECRET'],
+        message: 'Required in production',
+      });
+    }
+    if (!data.SUPABASE_URL) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['SUPABASE_URL'],
+        message: 'Required in production',
+      });
+    }
+    if (!data.SUPABASE_ANON_KEY) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['SUPABASE_ANON_KEY'],
         message: 'Required in production',
       });
     }

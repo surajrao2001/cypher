@@ -30,8 +30,15 @@ describe('validateEnv', () => {
     expect(env.RATE_LIMIT_ENABLED).toBe(false);
   });
 
-  it('requires a JWT secret in production', () => {
+  it('requires supabase credentials in production', () => {
     expect(() => validateEnv({ ...validEnv, NODE_ENV: 'production' })).toThrow(/SUPABASE_JWT_SECRET/);
+    expect(() =>
+      validateEnv({
+        ...validEnv,
+        NODE_ENV: 'production',
+        SUPABASE_JWT_SECRET: 'test-jwt-secret-16',
+      }),
+    ).toThrow(/SUPABASE_URL/);
   });
 
   it('rejects a missing database url', () => {
