@@ -1,3 +1,13 @@
+jest.mock('@nestjs/bullmq', () => ({
+  Processor: () => (target: unknown) => target,
+  OnWorkerEvent: () => () => undefined,
+  WorkerHost: class WorkerHost {},
+}));
+
+jest.mock('../prisma.service', () => ({
+  PrismaService: class PrismaService {},
+}));
+
 import { Job } from 'bullmq';
 import { StructuredLogger } from '../config/logger';
 import type { ReservationExpiryJobPayload } from '../jobs/payloads';
@@ -47,7 +57,7 @@ describe('ReservationExpiryConsumer', () => {
     });
   });
 
-  it('does not throw not-implemented and rejects invalid payloads', async () => {
+  it('rejects payloads without registrationId', async () => {
     const prisma = { registration: { findUnique: jest.fn() } } as unknown as PrismaService;
     const consumer = new ReservationExpiryConsumer(prisma, logger);
     const job = {
@@ -59,6 +69,5 @@ describe('ReservationExpiryConsumer', () => {
     } as Job<ReservationExpiryJobPayload>;
 
     await expect(consumer.process(job)).rejects.toThrow(/registrationId/);
-    await expect(consumer.process(job)).rejects.not.toThrow(/not implemented/i);
   });
 });

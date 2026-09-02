@@ -1,3 +1,13 @@
+jest.mock('@nestjs/bullmq', () => ({
+  Processor: () => (target: unknown) => target,
+  OnWorkerEvent: () => () => undefined,
+  WorkerHost: class WorkerHost {},
+}));
+
+jest.mock('../prisma.service', () => ({
+  PrismaService: class PrismaService {},
+}));
+
 import { Job } from 'bullmq';
 import { StructuredLogger } from '../config/logger';
 import type { NotificationJobPayload } from '../jobs/payloads';

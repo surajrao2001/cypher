@@ -37,7 +37,9 @@ export class StructuredLogger implements LoggerService {
 
   constructor(options: StructuredLoggerOptions = {}) {
     this.environment = options.environment ?? process.env.APP_ENV ?? process.env.NODE_ENV ?? 'local';
-    this.minLevel = LEVEL_ORDER[options.level ?? (process.env.LOG_LEVEL as LogLevel | undefined) ?? 'info'];
+    this.minLevel =
+      LEVEL_ORDER[options.level ?? (process.env.LOG_LEVEL as LogLevel | undefined) ?? 'info'] ??
+      LEVEL_ORDER.info;
     this.stdout = options.stdout ?? process.stdout;
     this.stderr = options.stderr ?? process.stderr;
   }
@@ -82,7 +84,7 @@ export class StructuredLogger implements LoggerService {
   }
 
   private emit(level: LogLevel, message: unknown, extra: Record<string, unknown> = {}): void {
-    if (LEVEL_ORDER[level] < this.minLevel) {
+    if (this.minLevel === undefined || LEVEL_ORDER[level] < this.minLevel) {
       return;
     }
 
