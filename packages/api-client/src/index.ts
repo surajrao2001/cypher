@@ -64,7 +64,11 @@ export class CypherApiClient {
     if (token) {
       headers.set('Authorization', `Bearer ${token}`);
     }
-    const response = await fetch(`${this.options.baseUrl}/v1/events/${encodeURIComponent(slugOrId)}`, { headers });
+    const response = await fetch(`${this.options.baseUrl}/v1/events/${encodeURIComponent(slugOrId)}`, {
+      headers,
+      cache: 'no-store',
+      signal: AbortSignal.timeout(8_000),
+    });
     if (response.status === 404) {
       return null;
     }
@@ -102,6 +106,8 @@ export class CypherApiClient {
     const response = await fetch(`${this.options.baseUrl}${path}`, {
       ...init,
       headers,
+      cache: 'no-store',
+      signal: init.signal ?? AbortSignal.timeout(8_000),
     });
 
     if (!response.ok) {

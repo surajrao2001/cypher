@@ -18,6 +18,8 @@ const eventInclude = {
 
 type EventRecord = Prisma.EventGetPayload<{ include: typeof eventInclude }>;
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 @Injectable()
 export class EventsService {
   constructor(private readonly prisma: PrismaService) {}
@@ -64,7 +66,7 @@ export class EventsService {
     const event = await this.prisma.event.findFirst({
       where: {
         status: { in: DETAIL_STATUSES },
-        OR: [{ slug: slugOrId }, { id: slugOrId }],
+        ...(isUuid(slugOrId) ? { OR: [{ slug: slugOrId }, { id: slugOrId }] } : { slug: slugOrId }),
       },
       include: eventInclude,
     });
@@ -98,6 +100,10 @@ export class EventsService {
     }
     return { AND: and };
   }
+}
+
+function isUuid(value: string): boolean {
+  return UUID_RE.test(value);
 }
 
 function toCard(event: EventRecord): EventCardDto {

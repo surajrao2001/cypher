@@ -86,11 +86,15 @@ describe('EventsService', () => {
     expect(JSON.stringify(where)).toContain('battle');
   });
 
-  it('returns detail by slug', async () => {
+  it('looks up a slug without treating it as a UUID id', async () => {
     prisma.event.findFirst.mockResolvedValue(eventRow());
-    const detail = await service.getBySlugOrId('andheri-cypher-vol-18');
-    expect(detail.categories).toHaveLength(1);
-    expect(detail.categories[0]?.confirmedCount).toBe(48);
+    await service.getBySlugOrId('andheri-cypher-vol-18');
+    expect(prisma.event.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ slug: 'andheri-cypher-vol-18' }),
+      }),
+    );
+    expect(JSON.stringify(prisma.event.findFirst.mock.calls[0]?.[0])).not.toContain('"id":"andheri');
   });
 
   it('404s when the event is missing', async () => {

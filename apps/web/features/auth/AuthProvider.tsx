@@ -7,7 +7,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 const TOKEN_KEY = 'cypher.accessToken';
 
 function apiBaseUrl(): string {
-  return process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
+  return process.env.NEXT_PUBLIC_API_URL ?? 'http://127.0.0.1:3001';
 }
 
 function readToken(): string | null {
