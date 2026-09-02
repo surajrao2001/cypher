@@ -14,6 +14,20 @@ export function ForYouTags() {
     <div>
       <p className="kicker mb-3">For you</p>
       <div className="flex flex-wrap gap-2">
+        <motion.button
+          type="button"
+          whileHover={reduceMotion ? undefined : { scale: 1.05 }}
+          whileTap={reduceMotion ? undefined : { scale: 0.97 }}
+          transition={{ duration: 0.15 }}
+          onClick={() => setParams({ tag: null })}
+          className={
+            !active
+              ? 'rounded-sm bg-accent-2 px-2.5 py-1 font-body text-[11px] font-semibold uppercase tracking-[0.14em] text-bg'
+              : 'rounded-sm bg-elevated px-2.5 py-1 font-body text-[11px] font-semibold uppercase tracking-[0.14em] text-text-secondary ring-1 ring-border hover:text-text-primary'
+          }
+        >
+          All
+        </motion.button>
         {FOR_YOU_TAGS.map((tag) => {
           const selected = active === tag;
           return (
