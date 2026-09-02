@@ -28,6 +28,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { useAuth } from '@/features/auth/AuthProvider';
 import { cn } from '@/lib/utils';
 
 const navItems = [
@@ -122,12 +123,43 @@ function SupportSlot() {
   );
 }
 
+function AuthSlot({ onNavigate }: { onNavigate?: () => void }) {
+  const auth = useAuth();
+  const name = auth.me?.profile.dancerName ?? auth.me?.profile.name;
+
+  if (!auth.ready) {
+    return <p className="px-3 text-xs text-text-muted">Session…</p>;
+  }
+
+  if (!auth.token) {
+    return (
+      <Button asChild variant="default" className="w-full">
+        <Link href={routes.login} onClick={onNavigate}>
+          Enter with OTP
+        </Link>
+      </Button>
+    );
+  }
+
+  return (
+    <Link
+      href={routes.profile}
+      onClick={onNavigate}
+      className="block rounded-md px-3 py-2 text-sm text-text-secondary hover:bg-elevated hover:text-text-primary"
+    >
+      <span className="kicker block text-[10px] text-accent">Signed in</span>
+      {name}
+    </Link>
+  );
+}
+
 function SidebarBody({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <div className="flex h-full flex-col gap-6 p-4">
       <BrandMark />
       <NavLinks onNavigate={onNavigate} />
       <div className="mt-auto space-y-3 border-t border-border pt-4">
+        <AuthSlot onNavigate={onNavigate} />
         <SupportSlot />
         <p className="px-3 text-[10px] uppercase tracking-[0.18em] text-text-muted">Floor stays dark</p>
       </div>

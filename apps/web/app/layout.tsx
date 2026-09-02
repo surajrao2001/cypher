@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Barlow, Bebas_Neue } from 'next/font/google';
 
+import { Providers } from '@/app/providers';
 import '@cypher/tokens/css';
 import '@/styles/globals.css';
 
@@ -30,7 +31,9 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className={`dark ${bebasNeue.variable} ${barlow.variable}`} suppressHydrationWarning>
-      <body className="min-h-dvh bg-bg font-body text-text-primary antialiased">{children}</body>
+      <body className="min-h-dvh bg-bg font-body text-text-primary antialiased">
+        <Providers>{children}</Providers>
+      </body>
     </html>
   );
 }

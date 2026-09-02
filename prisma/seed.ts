@@ -3,7 +3,7 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('Seed is intentionally empty until auth/onboarding is implemented.');
+  console.log('Seed stays empty: profiles are created lazily after Phone OTP.');
 }
 
 main()

@@ -25,6 +25,10 @@ export class PlatformRoleGuard implements CanActivate {
     const request = context.switchToHttp().getRequest<FastifyRequest & { auth?: AuthPrincipal }>();
     getAuthUserId(request);
 
+    if (request.auth?.status && request.auth.status !== 'active') {
+      throw new ForbiddenException('Account is not active');
+    }
+
     const roles = this.reflector.getAllAndOverride<PlatformRoleName[]>(PLATFORM_ROLES_KEY, [
       context.getHandler(),
       context.getClass(),
@@ -33,6 +37,10 @@ export class PlatformRoleGuard implements CanActivate {
       return true;
     }
 
-    throw new ForbiddenException('Platform role is resolved from the profile in a later milestone');
+    const platformRole = request.auth?.platformRole;
+    if (!platformRole || !roles.includes(platformRole)) {
+      throw new ForbiddenException('Insufficient platform role');
+    }
+    return true;
   }
 }

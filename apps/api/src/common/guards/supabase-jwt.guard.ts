@@ -1,4 +1,5 @@
 import {
+  ForbiddenException,
   Injectable,
   UnauthorizedException,
   type CanActivate,
@@ -6,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import type { FastifyRequest } from 'fastify';
+import { IdentityService } from '../../modules/identity/identity.service';
 import { IS_PUBLIC_KEY } from '../auth/public.decorator';
 import { SupabaseJwtVerifier } from '../auth/supabase-jwt.verifier';
 import type { AuthPrincipal } from '../auth/auth.types';
@@ -32,6 +34,7 @@ export class SupabaseJwtGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
     private readonly verifier: SupabaseJwtVerifier,
+    private readonly identity: IdentityService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -49,7 +52,16 @@ export class SupabaseJwtGuard implements CanActivate {
       throw new UnauthorizedException('Missing bearer token');
     }
 
-    request.auth = await this.verifier.verify(token);
+    const principal = await this.verifier.verify(token);
+    const profile = await this.identity.ensureProfile(principal.userId);
+    if (profile.status !== 'active') {
+      throw new ForbiddenException('Account is not active');
+    }
+    request.auth = {
+      ...principal,
+      platformRole: profile.platformRole,
+      status: profile.status,
+    };
     return true;
   }
 }

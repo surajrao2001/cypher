@@ -30,6 +30,43 @@ export interface HealthResponse {
   timestamp: string;
 }
 
+export interface CurrentUserDto {
+  userId: string;
+  jwtRole: string;
+  needsOnboarding: boolean;
+  profile: {
+    id: string;
+    name: string;
+    dancerName: string | null;
+    city: string | null;
+    crew: string | null;
+    styles: string[];
+    instagram: string | null;
+    avatarUrl: string | null;
+    platformRole: PlatformRole;
+    status: ProfileStatus;
+  };
+  organizerMemberships: Array<{
+    organizerId: string;
+    role: OrganizerMemberRole;
+    orgName: string;
+    slug: string;
+    verificationStatus: OrganizerVerificationStatus;
+  }>;
+}
+
+export interface OtpRequestResponse {
+  ok: true;
+}
+
+export interface OtpVerifyResponse {
+  accessToken: string;
+  refreshToken: string;
+  expiresIn: number;
+  tokenType: string;
+  userId: string;
+}
+
 export interface EventCardDto {
   id: string;
   slug: string;
@@ -51,5 +88,6 @@ export const routes = {
   organizers: '/organizers',
   tickets: '/tickets',
   profile: '/profile',
+  login: '/login',
   saved: '/saved',
 } as const;

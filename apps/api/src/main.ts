@@ -30,6 +30,7 @@ async function bootstrap(): Promise<void> {
     origin: [webOrigin, mobileOrigin ?? 'http://localhost:8081'],
     credentials: true,
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
   });
 
   app.useGlobalPipes(

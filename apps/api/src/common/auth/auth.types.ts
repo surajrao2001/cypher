@@ -1,6 +1,8 @@
 export type AuthPrincipal = {
   userId: string;
   jwtRole: string;
+  platformRole?: 'user' | 'admin';
+  status?: 'active' | 'suspended' | 'deleted';
 };
 
 export type AuthenticatedRequest = {
