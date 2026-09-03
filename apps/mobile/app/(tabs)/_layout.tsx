@@ -56,6 +56,15 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="organize"
+        options={{
+          title: 'Organize',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="mic" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="profile"
         options={{
           title: 'Profile',

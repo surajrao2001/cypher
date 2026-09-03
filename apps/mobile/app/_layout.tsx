@@ -10,6 +10,7 @@ import { View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { fallbackFonts, FontsProvider, loadedFonts } from '@/lib/fonts';
+import { AuthProvider } from '@/lib/auth';
 import { colors } from '@/lib/theme';
 
 import '../global.css';
@@ -40,7 +41,8 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.bg }}>
-      <FontsProvider value={fontsLoaded ? loadedFonts : fallbackFonts}>
+          <FontsProvider value={fontsLoaded ? loadedFonts : fallbackFonts}>
+        <AuthProvider>
         <StatusBar style="light" />
         <Stack
           screenOptions={{
@@ -61,7 +63,48 @@ export default function RootLayout() {
               animation: 'slide_from_right',
             }}
           />
+          <Stack.Screen
+            name="organize/new"
+            options={{
+              headerShown: true,
+              headerTitle: 'New organizer',
+              headerTintColor: colors.ink,
+              headerStyle: { backgroundColor: colors.bg },
+              animation: 'slide_from_right',
+            }}
+          />
+          <Stack.Screen
+            name="organize/[slug]/index"
+            options={{
+              headerShown: true,
+              headerTitle: 'Organizer',
+              headerTintColor: colors.ink,
+              headerStyle: { backgroundColor: colors.bg },
+              animation: 'slide_from_right',
+            }}
+          />
+          <Stack.Screen
+            name="organize/[slug]/events/new"
+            options={{
+              headerShown: true,
+              headerTitle: 'Draft event',
+              headerTintColor: colors.ink,
+              headerStyle: { backgroundColor: colors.bg },
+              animation: 'slide_from_right',
+            }}
+          />
+          <Stack.Screen
+            name="organize/[slug]/events/[eventId]"
+            options={{
+              headerShown: true,
+              headerTitle: 'Event',
+              headerTintColor: colors.ink,
+              headerStyle: { backgroundColor: colors.bg },
+              animation: 'slide_from_right',
+            }}
+          />
         </Stack>
+        </AuthProvider>
       </FontsProvider>
     </GestureHandlerRootView>
   );

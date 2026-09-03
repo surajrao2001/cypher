@@ -2,7 +2,8 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { EventStatus, type Prisma } from '@prisma/client';
 import { PrismaService } from '../../common/prisma.service';
 import { normalizeDiscoveryQuery, type EventDiscoveryQueryDto } from './events.dto';
-import type { EventCardDto, EventDetailDto, EventListResponse } from './events.types';
+import { eventInclude, toEventCard, toEventDetail } from './events.mapper';
+import type { EventListResponse, EventDetailDto } from './events.types';
 
 const LIST_STATUSES: EventStatus[] = [EventStatus.published, EventStatus.registration_closed];
 const DETAIL_STATUSES: EventStatus[] = [
@@ -10,13 +11,6 @@ const DETAIL_STATUSES: EventStatus[] = [
   EventStatus.registration_closed,
   EventStatus.completed,
 ];
-
-const eventInclude = {
-  organizer: true,
-  categories: { orderBy: { name: 'asc' as const } },
-} satisfies Prisma.EventInclude;
-
-type EventRecord = Prisma.EventGetPayload<{ include: typeof eventInclude }>;
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -53,9 +47,9 @@ export class EventsService {
     ]);
 
     return {
-      items: rows.map(toCard),
-      featured: featuredRows.map(toCard),
-      nextUp: nextUpRows.map(toCard),
+      items: rows.map(toEventCard),
+      featured: featuredRows.map(toEventCard),
+      nextUp: nextUpRows.map(toEventCard),
       total,
       page: filters.page,
       pageSize: filters.pageSize,
@@ -73,7 +67,7 @@ export class EventsService {
     if (!event) {
       throw new NotFoundException('Event not found');
     }
-    return toDetail(event);
+    return toEventDetail(event);
   }
 
   private buildWhere(filters: { q?: string; city?: string; tag?: string; type?: string }): Prisma.EventWhereInput {
@@ -104,56 +98,4 @@ export class EventsService {
 
 function isUuid(value: string): boolean {
   return UUID_RE.test(value);
-}
-
-function toCard(event: EventRecord): EventCardDto {
-  const spotsCapacity = event.categories.reduce((sum, category) => sum + category.capacity, 0);
-  const spotsConfirmed = event.categories.reduce((sum, category) => sum + category.confirmedCount, 0);
-  const priceMinor = event.categories.reduce(
-    (min, category) => Math.min(min, category.priceMinor),
-    event.categories[0]?.priceMinor ?? 0,
-  );
-  const styleLabel = event.styles[0];
-  const kicker = styleLabel ? `${event.city} · ${styleLabel}` : `${event.city} · ${event.eventType}`;
-
-  return {
-    id: event.id,
-    slug: event.slug,
-    title: event.title,
-    kicker,
-    city: event.city,
-    venue: event.venue,
-    startTime: event.startTime.toISOString(),
-    posterUrl: event.posterUrl,
-    status: event.status,
-    eventType: event.eventType,
-    organizerName: event.organizer.orgName,
-    organizerSlug: event.organizer.slug,
-    crew: event.organizer.orgName,
-    styles: event.styles,
-    tags: event.tags,
-    featured: event.featured,
-    priceMinor,
-    spotsConfirmed,
-    spotsCapacity,
-  };
-}
-
-function toDetail(event: EventRecord): EventDetailDto {
-  return {
-    ...toCard(event),
-    description: event.description,
-    endTime: event.endTime?.toISOString() ?? null,
-    registrationOpensAt: event.registrationOpensAt?.toISOString() ?? null,
-    registrationClosesAt: event.registrationClosesAt?.toISOString() ?? null,
-    categories: event.categories.map((category) => ({
-      id: category.id,
-      name: category.name,
-      priceMinor: category.priceMinor,
-      capacity: category.capacity,
-      reservedCount: category.reservedCount,
-      confirmedCount: category.confirmedCount,
-      teamSize: category.teamSize,
-    })),
-  };
 }

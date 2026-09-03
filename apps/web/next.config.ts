@@ -11,6 +11,18 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'images.unsplash.com',
       },
+      {
+        protocol: 'http',
+        hostname: '127.0.0.1',
+        port: '3001',
+        pathname: '/v1/media/**',
+      },
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+        port: '3001',
+        pathname: '/v1/media/**',
+      },
     ],
   },
 };

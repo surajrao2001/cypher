@@ -1,5 +1,5 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { View } from 'react-native';
+import { Image, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Badge } from '@/components/ui/Badge';
@@ -19,13 +19,17 @@ export function EventPoster({ event, height = 168, overlayHeader = false }: Prop
   const isLime = event.posterTone === 'lime';
   const accent = isLime ? colors.lime : colors.accent;
   const topPad = overlayHeader ? insets.top + 44 : 16;
+  const posterUrl = event.posterUrl?.trim();
 
   return (
     <View className="overflow-hidden bg-elevated" style={{ height }}>
+      {posterUrl ? (
+        <Image source={{ uri: posterUrl }} className="absolute inset-0 h-full w-full" resizeMode="cover" />
+      ) : null}
       <LinearGradient
-        colors={['#1A1A1A', '#0A0A0A']}
+        colors={posterUrl ? ['transparent', 'rgba(10,10,10,0.85)'] : ['#1A1A1A', '#0A0A0A']}
         start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
+        end={{ x: 0, y: 1 }}
         style={{ flex: 1 }}
       >
         <View

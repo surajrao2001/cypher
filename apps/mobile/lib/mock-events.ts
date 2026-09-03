@@ -28,6 +28,7 @@ export interface MockEvent {
   organizerName: string;
   description: string;
   posterTone: 'orange' | 'lime';
+  posterUrl?: string | null;
 }
 
 export const MOCK_EVENTS: MockEvent[] = [

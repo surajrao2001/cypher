@@ -3,7 +3,7 @@ import type { EventCardDto, EventDetailDto } from '@cypher/contracts';
 
 import type { MockEvent } from '@/lib/mock-events';
 
-function apiBaseUrl(): string {
+export function apiBaseUrl(): string {
   return process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3001';
 }
 
@@ -23,6 +23,7 @@ export function toMobileEvent(event: EventCardDto, description = ''): MockEvent 
     organizerName: event.organizerName,
     description,
     posterTone: event.featured ? 'orange' : 'lime',
+    posterUrl: event.posterUrl,
   };
 }
 
