@@ -1,4 +1,4 @@
-import { EventStatus, OrganizerMemberRole, OrganizerVerificationStatus, PrismaClient } from '@prisma/client';
+import { EventStatus, EventType, OrganizerMemberRole, OrganizerVerificationStatus, PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -6,6 +6,22 @@ const SEED_USER_ID = '00000000-0000-4000-8000-000000000001';
 
 function poster(id: string): string {
   return `https://images.unsplash.com/${id}?auto=format&fit=crop&w=1400&q=80`;
+}
+
+function styleSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+async function ensureStyle(name: string) {
+  const slug = styleSlug(name);
+  return prisma.danceStyle.upsert({
+    where: { slug },
+    create: { slug, name },
+    update: { name },
+  });
 }
 
 type SeedEvent = {
@@ -19,7 +35,7 @@ type SeedEvent = {
   organizerSlug: string;
   styles: string[];
   tags: string[];
-  eventType: string;
+  eventType: EventType;
   spotsConfirmed: number;
   spotsCapacity: number;
   featured?: boolean;
@@ -50,7 +66,7 @@ const events: SeedEvent[] = [
     organizerSlug: 'mumbai-city-breakers',
     styles: ['Breaking'],
     tags: ['Breaking', '1v1', 'Open Cypher'],
-    eventType: 'battle',
+    eventType: EventType.battle,
     spotsConfirmed: 48,
     spotsCapacity: 64,
     featured: true,
@@ -68,7 +84,7 @@ const events: SeedEvent[] = [
     organizerSlug: 'old-school-delhi',
     styles: ['Breaking'],
     tags: ['Breaking', '1v1'],
-    eventType: 'battle',
+    eventType: EventType.battle,
     spotsConfirmed: 91,
     spotsCapacity: 96,
     featured: true,
@@ -86,7 +102,7 @@ const events: SeedEvent[] = [
     organizerSlug: 'namma-cypher',
     styles: ['Popping'],
     tags: ['Popping', '1v1'],
-    eventType: 'battle',
+    eventType: EventType.battle,
     spotsConfirmed: 22,
     spotsCapacity: 32,
     featured: true,
@@ -102,9 +118,9 @@ const events: SeedEvent[] = [
     startTime: '2026-09-27T18:00:00+05:30',
     posterUrl: poster('photo-1516450360452-9312f5e86fc7'),
     organizerSlug: 'deccan-rockers',
-    styles: ['Hip-Hop', 'Breaking'],
-    tags: ['Hip-Hop', '2v2'],
-    eventType: 'battle',
+    styles: ['Hip Hop', 'Breaking'],
+    tags: ['Hip Hop', '2v2'],
+    eventType: EventType.battle,
     spotsConfirmed: 54,
     spotsCapacity: 80,
     priceMinor: 59900,
@@ -155,7 +171,7 @@ const events: SeedEvent[] = [
     organizerSlug: 'body-carnival',
     styles: ['Waacking'],
     tags: ['Waacking', '1v1'],
-    eventType: 'battle',
+    eventType: EventType.battle,
     spotsConfirmed: 18,
     spotsCapacity: 40,
     priceMinor: 44900,
@@ -204,9 +220,9 @@ const events: SeedEvent[] = [
     startTime: '2026-09-21T18:00:00+05:30',
     posterUrl: poster('photo-1493225457124-a3eb161ffa5f'),
     organizerSlug: 'the-groovers',
-    styles: ['Hip-Hop'],
-    tags: ['Hip-Hop', '2v2'],
-    eventType: 'battle',
+    styles: ['Hip Hop'],
+    tags: ['Hip Hop', '2v2'],
+    eventType: EventType.battle,
     spotsConfirmed: 44,
     spotsCapacity: 60,
     priceMinor: 54900,
@@ -223,7 +239,7 @@ const events: SeedEvent[] = [
     organizerSlug: 'soul-smashers',
     styles: ['Popping'],
     tags: ['Popping', 'Workshop'],
-    eventType: 'workshop',
+    eventType: EventType.workshop,
     spotsConfirmed: 14,
     spotsCapacity: 24,
     priceMinor: 149900,
@@ -238,9 +254,9 @@ const events: SeedEvent[] = [
     startTime: '2026-11-01T16:00:00+05:30',
     posterUrl: poster('photo-1459749411177-04aa7c0d2e66'),
     organizerSlug: 'old-school-delhi',
-    styles: ['Hip-Hop', 'Popping', 'Breaking'],
-    tags: ['Hip-Hop', '2v2', 'Open Cypher'],
-    eventType: 'battle',
+    styles: ['Hip Hop', 'Popping', 'Breaking'],
+    tags: ['Hip Hop', '2v2', 'Open Cypher'],
+    eventType: EventType.battle,
     spotsConfirmed: 62,
     spotsCapacity: 120,
     priceMinor: 64900,
@@ -298,7 +314,6 @@ async function main() {
         startTime: new Date(item.startTime),
         posterUrl: item.posterUrl,
         tags: item.tags,
-        styles: item.styles,
         featured: item.featured ?? false,
         status: EventStatus.published,
       },
@@ -312,11 +327,18 @@ async function main() {
         startTime: new Date(item.startTime),
         posterUrl: item.posterUrl,
         tags: item.tags,
-        styles: item.styles,
         featured: item.featured ?? false,
         status: EventStatus.published,
       },
     });
+
+    await prisma.eventDanceStyle.deleteMany({ where: { eventId: event.id } });
+    for (const styleName of item.styles) {
+      const style = await ensureStyle(styleName);
+      await prisma.eventDanceStyle.create({
+        data: { eventId: event.id, styleId: style.id },
+      });
+    }
 
     await prisma.eventCategory.deleteMany({ where: { eventId: event.id } });
     await prisma.eventCategory.create({

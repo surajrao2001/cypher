@@ -1,5 +1,6 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
 import type { Profile } from '@prisma/client';
+import { replaceProfileDanceStyles } from '../../common/dance-styles';
 import { PrismaService } from '../../common/prisma.service';
 import type { CompleteOnboardingDto } from './identity.dto';
 
@@ -23,7 +24,16 @@ export class IdentityService {
   }
 
   async getMe(userId: string, jwtRole: string) {
-    const profile = await this.ensureProfile(userId);
+    await this.ensureProfile(userId);
+    const profile = await this.prisma.profile.findUniqueOrThrow({
+      where: { id: userId },
+      include: {
+        danceStyles: {
+          include: { style: true },
+          orderBy: { style: { name: 'asc' } },
+        },
+      },
+    });
     const memberships = await this.prisma.organizerMember.findMany({
       where: { userId },
       include: {
@@ -48,7 +58,7 @@ export class IdentityService {
         dancerName: profile.dancerName,
         city: profile.city,
         crew: profile.crew,
-        styles: profile.styles,
+        styles: profile.danceStyles.map((row) => row.style.name),
         instagram: profile.instagram,
         avatarUrl: profile.avatarUrl,
         platformRole: profile.platformRole,
@@ -73,11 +83,11 @@ export class IdentityService {
         city: input.city.trim(),
         name: (input.name ?? input.dancerName).trim(),
         crew: input.crew?.trim(),
-        styles: input.styles ?? [],
         instagram: input.instagram?.replace(/^@/, '').trim(),
         onboardedAt: new Date(),
       },
     });
+    await replaceProfileDanceStyles(this.prisma, userId, input.styles ?? []);
     return this.getMe(userId, jwtRole);
   }
 }

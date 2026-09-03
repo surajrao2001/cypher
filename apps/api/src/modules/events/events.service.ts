@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { EventStatus, type Prisma } from '@prisma/client';
+import { EventStatus, EventType, type Prisma } from '@prisma/client';
+import { slugifyStyleName } from '../../common/dance-styles';
 import { PrismaService } from '../../common/prisma.service';
 import { normalizeDiscoveryQuery, type EventDiscoveryQueryDto } from './events.dto';
 import { eventInclude, toEventCard, toEventDetail } from './events.mapper';
@@ -13,6 +14,8 @@ const DETAIL_STATUSES: EventStatus[] = [
 ];
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+const EVENT_TYPES = new Set<string>(Object.values(EventType));
 
 @Injectable()
 export class EventsService {
@@ -70,16 +73,35 @@ export class EventsService {
     return toEventDetail(event);
   }
 
-  private buildWhere(filters: { q?: string; city?: string; tag?: string; type?: string }): Prisma.EventWhereInput {
+  private buildWhere(filters: {
+    q?: string;
+    city?: string;
+    tag?: string;
+    type?: string;
+  }): Prisma.EventWhereInput {
     const and: Prisma.EventWhereInput[] = [{ status: { in: LIST_STATUSES } }];
     if (filters.city) {
       and.push({ city: filters.city });
     }
-    if (filters.type) {
-      and.push({ eventType: filters.type });
+    if (filters.type && EVENT_TYPES.has(filters.type)) {
+      and.push({ eventType: filters.type as EventType });
     }
     if (filters.tag) {
-      and.push({ OR: [{ tags: { has: filters.tag } }, { styles: { has: filters.tag } }] });
+      const slug = slugifyStyleName(filters.tag);
+      and.push({
+        OR: [
+          { tags: { has: filters.tag } },
+          {
+            danceStyles: {
+              some: {
+                style: {
+                  OR: [{ name: { equals: filters.tag, mode: 'insensitive' } }, { slug }],
+                },
+              },
+            },
+          },
+        ],
+      });
     }
     if (filters.q) {
       const search = { contains: filters.q, mode: 'insensitive' as const };
@@ -89,6 +111,11 @@ export class EventsService {
           { city: search },
           { venue: search },
           { organizer: { is: { orgName: search } } },
+          {
+            danceStyles: {
+              some: { style: { name: search } },
+            },
+          },
         ],
       });
     }
