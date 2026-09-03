@@ -46,3 +46,7 @@ export type EventListResponse = {
   page: number;
   pageSize: number;
 };
+
+export type OrganizerEventDetailDto = EventDetailDto & {
+  organizerId: string;
+};

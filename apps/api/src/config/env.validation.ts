@@ -20,6 +20,7 @@ export const envSchema = z
     SUPABASE_URL: z.preprocess(emptyToUndefined, z.string().url().optional()),
     SUPABASE_ANON_KEY: z.preprocess(emptyToUndefined, z.string().min(20).optional()),
     SUPABASE_JWT_SECRET: z.preprocess(emptyToUndefined, z.string().min(16).optional()),
+    PUBLIC_API_URL: z.preprocess(emptyToUndefined, z.string().url().optional()),
     RATE_LIMIT_ENABLED: z.preprocess((value) => {
       if (value === 'false' || value === false) return false;
       if (value === 'true' || value === true) return true;
@@ -29,6 +30,7 @@ export const envSchema = z
   .transform((data) => ({
     ...data,
     RATE_LIMIT_ENABLED: data.RATE_LIMIT_ENABLED ?? data.NODE_ENV !== 'test',
+    PUBLIC_API_URL: data.PUBLIC_API_URL ?? `http://127.0.0.1:${String(data.API_PORT)}`,
   }))
   .superRefine((data, ctx) => {
     if (data.NODE_ENV !== 'production') {

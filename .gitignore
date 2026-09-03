@@ -70,6 +70,12 @@ web_modules/
 .env.*
 !.env.example
 
+# Local agent milestone tracker (never commit)
+MILESTONE_TRACKER.local.md
+
+# Uploaded posters (local Nest storage)
+apps/api/storage/
+
 # Supabase CLI
 supabase/.temp
 supabase/.branches

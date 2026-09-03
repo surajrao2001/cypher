@@ -22,6 +22,7 @@ type AuthContextValue = {
   token: string | null;
   me: CurrentUserDto | null;
   error: string | null;
+  api: ReturnType<typeof createApiClient>;
   requestOtp: (phone: string) => Promise<void>;
   verifyOtp: (phone: string, code: string) => Promise<void>;
   completeOnboarding: (input: {
@@ -80,6 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       token,
       me,
       error,
+      api: client,
       requestOtp: async (phone) => {
         setError(null);
         await client.requestOtp(phone);

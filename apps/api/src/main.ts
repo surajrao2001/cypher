@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import multipart from '@fastify/multipart';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/http-exception.filter';
 import { AppLogger, writeLog } from './common/logger';
@@ -24,6 +25,13 @@ async function bootstrap(): Promise<void> {
   const port = config.get('API_PORT', { infer: true });
   const webOrigin = config.get('WEB_ORIGIN', { infer: true });
   const mobileOrigin = config.get('MOBILE_ORIGIN', { infer: true });
+
+  await app.register(multipart as never, {
+    limits: {
+      fileSize: 5 * 1024 * 1024,
+      files: 1,
+    },
+  });
 
   app.setGlobalPrefix(prefix);
   app.enableCors({

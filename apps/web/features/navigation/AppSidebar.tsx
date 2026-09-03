@@ -12,6 +12,7 @@ import {
   UserRound,
   Users,
   Menu,
+  Clapperboard,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -37,6 +38,7 @@ const navItems = [
   { href: routes.map, label: 'Map', icon: Map },
   { href: routes.videos, label: 'Videos', icon: PlayCircle },
   { href: routes.organizers, label: 'Organizers', icon: Users },
+  { href: routes.organize, label: 'Organize', icon: Clapperboard },
   { href: routes.tickets, label: 'Tickets', icon: Ticket },
   { href: routes.profile, label: 'Profile', icon: UserRound },
   { href: routes.saved, label: 'Saved', icon: Bookmark },

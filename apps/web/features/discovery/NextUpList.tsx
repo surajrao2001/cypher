@@ -38,6 +38,7 @@ export function NextUpList({ events }: NextUpListProps) {
                           src={event.posterUrl}
                           alt=""
                           fill
+                          unoptimized
                           sizes="48px"
                           className="object-cover"
                         />

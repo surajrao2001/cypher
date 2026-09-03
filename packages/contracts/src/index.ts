@@ -116,12 +116,96 @@ export interface EventListResponse {
   pageSize: number;
 }
 
+export interface OrganizerDto {
+  id: string;
+  orgName: string;
+  slug: string;
+  city: string | null;
+  bio: string | null;
+  instagram: string | null;
+  verificationStatus: OrganizerVerificationStatus;
+  role: OrganizerMemberRole;
+  createdAt: string;
+}
+
+export interface CreateOrganizerBody {
+  orgName: string;
+  slug?: string;
+  city?: string;
+  bio?: string;
+  instagram?: string;
+}
+
+export interface UpdateOrganizerBody {
+  orgName?: string;
+  city?: string | null;
+  bio?: string | null;
+  instagram?: string | null;
+}
+
+export interface CreateOrganizerEventBody {
+  title: string;
+  slug?: string;
+  description?: string;
+  eventType?: string;
+  city: string;
+  venue?: string;
+  startTime: string;
+  endTime?: string;
+  posterUrl?: string;
+  tags?: string[];
+  styles?: string[];
+  categories?: Array<{
+    name: string;
+    priceMinor?: number;
+    capacity: number;
+    teamSize?: number;
+  }>;
+}
+
+export interface UpdateOrganizerEventBody {
+  title?: string;
+  description?: string | null;
+  eventType?: string;
+  city?: string;
+  venue?: string | null;
+  startTime?: string;
+  endTime?: string | null;
+  posterUrl?: string | null;
+  tags?: string[];
+  styles?: string[];
+  featured?: boolean;
+}
+
+export interface CreateEventCategoryBody {
+  name: string;
+  priceMinor?: number;
+  capacity: number;
+  teamSize?: number;
+}
+
+export interface UpdateEventCategoryBody {
+  name?: string;
+  priceMinor?: number;
+  capacity?: number;
+  teamSize?: number;
+}
+
+export interface OrganizerEventDetailDto extends EventDetailDto {
+  organizerId: string;
+}
+
+export interface OrganizerEventListResponse {
+  items: OrganizerEventDetailDto[];
+}
+
 export const routes = {
   discover: '/discover',
   events: '/events',
   map: '/map',
   videos: '/videos',
   organizers: '/organizers',
+  organize: '/organize',
   tickets: '/tickets',
   profile: '/profile',
   login: '/login',
