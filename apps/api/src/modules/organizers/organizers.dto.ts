@@ -147,7 +147,9 @@ export class CreateOrganizerEventDto {
 
   @IsOptional()
   @IsString()
-  @Matches(/^(battle|jam|workshop|showcase)$/)
+  @Matches(
+    /^(battle|workshop|jam|showcase|cypher|session|camp|audition|competition|other)$/,
+  )
   eventType?: string;
 
   @IsString()
@@ -206,7 +208,9 @@ export class UpdateOrganizerEventDto {
 
   @IsOptional()
   @IsString()
-  @Matches(/^(battle|jam|workshop|showcase)$/)
+  @Matches(
+    /^(battle|workshop|jam|showcase|cypher|session|camp|audition|competition|other)$/,
+  )
   eventType?: string;
 
   @IsOptional()

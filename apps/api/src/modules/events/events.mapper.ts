@@ -4,9 +4,17 @@ import type { EventCardDto, EventDetailDto, OrganizerEventDetailDto } from './ev
 export const eventInclude = {
   organizer: true,
   categories: { orderBy: { name: 'asc' as const } },
+  danceStyles: {
+    include: { style: true },
+    orderBy: { style: { name: 'asc' as const } },
+  },
 } satisfies Prisma.EventInclude;
 
 export type EventRecord = Prisma.EventGetPayload<{ include: typeof eventInclude }>;
+
+function styleNames(event: EventRecord): string[] {
+  return event.danceStyles.map((row) => row.style.name);
+}
 
 export function toEventCard(event: EventRecord): EventCardDto {
   const spotsCapacity = event.categories.reduce((sum, category) => sum + category.capacity, 0);
@@ -15,7 +23,8 @@ export function toEventCard(event: EventRecord): EventCardDto {
     (min, category) => Math.min(min, category.priceMinor),
     event.categories[0]?.priceMinor ?? 0,
   );
-  const styleLabel = event.styles[0];
+  const styles = styleNames(event);
+  const styleLabel = styles[0];
   const kicker = styleLabel ? `${event.city} · ${styleLabel}` : `${event.city} · ${event.eventType}`;
 
   return {
@@ -32,7 +41,7 @@ export function toEventCard(event: EventRecord): EventCardDto {
     organizerName: event.organizer.orgName,
     organizerSlug: event.organizer.slug,
     crew: event.organizer.orgName,
-    styles: event.styles,
+    styles,
     tags: event.tags,
     featured: event.featured,
     priceMinor,

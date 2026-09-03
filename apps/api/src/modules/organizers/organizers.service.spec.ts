@@ -103,10 +103,10 @@ describe('OrganizersService', () => {
       registrationClosesAt: null,
       posterUrl: null,
       tags: [],
-      styles: ['Breaking'],
       featured: false,
       status: EventStatus.published,
       organizer: { orgName: 'MCB', slug: 'mcb' },
+      danceStyles: [{ style: { id: 'style-1', slug: 'breaking', name: 'Breaking' } }],
       categories: [
         {
           id: 'cat-1',
@@ -176,10 +176,10 @@ describe('OrganizersService', () => {
         registrationClosesAt: null,
         posterUrl: null,
         tags: [],
-        styles: ['Breaking'],
         featured: false,
         status: EventStatus.draft,
         organizer: { orgName: 'MCB', slug: 'mcb' },
+        danceStyles: [{ style: { id: 'style-1', slug: 'breaking', name: 'Breaking' } }],
         categories: [
           {
             id: 'cat-2',

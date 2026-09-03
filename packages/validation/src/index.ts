@@ -89,7 +89,20 @@ export const createOrganizerEventSchema = z.object({
     .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
     .optional(),
   description: z.string().trim().max(5000).optional(),
-  eventType: z.enum(['battle', 'jam', 'workshop', 'showcase']).optional(),
+  eventType: z
+    .enum([
+      'battle',
+      'workshop',
+      'jam',
+      'showcase',
+      'cypher',
+      'session',
+      'camp',
+      'audition',
+      'competition',
+      'other',
+    ])
+    .optional(),
   city: z.string().trim().min(2).max(80),
   venue: z.string().trim().max(160).optional(),
   startTime: z.string().datetime({ offset: true }),
@@ -103,7 +116,20 @@ export const createOrganizerEventSchema = z.object({
 export const updateOrganizerEventSchema = z.object({
   title: z.string().trim().min(2).max(120).optional(),
   description: z.string().trim().max(5000).nullable().optional(),
-  eventType: z.enum(['battle', 'jam', 'workshop', 'showcase']).optional(),
+  eventType: z
+    .enum([
+      'battle',
+      'workshop',
+      'jam',
+      'showcase',
+      'cypher',
+      'session',
+      'camp',
+      'audition',
+      'competition',
+      'other',
+    ])
+    .optional(),
   city: z.string().trim().min(2).max(80).optional(),
   venue: z.string().trim().max(160).nullable().optional(),
   startTime: z.string().datetime({ offset: true }).optional(),

@@ -2,13 +2,32 @@ export type PlatformRole = 'user' | 'admin';
 export type ProfileStatus = 'active' | 'suspended' | 'deleted';
 export type OrganizerVerificationStatus = 'pending' | 'verified' | 'rejected';
 export type OrganizerMemberRole = 'owner' | 'manager' | 'editor';
+export type EventType =
+  | 'battle'
+  | 'workshop'
+  | 'jam'
+  | 'showcase'
+  | 'cypher'
+  | 'session'
+  | 'camp'
+  | 'audition'
+  | 'competition'
+  | 'other';
 export type EventStatus =
   | 'draft'
   | 'published'
   | 'registration_closed'
   | 'completed'
   | 'cancelled';
-export type PaymentStatus = 'pending' | 'paid' | 'refunded' | 'failed';
+/** @deprecated Prefer RegistrationPaymentStatus */
+export type PaymentStatus = RegistrationPaymentStatus;
+export type RegistrationPaymentStatus =
+  | 'not_started'
+  | 'pending'
+  | 'paid'
+  | 'failed'
+  | 'refunded'
+  | 'partially_refunded';
 export type RegistrationStatus =
   | 'pending_payment'
   | 'confirmed'
@@ -16,6 +35,22 @@ export type RegistrationStatus =
   | 'expired'
   | 'cancelled'
   | 'refunded';
+export type PaymentProvider = 'razorpay';
+export type PaymentOrderStatus =
+  | 'created'
+  | 'attempted'
+  | 'paid'
+  | 'failed'
+  | 'cancelled'
+  | 'refunded';
+export type PaymentRecordStatus =
+  | 'authorized'
+  | 'captured'
+  | 'failed'
+  | 'refunded'
+  | 'partially_refunded';
+export type WebhookProcessingStatus = 'received' | 'processing' | 'processed' | 'failed';
+export type VideoVisibility = 'public' | 'registered_only' | 'private';
 
 export interface ApiErrorBody {
   statusCode: number;
@@ -77,7 +112,7 @@ export interface EventCardDto {
   startTime: string;
   posterUrl: string | null;
   status: EventStatus;
-  eventType: string;
+  eventType: EventType;
   organizerName: string;
   organizerSlug: string;
   crew: string;
@@ -147,7 +182,7 @@ export interface CreateOrganizerEventBody {
   title: string;
   slug?: string;
   description?: string;
-  eventType?: string;
+  eventType?: EventType;
   city: string;
   venue?: string;
   startTime: string;
@@ -166,7 +201,7 @@ export interface CreateOrganizerEventBody {
 export interface UpdateOrganizerEventBody {
   title?: string;
   description?: string | null;
-  eventType?: string;
+  eventType?: EventType;
   city?: string;
   venue?: string | null;
   startTime?: string;

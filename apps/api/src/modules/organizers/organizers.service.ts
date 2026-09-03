@@ -7,10 +7,12 @@ import {
 } from '@nestjs/common';
 import {
   EventStatus,
+  EventType,
   OrganizerMemberRole,
   OrganizerVerificationStatus,
   type Prisma,
 } from '@prisma/client';
+import { replaceEventDanceStyles } from '../../common/dance-styles';
 import { PrismaService } from '../../common/prisma.service';
 import { slugify, uniqueSlugCandidate } from '../../common/slug';
 import { IdentityService } from '../identity/identity.service';
@@ -189,6 +191,7 @@ export class OrganizersService {
     const categories = input.categories?.length
       ? input.categories
       : [{ name: 'General', priceMinor: 0, capacity: 32, teamSize: 1 }];
+    const eventType = resolveEventType(input.eventType);
 
     const event = await this.prisma.event.create({
       data: {
@@ -196,14 +199,13 @@ export class OrganizersService {
         slug,
         title: input.title.trim(),
         description: input.description?.trim(),
-        eventType: input.eventType ?? 'battle',
+        eventType,
         city: input.city.trim(),
         venue: input.venue?.trim(),
         startTime,
         endTime,
         posterUrl: input.posterUrl?.trim(),
         tags: input.tags ?? [],
-        styles: input.styles ?? [],
         status: EventStatus.draft,
         categories: {
           create: categories.map((category) => ({
@@ -216,6 +218,11 @@ export class OrganizersService {
       },
       include: eventInclude,
     });
+
+    if (input.styles?.length) {
+      await replaceEventDanceStyles(this.prisma, event.id, input.styles);
+      return this.getEvent(userId, organizerId, event.id);
+    }
 
     return toOrganizerEventDetail(event);
   }
@@ -234,12 +241,11 @@ export class OrganizersService {
     const data: Prisma.EventUpdateInput = {};
     if (input.title !== undefined) data.title = input.title.trim();
     if (input.description !== undefined) data.description = input.description?.trim() || null;
-    if (input.eventType !== undefined) data.eventType = input.eventType;
+    if (input.eventType !== undefined) data.eventType = resolveEventType(input.eventType);
     if (input.city !== undefined) data.city = input.city.trim();
     if (input.venue !== undefined) data.venue = input.venue?.trim() || null;
     if (input.posterUrl !== undefined) data.posterUrl = input.posterUrl?.trim() || null;
     if (input.tags !== undefined) data.tags = input.tags;
-    if (input.styles !== undefined) data.styles = input.styles;
     if (input.featured !== undefined) data.featured = input.featured;
     if (input.startTime !== undefined) {
       const startTime = new Date(input.startTime);
@@ -265,6 +271,10 @@ export class OrganizersService {
       data,
       include: eventInclude,
     });
+    if (input.styles !== undefined) {
+      await replaceEventDanceStyles(this.prisma, eventId, input.styles);
+      return this.getEvent(userId, organizerId, eventId);
+    }
     return toOrganizerEventDetail(event);
   }
 
@@ -475,4 +485,14 @@ export class OrganizersService {
       createdAt: organizer.createdAt.toISOString(),
     };
   }
+}
+
+function resolveEventType(value?: string): EventType {
+  if (!value) {
+    return EventType.battle;
+  }
+  if ((Object.values(EventType) as string[]).includes(value)) {
+    return value as EventType;
+  }
+  throw new BadRequestException(`Unsupported eventType: ${value}`);
 }
