@@ -85,7 +85,6 @@ export function PosterField({ value, onChange, disabled }: PosterFieldProps) {
       ) : null}
       {value.trim() ? (
         <div className="relative aspect-[3/4] max-h-56 overflow-hidden rounded-md border border-border bg-elevated">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={value.trim()} alt="" className="h-full w-full object-cover" />
         </div>
       ) : null}
