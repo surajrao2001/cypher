@@ -37,7 +37,7 @@ const config: ExpoConfig = {
     output: 'single',
     backgroundColor: '#0A0A0A',
   },
-  plugins: ['expo-router', 'expo-font', 'expo-linear-gradient'],
+  plugins: ['expo-router', 'expo-font'],
   experiments: {
     typedRoutes: true,
   },
