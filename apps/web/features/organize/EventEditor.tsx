@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { OrganizeGate } from '@/features/organize/OrganizeGate';
 import { EventRegistrationsPanel } from '@/features/organize/EventRegistrationsPanel';
+import { EventMediaLinksEditor } from '@/features/organize/EventMediaLinksEditor';
 import { PosterField } from '@/features/organize/PosterField';
 
 type CategoryEdit = {
@@ -415,6 +416,16 @@ function EventEditorInner({ slug, eventId }: { slug: string; eventId: string }) 
           ) : null}
         </div>
       </form>
+
+      {org && event ? (
+        <EventMediaLinksEditor
+          organizerId={org.id}
+          eventId={eventId}
+          links={event.mediaLinks ?? []}
+          categories={event.categories.map((c) => ({ id: c.id, name: c.name }))}
+          onUpdated={(updated) => syncFromEvent(updated)}
+        />
+      ) : null}
 
       {org ? <EventRegistrationsPanel organizerId={org.id} eventId={eventId} /> : null}
 

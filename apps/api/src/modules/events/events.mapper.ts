@@ -4,6 +4,7 @@ import type { EventCardDto, EventDetailDto, OrganizerEventDetailDto } from './ev
 export const eventInclude = {
   organizer: true,
   categories: { orderBy: { name: 'asc' as const } },
+  mediaLinks: { orderBy: [{ sortOrder: 'asc' as const }, { createdAt: 'asc' as const }] },
   danceStyles: {
     include: { style: true },
     orderBy: { style: { name: 'asc' as const } },
@@ -68,6 +69,17 @@ export function toEventDetail(event: EventRecord): EventDetailDto {
       minTeamSize: category.minTeamSize,
       maxTeamSize: category.maxTeamSize,
       teamSize: category.maxTeamSize,
+    })),
+    mediaLinks: event.mediaLinks.map((link) => ({
+      id: link.id,
+      eventId: link.eventId,
+      categoryId: link.categoryId,
+      battleId: link.battleId,
+      title: link.title,
+      url: link.url,
+      kind: link.kind,
+      sortOrder: link.sortOrder,
+      createdAt: link.createdAt.toISOString(),
     })),
   };
 }

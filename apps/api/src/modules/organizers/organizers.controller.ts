@@ -6,8 +6,10 @@ import { getAuthUserId } from '../../common/guards/supabase-jwt.guard';
 import {
   CreateOrganizerDto,
   CreateOrganizerEventDto,
+  CreateEventMediaLinkDto,
   EventCategoryInputDto,
   UpdateEventCategoryDto,
+  UpdateEventMediaLinkDto,
   UpdateOrganizerDto,
   UpdateOrganizerEventDto,
 } from './organizers.dto';
@@ -154,6 +156,51 @@ export class OrganizersController {
       organizerId,
       eventId,
       categoryId,
+    );
+  }
+
+  @Post(':organizerId/events/:eventId/media-links')
+  @ApiOperation({ summary: 'Add an external media link (YouTube / IG / Drive / other)' })
+  addMediaLink(
+    @Req() request: FastifyRequest & { auth?: AuthPrincipal },
+    @Param('organizerId') organizerId: string,
+    @Param('eventId') eventId: string,
+    @Body() body: CreateEventMediaLinkDto,
+  ) {
+    return this.organizers.addMediaLink(getAuthUserId(request), organizerId, eventId, body);
+  }
+
+  @Patch(':organizerId/events/:eventId/media-links/:mediaLinkId')
+  @ApiOperation({ summary: 'Update an event media link' })
+  updateMediaLink(
+    @Req() request: FastifyRequest & { auth?: AuthPrincipal },
+    @Param('organizerId') organizerId: string,
+    @Param('eventId') eventId: string,
+    @Param('mediaLinkId') mediaLinkId: string,
+    @Body() body: UpdateEventMediaLinkDto,
+  ) {
+    return this.organizers.updateMediaLink(
+      getAuthUserId(request),
+      organizerId,
+      eventId,
+      mediaLinkId,
+      body,
+    );
+  }
+
+  @Delete(':organizerId/events/:eventId/media-links/:mediaLinkId')
+  @ApiOperation({ summary: 'Delete an event media link' })
+  deleteMediaLink(
+    @Req() request: FastifyRequest & { auth?: AuthPrincipal },
+    @Param('organizerId') organizerId: string,
+    @Param('eventId') eventId: string,
+    @Param('mediaLinkId') mediaLinkId: string,
+  ) {
+    return this.organizers.deleteMediaLink(
+      getAuthUserId(request),
+      organizerId,
+      eventId,
+      mediaLinkId,
     );
   }
 }

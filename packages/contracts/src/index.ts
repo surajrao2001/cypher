@@ -152,6 +152,37 @@ export interface EventDetailDto extends EventCardDto {
   registrationOpensAt: string | null;
   registrationClosesAt: string | null;
   categories: EventCategoryPublicDto[];
+  mediaLinks: EventMediaLinkDto[];
+}
+
+export type MediaLinkKind = 'youtube' | 'instagram' | 'drive' | 'other';
+
+export interface EventMediaLinkDto {
+  id: string;
+  eventId: string;
+  categoryId: string | null;
+  battleId: string | null;
+  title: string;
+  url: string;
+  kind: MediaLinkKind;
+  sortOrder: number;
+  createdAt: string;
+}
+
+export interface CreateEventMediaLinkBody {
+  title: string;
+  url: string;
+  kind?: MediaLinkKind;
+  categoryId?: string | null;
+  sortOrder?: number;
+}
+
+export interface UpdateEventMediaLinkBody {
+  title?: string;
+  url?: string;
+  kind?: MediaLinkKind;
+  categoryId?: string | null;
+  sortOrder?: number;
 }
 
 export interface EventListResponse {

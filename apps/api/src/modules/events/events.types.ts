@@ -33,12 +33,25 @@ export type EventCategoryPublicDto = {
   teamSize: number;
 };
 
+export type EventMediaLinkDto = {
+  id: string;
+  eventId: string;
+  categoryId: string | null;
+  battleId: string | null;
+  title: string;
+  url: string;
+  kind: string;
+  sortOrder: number;
+  createdAt: string;
+};
+
 export type EventDetailDto = EventCardDto & {
   description: string | null;
   endTime: string | null;
   registrationOpensAt: string | null;
   registrationClosesAt: string | null;
   categories: EventCategoryPublicDto[];
+  mediaLinks: EventMediaLinkDto[];
 };
 
 export type EventListResponse = {

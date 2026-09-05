@@ -299,3 +299,59 @@ export class UpdateOrganizerEventDto {
   @IsBoolean()
   featured?: boolean;
 }
+
+export class CreateEventMediaLinkDto {
+  @IsString()
+  @MinLength(1)
+  @MaxLength(120)
+  title!: string;
+
+  @IsUrl({ require_protocol: true, protocols: ['http', 'https'] })
+  @MaxLength(1000)
+  url!: string;
+
+  @IsOptional()
+  @IsString()
+  @Matches(/^(youtube|instagram|drive|other)$/)
+  kind?: string;
+
+  @IsOptional()
+  @IsString()
+  categoryId?: string | null;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  @Max(10_000)
+  sortOrder?: number;
+}
+
+export class UpdateEventMediaLinkDto {
+  @IsOptional()
+  @IsString()
+  @MinLength(1)
+  @MaxLength(120)
+  title?: string;
+
+  @IsOptional()
+  @IsUrl({ require_protocol: true, protocols: ['http', 'https'] })
+  @MaxLength(1000)
+  url?: string;
+
+  @IsOptional()
+  @IsString()
+  @Matches(/^(youtube|instagram|drive|other)$/)
+  kind?: string;
+
+  @IsOptional()
+  @IsString()
+  categoryId?: string | null;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  @Max(10_000)
+  sortOrder?: number;
+}

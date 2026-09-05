@@ -9,6 +9,7 @@ import {
   EventStatus,
   EventType,
   CategoryEntryType,
+  MediaLinkKind,
   OrganizerMemberRole,
   OrganizerType,
   OrganizerVerificationStatus,
@@ -85,6 +86,22 @@ export type UpdateEventInput = {
   tags?: string[];
   styles?: string[];
   featured?: boolean;
+};
+
+export type MediaLinkInput = {
+  title: string;
+  url: string;
+  kind?: string;
+  categoryId?: string | null;
+  sortOrder?: number;
+};
+
+export type UpdateMediaLinkInput = {
+  title?: string;
+  url?: string;
+  kind?: string;
+  categoryId?: string | null;
+  sortOrder?: number;
 };
 
 @Injectable()
@@ -516,6 +533,119 @@ export class OrganizersService {
     return this.getEvent(userId, organizerId, eventId);
   }
 
+  async addMediaLink(
+    userId: string,
+    organizerId: string,
+    eventId: string,
+    input: MediaLinkInput,
+  ) {
+    await this.requireMembership(organizerId, userId, [
+      OrganizerMemberRole.owner,
+      OrganizerMemberRole.manager,
+      OrganizerMemberRole.editor,
+    ]);
+    const event = await this.prisma.event.findFirst({
+      where: { id: eventId, organizerId },
+      include: { categories: true },
+    });
+    if (!event) {
+      throw new NotFoundException('Event not found');
+    }
+    const categoryId = await this.resolveOptionalCategoryId(event, input.categoryId);
+    const url = input.url.trim();
+    await this.prisma.mediaLink.create({
+      data: {
+        eventId,
+        categoryId,
+        title: input.title.trim(),
+        url,
+        kind: resolveMediaLinkKind(input.kind, url),
+        sortOrder: input.sortOrder ?? 0,
+      },
+    });
+    return this.getEvent(userId, organizerId, eventId);
+  }
+
+  async updateMediaLink(
+    userId: string,
+    organizerId: string,
+    eventId: string,
+    mediaLinkId: string,
+    input: UpdateMediaLinkInput,
+  ) {
+    await this.requireMembership(organizerId, userId, [
+      OrganizerMemberRole.owner,
+      OrganizerMemberRole.manager,
+      OrganizerMemberRole.editor,
+    ]);
+    const event = await this.prisma.event.findFirst({
+      where: { id: eventId, organizerId },
+      include: { categories: true },
+    });
+    if (!event) {
+      throw new NotFoundException('Event not found');
+    }
+    const existing = await this.prisma.mediaLink.findFirst({
+      where: { id: mediaLinkId, eventId },
+    });
+    if (!existing) {
+      throw new NotFoundException('Media link not found');
+    }
+    const categoryId =
+      input.categoryId === undefined
+        ? undefined
+        : await this.resolveOptionalCategoryId(event, input.categoryId);
+    const nextUrl = input.url === undefined ? existing.url : input.url.trim();
+    await this.prisma.mediaLink.update({
+      where: { id: mediaLinkId },
+      data: {
+        title: input.title === undefined ? undefined : input.title.trim(),
+        url: input.url === undefined ? undefined : nextUrl,
+        kind:
+          input.kind !== undefined || input.url !== undefined
+            ? resolveMediaLinkKind(input.kind ?? existing.kind, nextUrl)
+            : undefined,
+        categoryId,
+        sortOrder: input.sortOrder,
+      },
+    });
+    return this.getEvent(userId, organizerId, eventId);
+  }
+
+  async deleteMediaLink(
+    userId: string,
+    organizerId: string,
+    eventId: string,
+    mediaLinkId: string,
+  ) {
+    await this.requireMembership(organizerId, userId, [
+      OrganizerMemberRole.owner,
+      OrganizerMemberRole.manager,
+      OrganizerMemberRole.editor,
+    ]);
+    const existing = await this.prisma.mediaLink.findFirst({
+      where: { id: mediaLinkId, eventId, event: { organizerId } },
+    });
+    if (!existing) {
+      throw new NotFoundException('Media link not found');
+    }
+    await this.prisma.mediaLink.delete({ where: { id: mediaLinkId } });
+    return this.getEvent(userId, organizerId, eventId);
+  }
+
+  private async resolveOptionalCategoryId(
+    event: { id: string; categories: Array<{ id: string }> },
+    categoryId: string | null | undefined,
+  ): Promise<string | null> {
+    if (categoryId === undefined || categoryId === null || categoryId === '') {
+      return null;
+    }
+    if (!event.categories.some((row) => row.id === categoryId)) {
+      throw new BadRequestException('Category does not belong to this event');
+    }
+    return categoryId;
+  }
+
   private async requireMembership(
     organizerId: string,
     userId: string,
@@ -624,4 +754,26 @@ function resolveCategorySizes(input: {
     return { entryType: CategoryEntryType.solo, minTeamSize: 1, maxTeamSize: 1 };
   }
   return { entryType, minTeamSize, maxTeamSize };
+}
+
+function resolveMediaLinkKind(kind: string | undefined, url: string): MediaLinkKind {
+  if (kind && (Object.values(MediaLinkKind) as string[]).includes(kind)) {
+    return kind as MediaLinkKind;
+  }
+  let host = '';
+  try {
+    host = new URL(url).hostname.toLowerCase();
+  } catch {
+    return MediaLinkKind.other;
+  }
+  if (host.includes('youtube.com') || host === 'youtu.be' || host.endsWith('.youtube.com')) {
+    return MediaLinkKind.youtube;
+  }
+  if (host.includes('instagram.com')) {
+    return MediaLinkKind.instagram;
+  }
+  if (host.includes('drive.google.com') || host.includes('docs.google.com')) {
+    return MediaLinkKind.drive;
+  }
+  return MediaLinkKind.other;
 }

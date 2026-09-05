@@ -13,6 +13,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { EventPoster } from '@/features/discovery/EventPoster';
+import { EventMediaSection } from '@/features/discovery/EventMediaSection';
 import { StickyRegisterBar } from '@/features/discovery/StickyRegisterBar';
 import { spotsTone } from '@/features/discovery/mock-events';
 import { getServerApi } from '@/lib/api';
@@ -136,6 +137,8 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
             </Table>
           </CardContent>
         </Card>
+
+        <EventMediaSection links={event.mediaLinks ?? []} />
       </div>
 
       <StickyRegisterBar event={event} spotsLeft={left} />

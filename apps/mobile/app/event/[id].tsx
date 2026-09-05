@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { Linking, Pressable, ScrollView, View } from 'react-native';
 
 import { EventPoster } from '@/components/EventPoster';
 import { RegisterNowBar } from '@/components/RegisterNowBar';
@@ -181,6 +181,24 @@ export default function EventDetailScreen() {
                   </Pressable>
                 );
               })}
+            </View>
+          ) : null}
+
+          {event.mediaLinks && event.mediaLinks.length > 0 ? (
+            <View className="mt-8 gap-2">
+              <Text variant="label">Event media</Text>
+              {event.mediaLinks.map((link) => (
+                <Pressable
+                  key={link.id}
+                  onPress={() => void Linking.openURL(link.url)}
+                  className="rounded-md border border-border bg-surface px-3 py-3"
+                >
+                  <Text variant="subtitle">{link.title}</Text>
+                  <Text variant="caption" className="mt-1 text-muted">
+                    {link.kind}
+                  </Text>
+                </Pressable>
+              ))}
             </View>
           ) : null}
 
