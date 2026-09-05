@@ -76,6 +76,16 @@ export class OrganizersController {
     return this.organizers.getEvent(getAuthUserId(request), organizerId, eventId);
   }
 
+  @Get(':organizerId/events/:eventId/registrations')
+  @ApiOperation({ summary: 'List registrations for an organizer event' })
+  listEventRegistrations(
+    @Req() request: FastifyRequest & { auth?: AuthPrincipal },
+    @Param('organizerId') organizerId: string,
+    @Param('eventId') eventId: string,
+  ) {
+    return this.organizers.listEventRegistrations(getAuthUserId(request), organizerId, eventId);
+  }
+
   @Patch(':organizerId/events/:eventId')
   updateEvent(
     @Req() request: FastifyRequest & { auth?: AuthPrincipal },

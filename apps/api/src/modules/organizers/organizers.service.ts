@@ -179,6 +179,69 @@ export class OrganizersService {
     return toOrganizerEventDetail(event);
   }
 
+  async listEventRegistrations(userId: string, organizerId: string, eventId: string) {
+    await this.requireMembership(organizerId, userId);
+    const event = await this.prisma.event.findFirst({
+      where: { id: eventId, organizerId },
+      include: {
+        categories: { orderBy: { name: 'asc' } },
+      },
+    });
+    if (!event) {
+      throw new NotFoundException('Event not found');
+    }
+
+    const rows = await this.prisma.registration.findMany({
+      where: { eventId },
+      include: {
+        category: true,
+        participants: { orderBy: { createdAt: 'asc' } },
+      },
+      orderBy: [{ createdAt: 'desc' }],
+      take: 200,
+    });
+
+    return {
+      eventId: event.id,
+      eventTitle: event.title,
+      categories: event.categories.map((category) => ({
+        id: category.id,
+        name: category.name,
+        capacity: category.capacity,
+        reservedCount: category.reservedCount,
+        confirmedCount: category.confirmedCount,
+        priceMinor: category.priceMinor,
+      })),
+      items: rows.map((row) => ({
+        id: row.id,
+        categoryId: row.categoryId,
+        categoryName: row.category.name,
+        entryName: row.entryName,
+        registrationStatus: row.registrationStatus,
+        paymentStatus: row.paymentStatus,
+        reservationExpiresAt: row.reservationExpiresAt?.toISOString() ?? null,
+        totalAmountMinor: row.totalAmountMinor,
+        currency: row.currency,
+        registrationCode: row.registrationCode,
+        confirmedAt: row.confirmedAt?.toISOString() ?? null,
+        createdAt: row.createdAt.toISOString(),
+        participants: row.participants.map((p) => ({
+          id: p.id,
+          displayName: p.displayName,
+          dancerName: p.dancerName,
+          isTeamCaptain: p.isTeamCaptain,
+        })),
+      })),
+      totals: {
+        pending: rows.filter((r) => r.registrationStatus === 'pending_payment').length,
+        confirmed: rows.filter((r) => r.registrationStatus === 'confirmed').length,
+        other: rows.filter(
+          (r) => r.registrationStatus !== 'pending_payment' && r.registrationStatus !== 'confirmed',
+        ).length,
+      },
+    };
+  }
+
   async createEvent(userId: string, organizerId: string, input: CreateEventInput) {
     await this.requireMembership(organizerId, userId, [
       OrganizerMemberRole.owner,

@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { OrganizeGate } from '@/features/organize/OrganizeGate';
+import { EventRegistrationsPanel } from '@/features/organize/EventRegistrationsPanel';
 import { PosterField } from '@/features/organize/PosterField';
 
 type CategoryEdit = {
@@ -414,6 +415,8 @@ function EventEditorInner({ slug, eventId }: { slug: string; eventId: string }) 
           ) : null}
         </div>
       </form>
+
+      {org ? <EventRegistrationsPanel organizerId={org.id} eventId={eventId} /> : null}
 
       <Button asChild variant="ghost">
         <Link href={`${routes.organize}/${org.slug}`}>Back to organizer</Link>
