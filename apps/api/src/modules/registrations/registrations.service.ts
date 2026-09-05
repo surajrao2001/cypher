@@ -12,10 +12,12 @@ import {
 } from '@prisma/client';
 import { randomBytes } from 'node:crypto';
 import { PrismaService } from '../../common/prisma.service';
+import { RESERVATION_HOLD_MS } from '../../common/queues/queue-names';
+import { ReservationJobsService } from '../../common/queues/reservation-jobs.service';
 import { IdentityService } from '../identity/identity.service';
 import { TicketsService } from '../tickets/tickets.service';
 
-const HOLD_MS = 15 * 60 * 1000;
+const HOLD_MS = RESERVATION_HOLD_MS;
 const ACTIVE_STATUSES: RegistrationStatus[] = [
   RegistrationStatus.pending_payment,
   RegistrationStatus.confirmed,
@@ -49,6 +51,7 @@ export class RegistrationsService {
     private readonly prisma: PrismaService,
     private readonly identity: IdentityService,
     private readonly tickets: TicketsService,
+    private readonly reservationJobs: ReservationJobsService,
   ) {}
 
   async createHold(userId: string, input: CreateRegistrationInput) {
@@ -166,6 +169,7 @@ export class RegistrationsService {
         });
       });
 
+      await this.reservationJobs.scheduleExpiry(registration.id, expiresAt);
       return toRegistrationDto(registration, this.tickets);
     } catch (error) {
       if (
@@ -209,7 +213,7 @@ export class RegistrationsService {
   }
 
   async cancelHold(userId: string, registrationId: string) {
-    return this.prisma.$transaction(async (tx) => {
+    const dto = await this.prisma.$transaction(async (tx) => {
       const row = await tx.registration.findFirst({
         where: { id: registrationId, userId },
         include: registrationInclude,
@@ -237,11 +241,13 @@ export class RegistrationsService {
 
       return toRegistrationDto(updated, this.tickets);
     });
+    await this.reservationJobs.cancelExpiry(registrationId);
+    return dto;
   }
 
   async confirmFree(userId: string, registrationId: string) {
     try {
-      return await this.prisma.$transaction(async (tx) => {
+      const dto = await this.prisma.$transaction(async (tx) => {
         const locked = await tx.$queryRaw<Array<{ id: string }>>`
           SELECT id FROM registrations
           WHERE id = ${registrationId}::uuid AND user_id = ${userId}::uuid
@@ -306,6 +312,8 @@ export class RegistrationsService {
 
         return toRegistrationDto(updated, this.tickets);
       });
+      await this.reservationJobs.cancelExpiry(registrationId);
+      return dto;
     } catch (error) {
       if (
         error instanceof BadRequestException ||

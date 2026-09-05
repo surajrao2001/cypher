@@ -71,7 +71,17 @@ describe('RegistrationsService', () => {
     buildPayload: jest.fn((id: string) => `cy1.${id}.sig`),
   };
 
-  const service = new RegistrationsService(prisma as never, identity as never, tickets as never);
+  const reservationJobs = {
+    scheduleExpiry: jest.fn().mockResolvedValue(undefined),
+    cancelExpiry: jest.fn().mockResolvedValue(undefined),
+  };
+
+  const service = new RegistrationsService(
+    prisma as never,
+    identity as never,
+    tickets as never,
+    reservationJobs as never,
+  );
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -128,6 +138,10 @@ describe('RegistrationsService', () => {
     expect(result.registrationStatus).toBe('pending_payment');
     expect(result.registrationCode).toBe('CY-ABC123');
     expect(result.category.name).toBe('Breaking 1v1');
+    expect(reservationJobs.scheduleExpiry).toHaveBeenCalledWith(
+      'reg-1',
+      expect.any(Date),
+    );
   });
 
   it('rejects wrong participant count', async () => {
@@ -224,6 +238,7 @@ describe('RegistrationsService', () => {
     expect(result.confirmedAt).toBeTruthy();
     expect(result.ticketQrPayload).toBe('cy1.reg-1.sig');
     expect(tickets.issueHash).toHaveBeenCalledWith('reg-1');
+    expect(reservationJobs.cancelExpiry).toHaveBeenCalledWith('reg-1');
   });
 
   it('rejects free confirm for paid holds', async () => {
