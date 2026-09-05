@@ -4,6 +4,7 @@ import { BullModule } from '@nestjs/bullmq';
 import type { Env } from '../../config/env.validation';
 import { QUEUE_NAMES } from './queue-names';
 import { ReservationJobsService } from './reservation-jobs.service';
+import { PaymentSplitJobsService } from './payment-split-jobs.service';
 
 @Global()
 @Module({
@@ -26,9 +27,12 @@ import { ReservationJobsService } from './reservation-jobs.service';
         },
       }),
     }),
-    BullModule.registerQueue({ name: QUEUE_NAMES.RESERVATION_EXPIRY }),
+    BullModule.registerQueue(
+      { name: QUEUE_NAMES.RESERVATION_EXPIRY },
+      { name: QUEUE_NAMES.PAYMENT_SPLIT },
+    ),
   ],
-  providers: [ReservationJobsService],
-  exports: [ReservationJobsService, BullModule],
+  providers: [ReservationJobsService, PaymentSplitJobsService],
+  exports: [ReservationJobsService, PaymentSplitJobsService, BullModule],
 })
 export class QueuesModule {}

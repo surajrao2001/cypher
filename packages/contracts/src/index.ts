@@ -43,7 +43,14 @@ export type RegistrationStatus =
   | 'expired'
   | 'cancelled'
   | 'refunded';
-export type PaymentProvider = 'razorpay';
+export type PaymentProvider = 'razorpay' | 'cashfree';
+export type OrganizerPayoutAccountStatus =
+  | 'not_started'
+  | 'pending'
+  | 'action_required'
+  | 'active'
+  | 'suspended'
+  | 'rejected';
 export type PaymentOrderStatus =
   | 'created'
   | 'attempted'
@@ -342,6 +349,37 @@ export interface CreateRegistrationBody {
 
 export interface RegistrationListResponse {
   items: RegistrationDto[];
+}
+
+export interface OrganizerPaymentAccountDto {
+  organizerId: string;
+  provider: PaymentProvider;
+  status: OrganizerPayoutAccountStatus;
+  payoutReady: boolean;
+  providerVendorId: string | null;
+  displayName: string | null;
+  contactEmail: string | null;
+  contactPhone: string | null;
+  lastError: string | null;
+}
+
+export interface StartOrganizerPayoutSetupBody {
+  displayName: string;
+  contactEmail: string;
+  contactPhone: string;
+}
+
+export interface PaymentCheckoutSessionDto {
+  registrationId: string;
+  provider: 'cashfree';
+  orderId: string;
+  paymentSessionId: string;
+  amountMinor: number;
+  currency: string;
+}
+
+export interface CreatePaymentCheckoutBody {
+  customerPhone: string;
 }
 
 export interface OrganizerEventDetailDto extends EventDetailDto {

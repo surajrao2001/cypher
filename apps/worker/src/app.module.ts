@@ -9,8 +9,10 @@ import { parseRedisUrl } from './config/redis';
 import { ExportsConsumer } from './consumers/exports.consumer';
 import { MediaConsumer } from './consumers/media.consumer';
 import { NotificationConsumer } from './consumers/notification.consumer';
+import { PaymentSplitConsumer } from './consumers/payment-split.consumer';
 import { ReservationExpiryConsumer } from './consumers/reservation-expiry.consumer';
 import { QUEUE_NAMES } from './jobs/queue-names';
+import { PaymentSplitService } from './payment-split.service';
 import { PrismaService } from './prisma.service';
 import { ReservationExpiryService } from './reservation-expiry.service';
 
@@ -32,6 +34,7 @@ import { ReservationExpiryService } from './reservation-expiry.service';
     }),
     BullModule.registerQueue(
       { name: QUEUE_NAMES.RESERVATION_EXPIRY },
+      { name: QUEUE_NAMES.PAYMENT_SPLIT },
       { name: QUEUE_NAMES.NOTIFICATIONS },
       { name: QUEUE_NAMES.MEDIA },
       { name: QUEUE_NAMES.EXPORTS },
@@ -42,6 +45,8 @@ import { ReservationExpiryService } from './reservation-expiry.service';
     PrismaService,
     ReservationExpiryService,
     ReservationExpiryConsumer,
+    PaymentSplitService,
+    PaymentSplitConsumer,
     NotificationConsumer,
     MediaConsumer,
     ExportsConsumer,

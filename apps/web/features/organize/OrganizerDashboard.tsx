@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { OrganizeGate } from '@/features/organize/OrganizeGate';
+import { PayoutSetupPanel } from '@/features/organize/PayoutSetupPanel';
 import { EmptyState } from '@/features/shell/EmptyState';
 import { PageBreadcrumb } from '@/features/shell/PageBreadcrumb';
 
@@ -80,6 +81,8 @@ function OrganizerDashboardInner({ slug }: { slug: string }) {
           <Link href={`${routes.organize}/${org.slug}/events/new`}>New event</Link>
         </Button>
       </div>
+
+      <PayoutSetupPanel organizerId={org.id} orgName={org.orgName} />
 
       {events.length === 0 ? (
         <EmptyState

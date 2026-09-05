@@ -19,6 +19,7 @@ import { replaceEventDanceStyles } from '../../common/dance-styles';
 import { PrismaService } from '../../common/prisma.service';
 import { slugify, uniqueSlugCandidate } from '../../common/slug';
 import { IdentityService } from '../identity/identity.service';
+import { PaymentsService } from '../payments/payments.service';
 import { eventInclude, toOrganizerEventDetail } from '../events/events.mapper';
 import type { OrganizerEventDetailDto } from '../events/events.types';
 
@@ -109,6 +110,7 @@ export class OrganizersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly identity: IdentityService,
+    private readonly payments: PaymentsService,
   ) {}
 
   async createOrganizer(userId: string, input: CreateOrganizerInput) {
@@ -283,6 +285,10 @@ export class OrganizersService {
     const categories = input.categories?.length
       ? input.categories
       : [{ name: 'General', priceMinor: 0, capacity: 32, teamSize: 1 }];
+    await this.assertPaidCategoriesAllowed(
+      organizerId,
+      categories.map((c) => c.priceMinor ?? 0),
+    );
     const eventType = resolveEventType(input.eventType);
 
     const event = await this.prisma.event.create({
@@ -438,6 +444,7 @@ export class OrganizersService {
     if (!existing) {
       throw new NotFoundException('Event not found');
     }
+    await this.assertPaidCategoriesAllowed(organizerId, [input.priceMinor ?? 0]);
     const sizes = resolveCategorySizes(input);
     await this.prisma.eventCategory.create({
       data: {
@@ -470,6 +477,9 @@ export class OrganizersService {
     });
     if (!category) {
       throw new NotFoundException('Category not found');
+    }
+    if (input.priceMinor !== undefined && input.priceMinor > 0) {
+      await this.assertPaidCategoriesAllowed(organizerId, [input.priceMinor]);
     }
     const nextCapacity = input.capacity ?? category.capacity;
     const occupied = category.reservedCount + category.confirmedCount;
@@ -644,6 +654,18 @@ export class OrganizersService {
       throw new BadRequestException('Category does not belong to this event');
     }
     return categoryId;
+  }
+
+  private async assertPaidCategoriesAllowed(organizerId: string, pricesMinor: number[]) {
+    if (!pricesMinor.some((price) => price > 0)) {
+      return;
+    }
+    const ok = await this.payments.organizerCanAcceptPaid(organizerId);
+    if (!ok) {
+      throw new BadRequestException(
+        'Set up Cashfree payouts before creating paid categories. Free (₹0) categories are always allowed.',
+      );
+    }
   }
 
   private async requireMembership(

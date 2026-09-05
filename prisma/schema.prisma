@@ -85,8 +85,18 @@ enum RegistrationStatus {
   refunded
 }
 
+enum OrganizerPayoutAccountStatus {
+  not_started
+  pending
+  action_required
+  active
+  suspended
+  rejected
+}
+
 enum PaymentProvider {
   razorpay
+  cashfree
 }
 
 enum PaymentOrderStatus {
@@ -236,8 +246,9 @@ model Organizer {
   createdAt          DateTime                    @default(now()) @map("created_at")
   updatedAt          DateTime                    @updatedAt @map("updated_at")
 
-  members OrganizerMember[]
-  events  Event[]
+  members         OrganizerMember[]
+  events          Event[]
+  paymentAccount  OrganizerPaymentAccount?
 
   @@map("organizers")
 }
@@ -254,6 +265,28 @@ model OrganizerMember {
   @@id([organizerId, userId])
   @@index([userId], map: "organizer_members_user_id_idx")
   @@map("organizer_members")
+}
+
+/** Cashfree Easy Split vendor (or future provider) linked to an organizer for paid events. */
+model OrganizerPaymentAccount {
+  id               String                       @id @default(uuid()) @db.Uuid
+  organizerId      String                       @unique @map("organizer_id") @db.Uuid
+  provider         PaymentProvider              @default(cashfree)
+  providerVendorId String?                      @map("provider_vendor_id")
+  status           OrganizerPayoutAccountStatus @default(not_started)
+  payoutReady      Boolean                      @default(false) @map("payout_ready")
+  displayName      String?                      @map("display_name")
+  contactEmail     String?                      @map("contact_email")
+  contactPhone     String?                      @map("contact_phone")
+  lastError        String?                      @map("last_error")
+  metadata         Json?
+  createdAt        DateTime                     @default(now()) @map("created_at")
+  updatedAt        DateTime                     @updatedAt @map("updated_at")
+
+  organizer Organizer @relation(fields: [organizerId], references: [id], onDelete: Cascade)
+
+  @@index([provider, status], map: "organizer_payment_accounts_provider_status_idx")
+  @@map("organizer_payment_accounts")
 }
 
 model Event {
@@ -363,15 +396,16 @@ model RegistrationParticipant {
 }
 
 model PaymentOrder {
-  id              String             @id @default(uuid()) @db.Uuid
-  registrationId  String             @map("registration_id") @db.Uuid
-  provider        PaymentProvider    @default(razorpay)
-  providerOrderId String             @unique @map("provider_order_id")
-  amountMinor     Int                @map("amount_minor")
-  currency        String             @default("INR")
-  status          PaymentOrderStatus @default(created)
-  createdAt       DateTime           @default(now()) @map("created_at")
-  updatedAt       DateTime           @updatedAt @map("updated_at")
+  id                String             @id @default(uuid()) @db.Uuid
+  registrationId    String             @map("registration_id") @db.Uuid
+  provider          PaymentProvider    @default(cashfree)
+  providerOrderId   String             @unique @map("provider_order_id")
+  providerSessionId String?            @map("provider_session_id")
+  amountMinor       Int                @map("amount_minor")
+  currency          String             @default("INR")
+  status            PaymentOrderStatus @default(created)
+  createdAt         DateTime           @default(now()) @map("created_at")
+  updatedAt         DateTime           @updatedAt @map("updated_at")
 
   registration Registration @relation(fields: [registrationId], references: [id])
   payments     Payment[]
