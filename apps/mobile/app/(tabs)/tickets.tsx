@@ -51,7 +51,7 @@ export default function TicketsScreen() {
           Tickets
         </Text>
         <Text variant="caption" className="mt-2">
-          Confirmed entries with code + QR. Check-in scanning comes later.
+          Confirmed entries with code + QR. Show your ticket at the door.
         </Text>
 
         {!token || !me ? (
@@ -111,7 +111,7 @@ export default function TicketsScreen() {
                       <View className="mt-4 items-center rounded-md bg-white p-4">
                         <QRCode value={ticket.ticketQrPayload} size={180} />
                         <Text variant="caption" className="mt-3 text-center text-muted">
-                          Show at door when check-in ships
+                          Show this code at the door
                         </Text>
                       </View>
                     ) : null}

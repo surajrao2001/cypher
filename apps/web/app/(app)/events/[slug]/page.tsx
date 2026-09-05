@@ -1,3 +1,4 @@
+import { routes } from '@cypher/contracts';
 import { formatEventDate, formatMinorUnits, spotsLeft } from '@cypher/utils';
 import { Calendar, MapPin, Users } from 'lucide-react';
 import { notFound } from 'next/navigation';
@@ -16,6 +17,7 @@ import { EventPoster } from '@/features/discovery/EventPoster';
 import { EventMediaSection } from '@/features/discovery/EventMediaSection';
 import { StickyRegisterBar } from '@/features/discovery/StickyRegisterBar';
 import { spotsTone } from '@/features/discovery/mock-events';
+import { PageBreadcrumb } from '@/features/shell/PageBreadcrumb';
 import { getServerApi } from '@/lib/api';
 
 interface EventDetailPageProps {
@@ -44,6 +46,14 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
 
   return (
     <div className="pb-28">
+      <div className="mx-auto max-w-4xl px-4 pt-4 md:px-6">
+        <PageBreadcrumb
+          items={[
+            { label: 'Discover', href: routes.discover },
+            { label: event.title },
+          ]}
+        />
+      </div>
       <div className="relative min-h-[18rem] overflow-hidden border-b border-border md:min-h-[26rem]">
         <EventPoster title={event.title} src={event.posterUrl} priority sizes="100vw" />
         <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/50 to-transparent" />
@@ -109,32 +119,50 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Price</TableHead>
-                  <TableHead>Confirmed</TableHead>
-                  <TableHead>Spots left</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {event.categories.map((category) => {
-                  const categoryLeft = spotsLeft(category.capacity, category.confirmedCount);
-                  const price = category.priceMinor === 0 ? 'Free entry' : formatMinorUnits(category.priceMinor);
-                  return (
-                    <TableRow key={category.id}>
-                      <TableCell>{category.name}</TableCell>
-                      <TableCell>{price}</TableCell>
-                      <TableCell>
-                        {category.confirmedCount} / {category.capacity}
-                      </TableCell>
-                      <TableCell>{categoryLeft}</TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+            <ul className="space-y-3 sm:hidden">
+              {event.categories.map((category) => {
+                const categoryLeft = spotsLeft(category.capacity, category.confirmedCount);
+                const price = category.priceMinor === 0 ? 'Free entry' : formatMinorUnits(category.priceMinor);
+                return (
+                  <li key={category.id} className="rounded-md border border-border bg-elevated px-3 py-3">
+                    <p className="font-semibold text-text-primary">{category.name}</p>
+                    <p className="mt-1 text-sm text-text-secondary">{price}</p>
+                    <p className="mt-1 text-xs uppercase tracking-[0.12em] text-text-muted">
+                      {category.confirmedCount}/{category.capacity} confirmed · {categoryLeft} left
+                    </p>
+                  </li>
+                );
+              })}
+            </ul>
+            <div className="hidden sm:block">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Category</TableHead>
+                    <TableHead>Price</TableHead>
+                    <TableHead>Confirmed</TableHead>
+                    <TableHead>Spots left</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {event.categories.map((category) => {
+                    const categoryLeft = spotsLeft(category.capacity, category.confirmedCount);
+                    const price =
+                      category.priceMinor === 0 ? 'Free entry' : formatMinorUnits(category.priceMinor);
+                    return (
+                      <TableRow key={category.id}>
+                        <TableCell>{category.name}</TableCell>
+                        <TableCell>{price}</TableCell>
+                        <TableCell>
+                          {category.confirmedCount} / {category.capacity}
+                        </TableCell>
+                        <TableCell>{categoryLeft}</TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
 

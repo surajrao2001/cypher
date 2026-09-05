@@ -6,6 +6,7 @@ import type { OrganizerDto } from '@cypher/contracts';
 
 import { Button } from '@/components/ui/Button';
 import { Text } from '@/components/ui/Text';
+import { EmptyState } from '@/components/EmptyState';
 import { useAuth } from '@/lib/auth';
 import { colors } from '@/lib/theme';
 
@@ -124,7 +125,15 @@ export default function OrganizeTab() {
             {orgs === null ? (
               <Text variant="caption">Loading crews…</Text>
             ) : orgs.length === 0 ? (
-              <Text variant="caption">No organizers yet. Create one to draft events.</Text>
+              <EmptyState
+                kicker="No crews"
+                title="Start an organizer"
+                body="Create a crew, draft events, then publish to Discover."
+              >
+                <Button className="mt-2" onPress={() => router.push('/organize/new')}>
+                  Create organizer
+                </Button>
+              </EmptyState>
             ) : (
               <View className="gap-2 border-t border-border pt-4">
                 {orgs.map((org) => (

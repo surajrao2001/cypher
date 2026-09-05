@@ -9,7 +9,7 @@ export default function VideosPage() {
     <SectionPlaceholder
       kicker="Archive"
       title="Videos"
-      body="Unlisted YouTube recaps — highlights, battles, workshops, interviews — attach to each event after the floor closes."
+      body="Organizers share YouTube, Instagram, or Drive links on each event. A curated archive is not live yet — start from Discover or an event page."
     />
   );
 }

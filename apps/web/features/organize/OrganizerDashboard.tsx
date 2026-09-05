@@ -9,6 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { OrganizeGate } from '@/features/organize/OrganizeGate';
+import { EmptyState } from '@/features/shell/EmptyState';
+import { PageBreadcrumb } from '@/features/shell/PageBreadcrumb';
 
 export function OrganizerDashboard({ slug }: { slug: string }) {
   return (
@@ -56,6 +58,12 @@ function OrganizerDashboardInner({ slug }: { slug: string }) {
 
   return (
     <div className="mx-auto max-w-3xl space-y-8 px-4 py-8 md:px-8">
+      <PageBreadcrumb
+        items={[
+          { label: 'Organize', href: routes.organize },
+          { label: org.orgName },
+        ]}
+      />
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="space-y-2">
           <p className="kicker text-accent">@{org.slug}</p>
@@ -74,9 +82,16 @@ function OrganizerDashboardInner({ slug }: { slug: string }) {
       </div>
 
       {events.length === 0 ? (
-        <p className="border border-dashed border-border px-4 py-10 text-sm text-text-secondary">
-          No events yet. Draft one, add categories, then publish to Discover.
-        </p>
+        <EmptyState
+          kicker="No nights yet"
+          title="Draft your first event"
+          body="Add categories, set a poster, then publish to Discover when you are ready."
+          className="py-10 md:py-12"
+        >
+          <Button asChild>
+            <Link href={`${routes.organize}/${org.slug}/events/new`}>New event</Link>
+          </Button>
+        </EmptyState>
       ) : (
         <ul className="divide-y divide-border border-y border-border">
           {events.map((event) => (

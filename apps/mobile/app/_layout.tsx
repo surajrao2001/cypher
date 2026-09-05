@@ -59,7 +59,7 @@ export default function RootLayout() {
               headerTitle: '',
               headerTransparent: true,
               headerTintColor: colors.ink,
-              headerBackTitle: 'Back',
+              headerBackTitle: 'Discover',
               animation: 'slide_from_right',
             }}
           />
@@ -70,6 +70,7 @@ export default function RootLayout() {
               headerTitle: 'New organizer',
               headerTintColor: colors.ink,
               headerStyle: { backgroundColor: colors.bg },
+              headerBackTitle: 'Organize',
               animation: 'slide_from_right',
             }}
           />
@@ -80,6 +81,7 @@ export default function RootLayout() {
               headerTitle: 'Organizer',
               headerTintColor: colors.ink,
               headerStyle: { backgroundColor: colors.bg },
+              headerBackTitle: 'Organize',
               animation: 'slide_from_right',
             }}
           />
@@ -90,6 +92,7 @@ export default function RootLayout() {
               headerTitle: 'Draft event',
               headerTintColor: colors.ink,
               headerStyle: { backgroundColor: colors.bg },
+              headerBackTitle: 'Organizer',
               animation: 'slide_from_right',
             }}
           />
@@ -100,6 +103,7 @@ export default function RootLayout() {
               headerTitle: 'Event',
               headerTintColor: colors.ink,
               headerStyle: { backgroundColor: colors.bg },
+              headerBackTitle: 'Organizer',
               animation: 'slide_from_right',
             }}
           />

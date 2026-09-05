@@ -13,6 +13,7 @@ import { OrganizeGate } from '@/features/organize/OrganizeGate';
 import { EventRegistrationsPanel } from '@/features/organize/EventRegistrationsPanel';
 import { EventMediaLinksEditor } from '@/features/organize/EventMediaLinksEditor';
 import { PosterField } from '@/features/organize/PosterField';
+import { PageBreadcrumb } from '@/features/shell/PageBreadcrumb';
 
 type CategoryEdit = {
   id: string;
@@ -210,6 +211,13 @@ function EventEditorInner({ slug, eventId }: { slug: string; eventId: string }) 
 
   return (
     <div className="mx-auto max-w-lg space-y-8 px-4 py-8 md:px-8">
+      <PageBreadcrumb
+        items={[
+          { label: 'Organize', href: routes.organize },
+          { label: org.orgName, href: `${routes.organize}/${org.slug}` },
+          { label: event.title },
+        ]}
+      />
       <div className="space-y-2">
         <p className="kicker text-accent">{org.orgName}</p>
         <h1 className="display-title text-5xl">{event.title}</h1>

@@ -434,7 +434,9 @@ export default function EventManageScreen() {
               </View>
             ))}
             {regs.items.length === 0 ? (
-              <Text variant="caption">No registrations yet.</Text>
+              <Text variant="caption">
+                No registrations yet. Share the public event link so dancers can hold a spot.
+              </Text>
             ) : (
               regs.items.map((row) => (
                 <View key={row.id} className="gap-1 border border-border px-3 py-2">

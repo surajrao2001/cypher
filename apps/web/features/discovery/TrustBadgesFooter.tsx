@@ -1,25 +1,25 @@
-import { ShieldCheck, Ticket, BellRing, Film } from 'lucide-react';
+import { ShieldCheck, Ticket, BellRing, Link2 } from 'lucide-react';
 
 const badges = [
   {
-    icon: ShieldCheck,
-    title: 'Secure payments',
-    body: 'Razorpay checkout. Your card never hits our servers.',
+    icon: Ticket,
+    title: 'Hold a spot',
+    body: 'Reserve a category entry, confirm free events, and get a registration code.',
   },
   {
-    icon: Ticket,
-    title: 'Easy registration',
-    body: 'Hold a spot, pay, get a digital ticket in under a minute.',
+    icon: ShieldCheck,
+    title: 'Digital tickets',
+    body: 'Confirmed entries show a QR on My Tickets — bring it to the door.',
   },
   {
     icon: BellRing,
     title: 'Event updates',
-    body: 'Judges, brackets, and floor times land on your phone.',
+    body: 'Registration windows, capacity, and organizer notices stay on the event page.',
   },
   {
-    icon: Film,
-    title: 'HD battle videos',
-    body: 'Unlisted YouTube recaps from every scored round.',
+    icon: Link2,
+    title: 'Event media',
+    body: 'Organizers can share YouTube, Instagram, or Drive links — Cypher does not host video.',
   },
 ] as const;
 
@@ -40,7 +40,7 @@ export function TrustBadgesFooter() {
         ))}
       </div>
       <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border px-5 py-4 text-[11px] uppercase tracking-[0.16em] text-text-muted">
-        <span>Night Cypher · Underground dance, India</span>
+        <span>Night Cypher · Built for battle weekends, India</span>
         <span>No light mode. The floor stays dark.</span>
       </div>
     </footer>

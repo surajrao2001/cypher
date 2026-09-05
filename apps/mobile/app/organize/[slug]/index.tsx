@@ -6,6 +6,7 @@ import type { OrganizerDto, OrganizerEventDetailDto } from '@cypher/contracts';
 
 import { Button } from '@/components/ui/Button';
 import { Text } from '@/components/ui/Text';
+import { EmptyState } from '@/components/EmptyState';
 import { useAuth } from '@/lib/auth';
 
 export default function OrganizerScreen() {
@@ -72,7 +73,11 @@ export default function OrganizerScreen() {
 
         <View className="mt-6 gap-1 border-t border-border pt-4">
           {events.length === 0 ? (
-            <Text variant="caption">No events yet.</Text>
+            <EmptyState
+              kicker="No nights"
+              title="Draft an event"
+              body="Add categories and a poster, then publish to Discover."
+            />
           ) : (
             events.map((event) => (
               <Pressable

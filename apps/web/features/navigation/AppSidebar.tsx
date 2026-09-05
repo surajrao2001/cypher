@@ -102,8 +102,8 @@ function SupportSlot() {
         <DialogHeader>
           <DialogTitle>Need the floor?</DialogTitle>
           <DialogDescription>
-            Night Cypher support is built for battle weekends — registration holds, Razorpay failures, and
-            organizer check-in. No theme toggle. Dark is the product.
+            Night Cypher support covers registration holds, tickets, and organizer event setup. Payments
+            support lands when checkout ships. No theme toggle — dark is the product.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-2 rounded-md border border-border bg-elevated p-4 text-sm text-text-secondary">
