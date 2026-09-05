@@ -272,6 +272,9 @@ export interface RegistrationDto {
   totalAmountMinor: number;
   currency: string;
   registrationCode: string;
+  /** HMAC payload for QR rendering; null until confirmed */
+  ticketQrPayload: string | null;
+  hasTicket: boolean;
   confirmedAt: string | null;
   createdAt: string;
   event: {
