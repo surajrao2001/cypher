@@ -38,7 +38,8 @@ describe('OrganizersService', () => {
     },
   };
   const identity = { ensureProfile: jest.fn() };
-  const service = new OrganizersService(prisma as never, identity as never);
+  const payments = { organizerCanAcceptPaid: jest.fn().mockResolvedValue(false) };
+  const service = new OrganizersService(prisma as never, identity as never, payments as never);
 
   beforeEach(() => {
     jest.clearAllMocks();

@@ -11,6 +11,7 @@
     "test": "echo skip"
   },
   "dependencies": {
+    "@cashfreepayments/cashfree-js": "^1.0.7",
     "@cypher/api-client": "workspace:*",
     "@cypher/contracts": "workspace:*",
     "@cypher/tokens": "workspace:*",

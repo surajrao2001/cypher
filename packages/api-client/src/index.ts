@@ -20,6 +20,10 @@ import type {
   CreateEventMediaLinkBody,
   UpdateEventMediaLinkBody,
   OrganizerEventRegistrationsResponse,
+  OrganizerPaymentAccountDto,
+  PaymentCheckoutSessionDto,
+  StartOrganizerPayoutSetupBody,
+  CreatePaymentCheckoutBody,
 } from '@cypher/contracts';
 
 export interface ApiClientOptions {
@@ -284,6 +288,32 @@ export class CypherApiClient {
     return this.request<RegistrationDto>(
       `/v1/registrations/${encodeURIComponent(id)}/confirm-free`,
       { method: 'POST' },
+    );
+  }
+
+  async createRegistrationCheckout(
+    id: string,
+    body: CreatePaymentCheckoutBody,
+  ): Promise<PaymentCheckoutSessionDto> {
+    return this.request<PaymentCheckoutSessionDto>(
+      `/v1/registrations/${encodeURIComponent(id)}/checkout`,
+      { method: 'POST', body: JSON.stringify(body) },
+    );
+  }
+
+  async getOrganizerPaymentAccount(organizerId: string): Promise<OrganizerPaymentAccountDto> {
+    return this.request<OrganizerPaymentAccountDto>(
+      `/v1/organizers/${encodeURIComponent(organizerId)}/payment-account`,
+    );
+  }
+
+  async setupOrganizerPaymentAccount(
+    organizerId: string,
+    body: StartOrganizerPayoutSetupBody,
+  ): Promise<OrganizerPaymentAccountDto> {
+    return this.request<OrganizerPaymentAccountDto>(
+      `/v1/organizers/${encodeURIComponent(organizerId)}/payment-account/setup`,
+      { method: 'POST', body: JSON.stringify(body) },
     );
   }
 

@@ -1,6 +1,7 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Linking, Pressable, ScrollView, View } from 'react-native';
+import { ActivityIndicator, Linking, Pressable, ScrollView, TextInput, View } from 'react-native';
 
 import { EventPoster } from '@/components/EventPoster';
 import { RegisterNowBar } from '@/components/RegisterNowBar';
@@ -13,6 +14,7 @@ import { toMobileDetail, mobileApi } from '@/lib/api';
 import type { MobileEvent } from '@/lib/events';
 import { formatEventDate, formatMinorUnits, spotsLeft } from '@/lib/format';
 import { colors } from '@/lib/theme';
+import { cashfreePayUrl } from '@/lib/web';
 
 export default function EventDetailScreen() {
   const router = useRouter();
@@ -23,6 +25,8 @@ export default function EventDetailScreen() {
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [customerPhone, setCustomerPhone] = useState('');
+  const [pendingPaidRegistrationId, setPendingPaidRegistrationId] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof id !== 'string') {
@@ -96,18 +100,44 @@ export default function EventDetailScreen() {
       });
       if (registration.totalAmountMinor === 0) {
         registration = await api.confirmFreeRegistration(registration.id);
+        setPendingPaidRegistrationId(null);
+        setNotice(`Confirmed ${registration.category.name} · ${registration.registrationCode}`);
+      } else {
+        setPendingPaidRegistrationId(registration.id);
+        setNotice(
+          `Held ${registration.category.name} · ${registration.registrationCode}. Enter mobile and pay with Cashfree.`,
+        );
       }
-      setNotice(
-        registration.registrationStatus === 'confirmed'
-          ? `Confirmed ${registration.category.name} · ${registration.registrationCode}`
-          : `Held ${registration.category.name} · ${registration.registrationCode}`,
-      );
       const refreshed = await mobileApi().getEvent(event.slug);
       if (refreshed) {
         setEvent(toMobileDetail(refreshed));
       }
     } catch (error) {
       setNotice(error instanceof Error ? error.message : 'Could not register');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function payHeld() {
+    if (!pendingPaidRegistrationId) {
+      return;
+    }
+    const phone = customerPhone.replace(/\D/g, '').slice(-10);
+    if (!/^[6-9]\d{9}$/.test(phone)) {
+      setNotice('Enter a valid 10-digit Indian mobile for Cashfree.');
+      return;
+    }
+    setBusy(true);
+    setNotice(null);
+    try {
+      const session = await api.createRegistrationCheckout(pendingPaidRegistrationId, {
+        customerPhone: phone,
+      });
+      await WebBrowser.openBrowserAsync(cashfreePayUrl(session.paymentSessionId));
+      setNotice('Finish payment in the browser, then open Tickets.');
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : 'Could not start payment');
     } finally {
       setBusy(false);
     }
@@ -227,6 +257,23 @@ export default function EventDetailScreen() {
             <Text variant="caption" className="mt-4 text-lime">
               {notice}
             </Text>
+          ) : null}
+
+          {pendingPaidRegistrationId ? (
+            <View className="mt-4 gap-3">
+              <Text variant="caption">Mobile for Cashfree</Text>
+              <TextInput
+                value={customerPhone}
+                onChangeText={setCustomerPhone}
+                keyboardType="phone-pad"
+                placeholder="9876543210"
+                placeholderTextColor={colors.muted}
+                className="rounded-md border border-border bg-surface px-3 py-3 font-body text-base text-primary"
+              />
+              <Button disabled={busy} onPress={() => void payHeld()}>
+                {busy ? 'Opening…' : 'Pay with Cashfree'}
+              </Button>
+            </View>
           ) : null}
         </View>
       </ScrollView>

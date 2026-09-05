@@ -1,5 +1,6 @@
 export const QUEUE_NAMES = {
   RESERVATION_EXPIRY: 'reservation-expiry',
+  PAYMENT_SPLIT: 'payment-split',
   NOTIFICATIONS: 'notifications',
   MEDIA: 'media',
   EXPORTS: 'exports',

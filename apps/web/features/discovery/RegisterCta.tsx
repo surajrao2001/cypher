@@ -1,6 +1,7 @@
 'use client';
 
 import type { EventDetailDto, RegistrationDto } from '@cypher/contracts';
+import { routes } from '@cypher/contracts';
 import { formatMinorUnits, spotsLeft as calcSpotsLeft } from '@cypher/utils';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
@@ -17,7 +18,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/features/auth/AuthProvider';
-import { routes } from '@cypher/contracts';
+import { openCashfreeCheckout } from '@/features/payments/cashfree-checkout';
 
 interface RegisterCtaProps {
   event: EventDetailDto;
@@ -30,6 +31,7 @@ export function RegisterCta({ event, spotsLeft }: RegisterCtaProps) {
   const [categoryId, setCategoryId] = useState(event.categories[0]?.id ?? '');
   const [entryName, setEntryName] = useState('');
   const [names, setNames] = useState<string[]>(['']);
+  const [customerPhone, setCustomerPhone] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [held, setHeld] = useState<RegistrationDto | null>(null);
@@ -107,6 +109,26 @@ export function RegisterCta({ event, spotsLeft }: RegisterCtaProps) {
     }
   }
 
+  async function payHeld() {
+    if (!held || held.totalAmountMinor <= 0) {
+      return;
+    }
+    const phone = customerPhone.replace(/\D/g, '').slice(-10);
+    if (!/^[6-9]\d{9}$/.test(phone)) {
+      setError('Enter a valid 10-digit Indian mobile for checkout');
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      const session = await api.createRegistrationCheckout(held.id, { customerPhone: phone });
+      await openCashfreeCheckout(session.paymentSessionId);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not start payment');
+      setBusy(false);
+    }
+  }
+
   const isConfirmed = held?.registrationStatus === 'confirmed';
 
   return (
@@ -123,11 +145,11 @@ export function RegisterCta({ event, spotsLeft }: RegisterCtaProps) {
           </DialogTitle>
           <DialogDescription>
             {isConfirmed
-              ? 'Your free entry is confirmed. Open Tickets for your QR pass.'
+              ? 'Entry confirmed. Open Tickets for your QR pass.'
               : held
                 ? held.totalAmountMinor === 0
                   ? 'Confirm your free entry to lock the spot.'
-                  : 'Paid checkout is not wired yet — hold only for now.'
+                  : 'Pay with Cashfree to confirm. The hold expires if payment does not complete.'
                 : 'Register for one category entry. Capacity counts teams, not dancers.'}
           </DialogDescription>
         </DialogHeader>
@@ -152,6 +174,20 @@ export function RegisterCta({ event, spotsLeft }: RegisterCtaProps) {
             <p className="text-text-primary">
               {held.totalAmountMinor === 0 ? 'Free entry' : formatMinorUnits(held.totalAmountMinor)}
             </p>
+            {!isConfirmed && held.totalAmountMinor > 0 ? (
+              <div className="space-y-1 pt-2">
+                <label className="text-xs uppercase tracking-[0.14em] text-text-muted" htmlFor="pay-phone">
+                  Mobile for payment
+                </label>
+                <Input
+                  id="pay-phone"
+                  value={customerPhone}
+                  onChange={(e) => setCustomerPhone(e.target.value)}
+                  placeholder="9876543210"
+                  inputMode="numeric"
+                />
+              </div>
+            ) : null}
             {error ? <p className="text-sm text-red-400">{error}</p> : null}
           </div>
         ) : (
@@ -227,6 +263,16 @@ export function RegisterCta({ event, spotsLeft }: RegisterCtaProps) {
           {token && me && held && !isConfirmed && held.totalAmountMinor === 0 ? (
             <Button onClick={() => void confirmHeld()} disabled={busy}>
               {busy ? 'Confirming…' : 'Confirm free entry'}
+            </Button>
+          ) : null}
+          {token && me && held && !isConfirmed && held.totalAmountMinor > 0 ? (
+            <Button onClick={() => void payHeld()} disabled={busy}>
+              {busy ? 'Opening Cashfree…' : `Pay ${formatMinorUnits(held.totalAmountMinor)}`}
+            </Button>
+          ) : null}
+          {isConfirmed ? (
+            <Button asChild>
+              <Link href={routes.tickets}>Open tickets</Link>
             </Button>
           ) : null}
         </DialogFooter>
