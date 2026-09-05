@@ -3,7 +3,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Env } from '../../config/env.validation';
 import { writeLog } from '../logger';
-import type { AuthPrincipal } from './auth.types';
+import type { VerifiedSupabaseToken } from './auth.types';
 
 const CLOCK_TOLERANCE_SEC = 5;
 const JWKS_TTL_MS = 10 * 60 * 1000;
@@ -20,7 +20,7 @@ export class SupabaseJwtVerifier {
 
   constructor(private readonly config: ConfigService<Env, true>) {}
 
-  async verify(token: string): Promise<AuthPrincipal> {
+  async verify(token: string): Promise<VerifiedSupabaseToken> {
     const secret = this.config.get('SUPABASE_JWT_SECRET', { infer: true });
     const supabaseUrl = this.config.get('SUPABASE_URL', { infer: true });
     if (!secret && !supabaseUrl) {
@@ -53,7 +53,7 @@ export class SupabaseJwtVerifier {
       }
 
       const jwtRole = typeof payload.role === 'string' ? payload.role : 'authenticated';
-      return { userId, jwtRole };
+      return { providerUserId: userId, jwtRole };
     } catch (error) {
       if (error instanceof UnauthorizedException) {
         throw error;

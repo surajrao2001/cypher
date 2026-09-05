@@ -47,7 +47,7 @@ describe('SupabaseJwtVerifier', () => {
   it('accepts a valid HS256 supabase access token', async () => {
     const token = signHs256();
     await expect(verifier().verify(token)).resolves.toEqual({
-      userId: '11111111-1111-1111-1111-111111111111',
+      providerUserId: '11111111-1111-1111-1111-111111111111',
       jwtRole: 'authenticated',
     });
   });
@@ -98,7 +98,7 @@ describe('SupabaseJwtVerifier', () => {
     } as Response);
 
     await expect(verifier({ jwtSecret: undefined }).verify(token)).resolves.toEqual({
-      userId: '22222222-2222-2222-2222-222222222222',
+      providerUserId: '22222222-2222-2222-2222-222222222222',
       jwtRole: 'authenticated',
     });
     fetchMock.mockRestore();

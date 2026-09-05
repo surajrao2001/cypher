@@ -126,8 +126,48 @@ enum MediaLinkKind {
   other
 }
 
+enum AuthProvider {
+  SUPABASE
+  CLERK
+  GOOGLE
+  APPLE
+}
+
+/// Cypher-owned canonical identity. Domain FKs point here — never at the auth provider.
+model User {
+  id        String   @id @default(uuid()) @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  profile        Profile?
+  authIdentities AuthIdentity[]
+
+  createdOrganizers Organizer[]               @relation("OrganizerCreator")
+  organizerMembers  OrganizerMember[]
+  registrations     Registration[]
+  participants      RegistrationParticipant[]
+  auditLogs         AuditLog[]
+
+  @@map("users")
+}
+
+model AuthIdentity {
+  id             String       @id @default(uuid()) @db.Uuid
+  userId         String       @map("user_id") @db.Uuid
+  provider       AuthProvider
+  providerUserId String       @map("provider_user_id")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerUserId], map: "auth_identities_provider_user_uidx")
+  @@index([userId], map: "auth_identities_user_id_idx")
+  @@map("auth_identities")
+}
+
 model Profile {
-  id           String        @id @db.Uuid
+  userId       String        @id @map("user_id") @db.Uuid
   name         String
   dancerName   String?       @map("dancer_name")
   city         String?
@@ -140,12 +180,8 @@ model Profile {
   createdAt    DateTime      @default(now()) @map("created_at")
   updatedAt    DateTime      @updatedAt @map("updated_at")
 
-  createdOrganizers Organizer[]               @relation("OrganizerCreator")
-  organizerMembers  OrganizerMember[]
-  registrations     Registration[]
-  participants      RegistrationParticipant[]
-  auditLogs         AuditLog[]
-  danceStyles       ProfileDanceStyle[]
+  user        User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  danceStyles ProfileDanceStyle[]
 
   @@map("profiles")
 }
@@ -166,7 +202,7 @@ model ProfileDanceStyle {
   profileId String @map("profile_id") @db.Uuid
   styleId   String @map("style_id") @db.Uuid
 
-  profile Profile    @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  profile Profile    @relation(fields: [profileId], references: [userId], onDelete: Cascade)
   style   DanceStyle @relation(fields: [styleId], references: [id], onDelete: Cascade)
 
   @@id([profileId, styleId])
@@ -196,7 +232,7 @@ model Organizer {
   logoUrl            String?                     @map("logo_url")
   instagram          String?
   createdById        String                      @map("created_by") @db.Uuid
-  createdBy          Profile                     @relation("OrganizerCreator", fields: [createdById], references: [id])
+  createdBy          User                        @relation("OrganizerCreator", fields: [createdById], references: [id])
   createdAt          DateTime                    @default(now()) @map("created_at")
   updatedAt          DateTime                    @updatedAt @map("updated_at")
 
@@ -213,7 +249,7 @@ model OrganizerMember {
   createdAt   DateTime            @default(now()) @map("created_at")
 
   organizer Organizer @relation(fields: [organizerId], references: [id], onDelete: Cascade)
-  user      Profile   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([organizerId, userId])
   @@index([userId], map: "organizer_members_user_id_idx")
@@ -294,7 +330,7 @@ model Registration {
   updatedAt            DateTime                  @updatedAt @map("updated_at")
   confirmedAt          DateTime?                 @map("confirmed_at")
 
-  user          Profile                    @relation(fields: [userId], references: [id])
+  user          User                       @relation(fields: [userId], references: [id])
   event         Event                      @relation(fields: [eventId], references: [id])
   category      EventCategory              @relation(fields: [categoryId], references: [id])
   participants  RegistrationParticipant[]
@@ -321,7 +357,7 @@ model RegistrationParticipant {
   updatedAt      DateTime @updatedAt @map("updated_at")
 
   registration Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
-  user         Profile?     @relation(fields: [userId], references: [id])
+  user         User?        @relation(fields: [userId], references: [id])
 
   @@map("registration_participants")
 }
@@ -429,7 +465,7 @@ model AuditLog {
   ipAddress   String?  @map("ip_address")
   createdAt   DateTime @default(now()) @map("created_at")
 
-  actor Profile? @relation(fields: [actorUserId], references: [id])
+  actor User? @relation(fields: [actorUserId], references: [id])
 
   @@index([entityType, entityId], map: "audit_logs_entity_idx")
   @@index([actorUserId, createdAt], map: "audit_logs_actor_created_idx")

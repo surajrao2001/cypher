@@ -56,7 +56,7 @@ export class RegistrationsService {
 
   async createHold(userId: string, input: CreateRegistrationInput) {
     await this.identity.ensureProfile(userId);
-    const profile = await this.prisma.profile.findUniqueOrThrow({ where: { id: userId } });
+    const profile = await this.prisma.profile.findUniqueOrThrow({ where: { userId } });
 
     const category = await this.prisma.eventCategory.findUnique({
       where: { id: input.categoryId },
@@ -342,7 +342,7 @@ export class RegistrationsService {
 
 function normalizeParticipants(
   input: CreateRegistrationParticipantInput[],
-  profile: { id: string; name: string; dancerName: string | null },
+  profile: { userId: string; name: string; dancerName: string | null },
 ): Array<{
   userId?: string;
   displayName: string;
@@ -354,7 +354,7 @@ function normalizeParticipants(
   if (!input.length) {
     return [
       {
-        userId: profile.id,
+        userId: profile.userId,
         displayName: profile.dancerName?.trim() || profile.name,
         dancerName: profile.dancerName,
         isTeamCaptain: true,
