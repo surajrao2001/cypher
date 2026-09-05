@@ -49,6 +49,7 @@ export const createOrganizerSchema = z.object({
     .max(60)
     .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'Slug must be lowercase letters, numbers, and hyphens')
     .optional(),
+  type: z.enum(['independent', 'collective', 'college', 'studio', 'community', 'other']).optional(),
   city: z.string().trim().min(2).max(80).optional(),
   bio: z.string().trim().max(500).optional(),
   instagram: z
@@ -61,6 +62,7 @@ export const createOrganizerSchema = z.object({
 
 export const updateOrganizerSchema = z.object({
   orgName: z.string().trim().min(2).max(80).optional(),
+  type: z.enum(['independent', 'collective', 'college', 'studio', 'community', 'other']).optional(),
   city: z.string().trim().min(2).max(80).nullable().optional(),
   bio: z.string().trim().max(500).nullable().optional(),
   instagram: z
@@ -76,6 +78,9 @@ const categoryInputSchema = z.object({
   name: z.string().trim().min(1).max(80),
   priceMinor: z.number().int().min(0).max(10_000_000).optional(),
   capacity: z.number().int().min(1).max(100_000),
+  entryType: z.enum(['solo', 'team']).optional(),
+  minTeamSize: z.number().int().min(1).max(50).optional(),
+  maxTeamSize: z.number().int().min(1).max(50).optional(),
   teamSize: z.number().int().min(1).max(50).optional(),
 });
 

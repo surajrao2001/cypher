@@ -64,7 +64,10 @@ export function toEventDetail(event: EventRecord): EventDetailDto {
       capacity: category.capacity,
       reservedCount: category.reservedCount,
       confirmedCount: category.confirmedCount,
-      teamSize: category.teamSize,
+      entryType: category.entryType,
+      minTeamSize: category.minTeamSize,
+      maxTeamSize: category.maxTeamSize,
+      teamSize: category.maxTeamSize,
     })),
   };
 }

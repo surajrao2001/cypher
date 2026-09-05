@@ -27,6 +27,9 @@ export type EventCategoryPublicDto = {
   capacity: number;
   reservedCount: number;
   confirmedCount: number;
+  entryType: string;
+  minTeamSize: number;
+  maxTeamSize: number;
   teamSize: number;
 };
 

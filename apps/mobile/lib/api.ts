@@ -28,7 +28,19 @@ export function toMobileEvent(event: EventCardDto, description = ''): MockEvent 
 }
 
 export function toMobileDetail(event: EventDetailDto): MockEvent {
-  return toMobileEvent(event, event.description ?? '');
+  return {
+    ...toMobileEvent(event, event.description ?? ''),
+    categories: event.categories.map((category) => ({
+      id: category.id,
+      name: category.name,
+      priceMinor: category.priceMinor,
+      capacity: category.capacity,
+      reservedCount: category.reservedCount,
+      confirmedCount: category.confirmedCount,
+      minTeamSize: category.minTeamSize,
+      maxTeamSize: category.maxTeamSize,
+    })),
+  };
 }
 
 export function mobileApi() {

@@ -116,6 +116,9 @@ describe('OrganizersService', () => {
           reservedCount: 0,
           confirmedCount: 0,
           teamSize: 1,
+          entryType: 'solo',
+          minTeamSize: 1,
+          maxTeamSize: 1,
         },
       ],
     });
@@ -189,6 +192,9 @@ describe('OrganizersService', () => {
             reservedCount: 0,
             confirmedCount: 0,
             teamSize: 2,
+            entryType: 'team',
+            minTeamSize: 2,
+            maxTeamSize: 2,
           },
         ],
       });

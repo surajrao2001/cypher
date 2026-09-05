@@ -43,6 +43,9 @@ function eventRow(
         reservedCount: 0,
         confirmedCount: 48,
         teamSize: 1,
+        entryType: 'solo',
+        minTeamSize: 1,
+        maxTeamSize: 1,
       },
     ],
   };

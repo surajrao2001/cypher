@@ -30,6 +30,11 @@ export class CreateOrganizerDto {
 
   @IsOptional()
   @IsString()
+  @Matches(/^(independent|collective|college|studio|community|other)$/)
+  type?: string;
+
+  @IsOptional()
+  @IsString()
   @MinLength(2)
   @MaxLength(80)
   city?: string;
@@ -52,6 +57,11 @@ export class UpdateOrganizerDto {
   @MinLength(2)
   @MaxLength(80)
   orgName?: string;
+
+  @IsOptional()
+  @IsString()
+  @Matches(/^(independent|collective|college|studio|community|other)$/)
+  type?: string;
 
   @IsOptional()
   @IsString()
@@ -96,6 +106,25 @@ export class EventCategoryInputDto {
   @Min(1)
   @Max(50)
   teamSize?: number;
+
+  @IsOptional()
+  @IsString()
+  @Matches(/^(solo|team)$/)
+  entryType?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(50)
+  minTeamSize?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(50)
+  maxTeamSize?: number;
 }
 
 export class UpdateEventCategoryDto {
@@ -125,6 +154,25 @@ export class UpdateEventCategoryDto {
   @Min(1)
   @Max(50)
   teamSize?: number;
+
+  @IsOptional()
+  @IsString()
+  @Matches(/^(solo|team)$/)
+  entryType?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(50)
+  minTeamSize?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(50)
+  maxTeamSize?: number;
 }
 
 export class CreateOrganizerEventDto {

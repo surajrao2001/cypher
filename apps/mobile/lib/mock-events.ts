@@ -29,6 +29,16 @@ export interface MockEvent {
   description: string;
   posterTone: 'orange' | 'lime';
   posterUrl?: string | null;
+  categories?: Array<{
+    id: string;
+    name: string;
+    priceMinor: number;
+    capacity: number;
+    reservedCount: number;
+    confirmedCount: number;
+    minTeamSize: number;
+    maxTeamSize: number;
+  }>;
 }
 
 export const MOCK_EVENTS: MockEvent[] = [

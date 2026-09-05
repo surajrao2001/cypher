@@ -1,27 +1,27 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 
 import { EventPoster } from '@/components/EventPoster';
 import { RegisterNowBar } from '@/components/RegisterNowBar';
-import { TicketQuantityStepper } from '@/components/TicketQuantityStepper';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Chip } from '@/components/ui/Chip';
 import { Text } from '@/components/ui/Text';
-import { mobileApi, toMobileDetail } from '@/lib/api';
-import { clampQuantity, formatEventDate, formatMinorUnits, spotsLeft } from '@/lib/format';
+import { useAuth } from '@/lib/auth';
+import { toMobileDetail, mobileApi } from '@/lib/api';
+import { formatEventDate, formatMinorUnits, spotsLeft } from '@/lib/format';
 import { getEventById, type MockEvent } from '@/lib/mock-events';
 
 export default function EventDetailScreen() {
   const router = useRouter();
+  const { token, me, api } = useAuth();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [event, setEvent] = useState<MockEvent | undefined>(
     typeof id === 'string' ? getEventById(id) : undefined,
   );
-  const remaining = event ? spotsLeft(event.spotsCapacity, event.spotsConfirmed) : 0;
-  const soldOut = remaining === 0;
-  const [quantity, setQuantity] = useState(1);
+  const [categoryId, setCategoryId] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
 
   useEffect(() => {
@@ -32,7 +32,9 @@ export default function EventDetailScreen() {
       .getEvent(id)
       .then((row) => {
         if (row) {
-          setEvent(toMobileDetail(row));
+          const detail = toMobileDetail(row);
+          setEvent(detail);
+          setCategoryId(detail.categories?.[0]?.id ?? null);
         }
       })
       .catch(() => {
@@ -40,11 +42,56 @@ export default function EventDetailScreen() {
       });
   }, [id]);
 
-  const maxTickets = Math.max(remaining, 0);
-  const safeQuantity = useMemo(
-    () => clampQuantity(quantity, 1, Math.max(maxTickets, 1)),
-    [quantity, maxTickets],
+  const category = useMemo(
+    () => event?.categories?.find((row) => row.id === categoryId) ?? event?.categories?.[0],
+    [categoryId, event?.categories],
   );
+
+  const remaining = category
+    ? spotsLeft(category.capacity, category.confirmedCount + category.reservedCount)
+    : event
+      ? spotsLeft(event.spotsCapacity, event.spotsConfirmed)
+      : 0;
+  const soldOut = remaining === 0;
+  const unitPrice = category?.priceMinor ?? event?.priceMinor ?? 0;
+
+  async function holdSpot() {
+    if (!event) {
+      return;
+    }
+    if (!token || !me) {
+      setNotice('Sign in from Profile to hold a spot.');
+      return;
+    }
+    if (!category) {
+      setNotice('No category available.');
+      return;
+    }
+    setBusy(true);
+    setNotice(null);
+    try {
+      const registration = await api.createRegistration({
+        categoryId: category.id,
+        participants: [
+          {
+            displayName: me.profile.dancerName ?? me.profile.name,
+            dancerName: me.profile.dancerName ?? undefined,
+            userId: me.profile.id,
+            isTeamCaptain: true,
+          },
+        ],
+      });
+      setNotice(`Held ${registration.category.name} · ${registration.registrationCode}`);
+      const refreshed = await mobileApi().getEvent(event.slug);
+      if (refreshed) {
+        setEvent(toMobileDetail(refreshed));
+      }
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : 'Could not hold spot');
+    } finally {
+      setBusy(false);
+    }
+  }
 
   if (!event) {
     return (
@@ -91,12 +138,10 @@ export default function EventDetailScreen() {
 
           <View className="mt-5 flex-row items-center justify-between">
             <Badge tone={soldOut ? 'danger' : remaining <= 10 ? 'lime' : 'muted'}>
-              {soldOut
-                ? 'Sold out'
-                : `${remaining} / ${event.spotsCapacity} spots left`}
+              {soldOut ? 'Sold out' : `${remaining} spots left`}
             </Badge>
             <Text variant="subtitle" className="text-[22px]">
-              {event.priceMinor === 0 ? 'Free' : formatMinorUnits(event.priceMinor)}
+              {unitPrice === 0 ? 'Free' : formatMinorUnits(unitPrice)}
             </Text>
           </View>
 
@@ -104,15 +149,33 @@ export default function EventDetailScreen() {
             {event.description}
           </Text>
 
-          <View className="mt-8">
-            <TicketQuantityStepper
-              value={soldOut ? 0 : safeQuantity}
-              min={soldOut ? 0 : 1}
-              max={maxTickets}
-              disabled={soldOut}
-              onChange={setQuantity}
-            />
-          </View>
+          {event.categories && event.categories.length > 0 ? (
+            <View className="mt-8 gap-2">
+              <Text variant="caption">Choose category</Text>
+              {event.categories.map((row) => {
+                const left = spotsLeft(row.capacity, row.confirmedCount + row.reservedCount);
+                const selected = row.id === (category?.id ?? null);
+                return (
+                  <Pressable
+                    key={row.id}
+                    disabled={left === 0}
+                    onPress={() => setCategoryId(row.id)}
+                    className={`rounded-md border px-3 py-3 ${
+                      selected ? 'border-lime bg-elevated' : 'border-border bg-surface'
+                    } ${left === 0 ? 'opacity-40' : ''}`}
+                  >
+                    <Text variant="subtitle">{row.name}</Text>
+                    <Text variant="caption" className="mt-1 text-muted">
+                      {row.priceMinor === 0 ? 'Free' : formatMinorUnits(row.priceMinor)} · {left} left
+                      · {row.minTeamSize === row.maxTeamSize
+                        ? `${row.minTeamSize}p`
+                        : `${row.minTeamSize}-${row.maxTeamSize}p`}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          ) : null}
 
           {notice ? (
             <Text variant="caption" className="mt-4 text-lime">
@@ -122,12 +185,15 @@ export default function EventDetailScreen() {
         </View>
       </ScrollView>
       <RegisterNowBar
-        quantity={soldOut ? 0 : safeQuantity}
-        unitPriceMinor={event.priceMinor}
+        quantity={1}
+        unitPriceMinor={unitPrice}
         soldOut={soldOut}
-        onRegister={() =>
-          setNotice('Checkout is not wired yet. Quantity and total are live on this screen.')
-        }
+        onRegister={() => {
+          if (busy) {
+            return;
+          }
+          void holdSpot();
+        }}
       />
     </View>
   );
