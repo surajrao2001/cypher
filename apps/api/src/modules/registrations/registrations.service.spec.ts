@@ -164,4 +164,74 @@ describe('RegistrationsService', () => {
       }),
     ).rejects.toBeInstanceOf(ConflictException);
   });
+
+  it('confirms a free pending hold', async () => {
+    const pending = {
+      id: 'reg-1',
+      userId: 'user-1',
+      eventId: 'evt-1',
+      categoryId: 'cat-1',
+      entryName: null,
+      registrationStatus: RegistrationStatus.pending_payment,
+      paymentStatus: 'not_started',
+      reservationExpiresAt: new Date('2026-10-01T12:15:00.000Z'),
+      totalAmountMinor: 0,
+      currency: 'INR',
+      registrationCode: 'CY-ABC123',
+      confirmedAt: null,
+      createdAt: new Date('2026-10-01T12:00:00.000Z'),
+      category,
+      event: category.event,
+      participants: [
+        {
+          id: 'p1',
+          userId: 'user-1',
+          displayName: 'Cypher',
+          dancerName: 'Cypher',
+          isTeamCaptain: true,
+        },
+      ],
+    };
+    const confirmed = {
+      ...pending,
+      registrationStatus: RegistrationStatus.confirmed,
+      reservationExpiresAt: null,
+      confirmedAt: new Date('2026-10-01T12:01:00.000Z'),
+    };
+
+    prisma.$transaction.mockImplementation(async (fn: (tx: typeof prisma) => unknown) =>
+      fn({
+        $queryRaw: jest.fn().mockResolvedValue([{ id: 'reg-1' }]),
+        registration: {
+          findFirst: jest.fn().mockResolvedValue(pending),
+          update: jest.fn().mockResolvedValue(confirmed),
+        },
+        eventCategory: { update: jest.fn().mockResolvedValue({}) },
+      } as never),
+    );
+
+    const result = await service.confirmFree('user-1', 'reg-1');
+    expect(result.registrationStatus).toBe('confirmed');
+    expect(result.confirmedAt).toBeTruthy();
+  });
+
+  it('rejects free confirm for paid holds', async () => {
+    prisma.$transaction.mockImplementation(async (fn: (tx: typeof prisma) => unknown) =>
+      fn({
+        $queryRaw: jest.fn().mockResolvedValue([{ id: 'reg-1' }]),
+        registration: {
+          findFirst: jest.fn().mockResolvedValue({
+            id: 'reg-1',
+            registrationStatus: RegistrationStatus.pending_payment,
+            totalAmountMinor: 49900,
+            category,
+            event: category.event,
+            participants: [],
+          }),
+        },
+      } as never),
+    );
+
+    await expect(service.confirmFree('user-1', 'reg-1')).rejects.toBeInstanceOf(BadRequestException);
+  });
 });

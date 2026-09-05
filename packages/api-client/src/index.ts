@@ -234,6 +234,13 @@ export class CypherApiClient {
     });
   }
 
+  async confirmFreeRegistration(id: string): Promise<RegistrationDto> {
+    return this.request<RegistrationDto>(
+      `/v1/registrations/${encodeURIComponent(id)}/confirm-free`,
+      { method: 'POST' },
+    );
+  }
+
   async uploadPoster(file: Blob, filename = 'poster.jpg'): Promise<{ url: string; filename: string }> {
     const token = await this.options.getAccessToken?.();
     const body = new FormData();

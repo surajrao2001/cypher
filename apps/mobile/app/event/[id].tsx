@@ -70,7 +70,7 @@ export default function EventDetailScreen() {
     setBusy(true);
     setNotice(null);
     try {
-      const registration = await api.createRegistration({
+      let registration = await api.createRegistration({
         categoryId: category.id,
         participants: [
           {
@@ -81,13 +81,20 @@ export default function EventDetailScreen() {
           },
         ],
       });
-      setNotice(`Held ${registration.category.name} · ${registration.registrationCode}`);
+      if (registration.totalAmountMinor === 0) {
+        registration = await api.confirmFreeRegistration(registration.id);
+      }
+      setNotice(
+        registration.registrationStatus === 'confirmed'
+          ? `Confirmed ${registration.category.name} · ${registration.registrationCode}`
+          : `Held ${registration.category.name} · ${registration.registrationCode}`,
+      );
       const refreshed = await mobileApi().getEvent(event.slug);
       if (refreshed) {
         setEvent(toMobileDetail(refreshed));
       }
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : 'Could not hold spot');
+      setNotice(error instanceof Error ? error.message : 'Could not register');
     } finally {
       setBusy(false);
     }

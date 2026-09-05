@@ -237,6 +237,73 @@ export class RegistrationsService {
     });
   }
 
+  async confirmFree(userId: string, registrationId: string) {
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        const locked = await tx.$queryRaw<Array<{ id: string }>>`
+          SELECT id FROM registrations
+          WHERE id = ${registrationId}::uuid AND user_id = ${userId}::uuid
+          FOR UPDATE
+        `;
+        if (!locked[0]) {
+          throw new NotFoundException('Registration not found');
+        }
+
+        const row = await tx.registration.findFirst({
+          where: { id: registrationId, userId },
+          include: registrationInclude,
+        });
+        if (!row) {
+          throw new NotFoundException('Registration not found');
+        }
+
+        if (row.registrationStatus === RegistrationStatus.confirmed) {
+          return toRegistrationDto(row);
+        }
+        if (row.registrationStatus !== RegistrationStatus.pending_payment) {
+          throw new BadRequestException('Only pending holds can be confirmed');
+        }
+        if (row.totalAmountMinor !== 0) {
+          throw new BadRequestException('Paid entries cannot use free confirm');
+        }
+
+        await tx.$queryRaw`
+          SELECT id FROM event_categories WHERE id = ${row.categoryId}::uuid FOR UPDATE
+        `;
+
+        const updated = await tx.registration.update({
+          where: { id: row.id },
+          data: {
+            registrationStatus: RegistrationStatus.confirmed,
+            paymentStatus: RegistrationPaymentStatus.not_started,
+            reservationExpiresAt: null,
+            confirmedAt: new Date(),
+          },
+          include: registrationInclude,
+        });
+
+        await tx.eventCategory.update({
+          where: { id: row.categoryId },
+          data: {
+            reservedCount: { decrement: 1 },
+            confirmedCount: { increment: 1 },
+          },
+        });
+
+        return toRegistrationDto(updated);
+      });
+    } catch (error) {
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException ||
+        error instanceof ConflictException
+      ) {
+        throw error;
+      }
+      throw error;
+    }
+  }
+
   private async allocateRegistrationCode(): Promise<string> {
     for (let attempt = 0; attempt < 8; attempt += 1) {
       const code = `CY-${randomBytes(3).toString('hex').toUpperCase()}`;
