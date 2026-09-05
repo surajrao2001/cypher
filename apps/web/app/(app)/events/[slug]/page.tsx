@@ -16,7 +16,7 @@ import {
 import { EventPoster } from '@/features/discovery/EventPoster';
 import { EventMediaSection } from '@/features/discovery/EventMediaSection';
 import { StickyRegisterBar } from '@/features/discovery/StickyRegisterBar';
-import { spotsTone } from '@/features/discovery/mock-events';
+import { spotsTone } from '@/features/discovery/catalog';
 import { PageBreadcrumb } from '@/features/shell/PageBreadcrumb';
 import { getServerApi } from '@/lib/api';
 

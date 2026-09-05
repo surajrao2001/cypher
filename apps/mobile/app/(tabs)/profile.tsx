@@ -13,7 +13,7 @@ import { Chip } from '@/components/ui/Chip';
 import { Text } from '@/components/ui/Text';
 import { useCypherFonts } from '@/lib/fonts';
 import { cn } from '@/lib/format';
-import { DANCE_STYLES } from '@/lib/mock-events';
+import { DANCE_STYLES } from '@/lib/events';
 import { colors } from '@/lib/theme';
 
 const STYLES = DANCE_STYLES.filter((style) => style !== 'All');

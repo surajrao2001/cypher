@@ -1,3 +1,5 @@
+import { spotsLeft } from '@cypher/utils';
+
 export const CITIES = ['Mumbai', 'Delhi', 'Bengaluru', 'Pune'] as const;
 
 export type City = (typeof CITIES)[number];
@@ -33,44 +35,6 @@ export const FOR_YOU_TAGS = [
 ] as const;
 
 export type ForYouTag = (typeof FOR_YOU_TAGS)[number];
-
-export interface MockNotification {
-  id: string;
-  title: string;
-  body: string;
-  time: string;
-  unread: boolean;
-  href: string;
-}
-
-export const mockNotifications: MockNotification[] = [
-  {
-    id: 'ntf_1',
-    title: 'Delhi Break League is almost full',
-    body: '5 spots left in Breaking 1v1 — finals week at Hangar 9.',
-    time: '12m ago',
-    unread: true,
-    href: '/events/delhi-break-league-monsoon-finals',
-  },
-  {
-    id: 'ntf_2',
-    title: 'Payment confirmed · Andheri Cypher',
-    body: 'Your ticket for Vol. 18 is in Tickets. Floor opens 6:30pm.',
-    time: '2h ago',
-    unread: true,
-    href: '/tickets',
-  },
-  {
-    id: 'ntf_3',
-    title: 'Session BLR: judges posted',
-    body: 'Namma Cypher locked the popping panel. Check the event page.',
-    time: 'Yesterday',
-    unread: false,
-    href: '/events/session-blr-popping-1v1',
-  },
-];
-
-import { spotsLeft } from '@cypher/utils';
 
 export function spotsTone(
   confirmed: number,
