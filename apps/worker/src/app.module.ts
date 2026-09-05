@@ -12,6 +12,7 @@ import { NotificationConsumer } from './consumers/notification.consumer';
 import { ReservationExpiryConsumer } from './consumers/reservation-expiry.consumer';
 import { QUEUE_NAMES } from './jobs/queue-names';
 import { PrismaService } from './prisma.service';
+import { ReservationExpiryService } from './reservation-expiry.service';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { PrismaService } from './prisma.service';
   providers: [
     StructuredLogger,
     PrismaService,
+    ReservationExpiryService,
     ReservationExpiryConsumer,
     NotificationConsumer,
     MediaConsumer,

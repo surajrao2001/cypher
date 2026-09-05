@@ -1,6 +1,6 @@
-export type ReservationExpiryJobPayload = {
-  registrationId: string;
-};
+export type ReservationExpiryJobPayload =
+  | { mode?: 'expire'; registrationId: string }
+  | { mode: 'sweep'; registrationId?: never };
 
 export type NotificationJobPayload = {
   registrationId: string;

@@ -3,6 +3,7 @@ import { Module, type MiddlewareConsumer, type NestModule } from '@nestjs/common
 import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from './common/prisma.module';
 import { RedisModule } from './common/redis/redis.module';
+import { QueuesModule } from './common/queues/queues.module';
 import { AuthModule } from './common/auth/auth.module';
 import { RequestIdMiddleware } from './common/request-id.middleware';
 import { validateEnv } from './config/env.validation';
@@ -29,6 +30,7 @@ import { UsersModule } from './modules/users/users.module';
     }),
     PrismaModule,
     RedisModule,
+    QueuesModule,
     IdentityModule,
     AuthModule,
     HealthModule,
