@@ -2,7 +2,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, ScrollView, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import type { OrganizerDto, OrganizerEventDetailDto } from '@cypher/contracts';
+import type { OrganizerDto, OrganizerEventDetailDto, OrganizerEventRegistrationsResponse } from '@cypher/contracts';
 
 import { PosterPicker } from '@/components/PosterPicker';
 import { Button } from '@/components/ui/Button';
@@ -33,6 +33,7 @@ export default function EventManageScreen() {
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [regs, setRegs] = useState<OrganizerEventRegistrationsResponse | null>(null);
 
   function sync(detail: OrganizerEventDetailDto) {
     setEvent(detail);
@@ -54,8 +55,10 @@ export default function EventManageScreen() {
     try {
       const organizer = await auth.api.getMyOrganizerBySlug(slug);
       const detail = await auth.api.getOrganizerEvent(organizer.id, eventId);
+      const registrations = await auth.api.listOrganizerEventRegistrations(organizer.id, eventId);
       setOrg(organizer);
       sync(detail);
+      setRegs(registrations);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Load failed');
@@ -325,6 +328,48 @@ export default function EventManageScreen() {
         <Button loading={pending} variant="secondary" onPress={() => void addCategory()}>
           Add category
         </Button>
+
+        <Text variant="label" className="mt-2">
+          Registrations
+        </Text>
+        {regs ? (
+          <>
+            <Text variant="caption">
+              Pending {regs.totals.pending} · Confirmed {regs.totals.confirmed}
+              {regs.totals.other > 0 ? ` · Other ${regs.totals.other}` : ''}
+            </Text>
+            {regs.categories.map((cat) => (
+              <View key={cat.id} className="border border-border px-3 py-2">
+                <Text variant="body" className="font-semibold">
+                  {cat.name}
+                </Text>
+                <Text variant="caption">
+                  {cat.confirmedCount} confirmed · {cat.reservedCount} held · {cat.capacity} cap
+                </Text>
+              </View>
+            ))}
+            {regs.items.length === 0 ? (
+              <Text variant="caption">No registrations yet.</Text>
+            ) : (
+              regs.items.map((row) => (
+                <View key={row.id} className="gap-1 border border-border px-3 py-2">
+                  <Text variant="body" className="font-semibold">
+                    {row.categoryName} · {row.registrationStatus.replaceAll('_', ' ')}
+                  </Text>
+                  {row.entryName ? <Text variant="caption">Entry {row.entryName}</Text> : null}
+                  <Text variant="caption">
+                    {row.participants
+                      .map((p) => `${p.displayName}${p.isTeamCaptain ? ' (captain)' : ''}`)
+                      .join(', ')}
+                  </Text>
+                  <Text variant="caption">{row.registrationCode}</Text>
+                </View>
+              ))
+            )}
+          </>
+        ) : (
+          <Text variant="caption">Loading registrations…</Text>
+        )}
 
         {message ? <Text variant="caption">{message}</Text> : null}
         {error ? (

@@ -321,6 +321,48 @@ export interface OrganizerEventListResponse {
   items: OrganizerEventDetailDto[];
 }
 
+export interface OrganizerRegistrationParticipantDto {
+  id: string;
+  displayName: string;
+  dancerName: string | null;
+  isTeamCaptain: boolean;
+}
+
+export interface OrganizerRegistrationItemDto {
+  id: string;
+  categoryId: string;
+  categoryName: string;
+  entryName: string | null;
+  registrationStatus: RegistrationStatus;
+  paymentStatus: RegistrationPaymentStatus;
+  reservationExpiresAt: string | null;
+  totalAmountMinor: number;
+  currency: string;
+  registrationCode: string;
+  confirmedAt: string | null;
+  createdAt: string;
+  participants: OrganizerRegistrationParticipantDto[];
+}
+
+export interface OrganizerEventRegistrationsResponse {
+  eventId: string;
+  eventTitle: string;
+  categories: Array<{
+    id: string;
+    name: string;
+    capacity: number;
+    reservedCount: number;
+    confirmedCount: number;
+    priceMinor: number;
+  }>;
+  items: OrganizerRegistrationItemDto[];
+  totals: {
+    pending: number;
+    confirmed: number;
+    other: number;
+  };
+}
+
 export const routes = {
   discover: '/discover',
   events: '/events',

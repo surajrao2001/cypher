@@ -17,6 +17,7 @@ import type {
   UpdateOrganizerEventBody,
   CreateEventCategoryBody,
   UpdateEventCategoryBody,
+  OrganizerEventRegistrationsResponse,
 } from '@cypher/contracts';
 
 export interface ApiClientOptions {
@@ -145,6 +146,15 @@ export class CypherApiClient {
   async getOrganizerEvent(organizerId: string, eventId: string): Promise<OrganizerEventDetailDto> {
     return this.request<OrganizerEventDetailDto>(
       `/v1/organizers/${encodeURIComponent(organizerId)}/events/${encodeURIComponent(eventId)}`,
+    );
+  }
+
+  async listOrganizerEventRegistrations(
+    organizerId: string,
+    eventId: string,
+  ): Promise<OrganizerEventRegistrationsResponse> {
+    return this.request<OrganizerEventRegistrationsResponse>(
+      `/v1/organizers/${encodeURIComponent(organizerId)}/events/${encodeURIComponent(eventId)}/registrations`,
     );
   }
 

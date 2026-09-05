@@ -28,6 +28,7 @@ describe('OrganizersService', () => {
     },
     registration: {
       count: jest.fn(),
+      findMany: jest.fn(),
     },
   };
   const identity = { ensureProfile: jest.fn() };
@@ -202,5 +203,85 @@ describe('OrganizersService', () => {
     const result = await service.deleteCategory('user-1', 'org-1', 'evt-1', 'cat-1');
     expect(prisma.eventCategory.delete).toHaveBeenCalledWith({ where: { id: 'cat-1' } });
     expect(result.categories).toHaveLength(1);
+  });
+
+  it('lists event registrations with category capacity and totals', async () => {
+    prisma.organizerMember.findUnique.mockResolvedValue({ role: OrganizerMemberRole.owner });
+    prisma.event.findFirst.mockResolvedValue({
+      id: 'evt-1',
+      title: 'Andheri Cypher',
+      categories: [
+        {
+          id: 'cat-1',
+          name: '1v1',
+          capacity: 32,
+          reservedCount: 1,
+          confirmedCount: 1,
+          priceMinor: 0,
+        },
+      ],
+    });
+    prisma.registration.findMany.mockResolvedValue([
+      {
+        id: 'reg-1',
+        categoryId: 'cat-1',
+        category: { name: '1v1' },
+        entryName: null,
+        registrationStatus: 'confirmed',
+        paymentStatus: 'not_required',
+        reservationExpiresAt: null,
+        totalAmountMinor: 0,
+        currency: 'INR',
+        registrationCode: 'NC-ABC123',
+        confirmedAt: new Date('2026-09-04T10:00:00.000Z'),
+        createdAt: new Date('2026-09-04T09:00:00.000Z'),
+        participants: [
+          {
+            id: 'p-1',
+            displayName: 'Riya',
+            dancerName: 'Riya',
+            isTeamCaptain: true,
+          },
+        ],
+      },
+      {
+        id: 'reg-2',
+        categoryId: 'cat-1',
+        category: { name: '1v1' },
+        entryName: 'Crew A',
+        registrationStatus: 'pending_payment',
+        paymentStatus: 'pending',
+        reservationExpiresAt: new Date('2026-09-04T12:00:00.000Z'),
+        totalAmountMinor: 0,
+        currency: 'INR',
+        registrationCode: 'NC-DEF456',
+        confirmedAt: null,
+        createdAt: new Date('2026-09-04T11:00:00.000Z'),
+        participants: [
+          {
+            id: 'p-2',
+            displayName: 'Asha',
+            dancerName: null,
+            isTeamCaptain: true,
+          },
+        ],
+      },
+    ]);
+
+    const result = await service.listEventRegistrations('user-1', 'org-1', 'evt-1');
+
+    expect(result.eventTitle).toBe('Andheri Cypher');
+    expect(result.categories).toHaveLength(1);
+    expect(result.items).toHaveLength(2);
+    expect(result.totals).toEqual({ pending: 1, confirmed: 1, other: 0 });
+    expect(result.items[0]?.registrationCode).toBe('NC-ABC123');
+  });
+
+  it('404s when listing registrations for an unknown event', async () => {
+    prisma.organizerMember.findUnique.mockResolvedValue({ role: OrganizerMemberRole.owner });
+    prisma.event.findFirst.mockResolvedValue(null);
+    await expect(
+      service.listEventRegistrations('user-1', 'org-1', 'missing'),
+    ).rejects.toBeInstanceOf(NotFoundException);
   });
 });
