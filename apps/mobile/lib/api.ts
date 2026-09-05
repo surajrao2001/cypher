@@ -1,0 +1,54 @@
+import { createApiClient } from '@cypher/api-client';
+import type { EventCardDto, EventDetailDto } from '@cypher/contracts';
+
+import type { MobileEvent } from '@/lib/events';
+
+export function apiBaseUrl(): string {
+  return process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3001';
+}
+
+export function toMobileEvent(event: EventCardDto, description = ''): MobileEvent {
+  return {
+    id: event.id,
+    slug: event.slug,
+    title: event.title,
+    city: event.city,
+    venue: event.venue ?? event.city,
+    startTime: event.startTime,
+    styles: event.styles,
+    spotsConfirmed: event.spotsConfirmed,
+    spotsCapacity: event.spotsCapacity,
+    priceMinor: event.priceMinor,
+    featured: event.featured,
+    organizerName: event.organizerName,
+    description,
+    posterTone: event.featured ? 'orange' : 'lime',
+    posterUrl: event.posterUrl,
+  };
+}
+
+export function toMobileDetail(event: EventDetailDto): MobileEvent {
+  return {
+    ...toMobileEvent(event, event.description ?? ''),
+    categories: event.categories.map((category) => ({
+      id: category.id,
+      name: category.name,
+      priceMinor: category.priceMinor,
+      capacity: category.capacity,
+      reservedCount: category.reservedCount,
+      confirmedCount: category.confirmedCount,
+      minTeamSize: category.minTeamSize,
+      maxTeamSize: category.maxTeamSize,
+    })),
+    mediaLinks: (event.mediaLinks ?? []).map((link) => ({
+      id: link.id,
+      title: link.title,
+      url: link.url,
+      kind: link.kind,
+    })),
+  };
+}
+
+export function mobileApi() {
+  return createApiClient({ baseUrl: apiBaseUrl() });
+}

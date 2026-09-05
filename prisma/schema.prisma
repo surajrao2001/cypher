@@ -1,0 +1,474 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [postgis]
+}
+
+enum PlatformRole {
+  user
+  admin
+}
+
+enum ProfileStatus {
+  active
+  suspended
+  deleted
+}
+
+enum OrganizerVerificationStatus {
+  pending
+  verified
+  rejected
+}
+
+enum OrganizerMemberRole {
+  owner
+  manager
+  editor
+}
+
+enum OrganizerType {
+  independent
+  collective
+  college
+  studio
+  community
+  other
+}
+
+enum CategoryEntryType {
+  solo
+  team
+}
+
+enum EventStatus {
+  draft
+  published
+  registration_closed
+  completed
+  cancelled
+}
+
+enum EventType {
+  battle
+  workshop
+  jam
+  showcase
+  cypher
+  session
+  camp
+  audition
+  competition
+  other
+}
+
+enum RegistrationPaymentStatus {
+  not_started
+  pending
+  paid
+  failed
+  refunded
+  partially_refunded
+}
+
+enum RegistrationStatus {
+  pending_payment
+  confirmed
+  waitlist
+  expired
+  cancelled
+  refunded
+}
+
+enum PaymentProvider {
+  razorpay
+}
+
+enum PaymentOrderStatus {
+  created
+  attempted
+  paid
+  failed
+  cancelled
+  refunded
+}
+
+enum PaymentRecordStatus {
+  authorized
+  captured
+  failed
+  refunded
+  partially_refunded
+}
+
+enum WebhookProcessingStatus {
+  received
+  processing
+  processed
+  failed
+}
+
+enum VideoVisibility {
+  public
+  registered_only
+  private
+}
+
+enum MediaLinkKind {
+  youtube
+  instagram
+  drive
+  other
+}
+
+enum AuthProvider {
+  SUPABASE
+  CLERK
+  GOOGLE
+  APPLE
+}
+
+/// Cypher-owned canonical identity. Domain FKs point here — never at the auth provider.
+model User {
+  id        String   @id @default(uuid()) @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  profile        Profile?
+  authIdentities AuthIdentity[]
+
+  createdOrganizers Organizer[]               @relation("OrganizerCreator")
+  organizerMembers  OrganizerMember[]
+  registrations     Registration[]
+  participants      RegistrationParticipant[]
+  auditLogs         AuditLog[]
+
+  @@map("users")
+}
+
+model AuthIdentity {
+  id             String       @id @default(uuid()) @db.Uuid
+  userId         String       @map("user_id") @db.Uuid
+  provider       AuthProvider
+  providerUserId String       @map("provider_user_id")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerUserId], map: "auth_identities_provider_user_uidx")
+  @@index([userId], map: "auth_identities_user_id_idx")
+  @@map("auth_identities")
+}
+
+model Profile {
+  userId       String        @id @map("user_id") @db.Uuid
+  name         String
+  dancerName   String?       @map("dancer_name")
+  city         String?
+  crew         String?
+  instagram    String?
+  avatarUrl    String?       @map("avatar_url")
+  platformRole PlatformRole  @default(user) @map("platform_role")
+  status       ProfileStatus @default(active)
+  onboardedAt  DateTime?     @map("onboarded_at")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+
+  user        User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  danceStyles ProfileDanceStyle[]
+
+  @@map("profiles")
+}
+
+model DanceStyle {
+  id        String   @id @default(uuid()) @db.Uuid
+  slug      String   @unique
+  name      String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+
+  profiles ProfileDanceStyle[]
+  events   EventDanceStyle[]
+
+  @@map("dance_styles")
+}
+
+model ProfileDanceStyle {
+  profileId String @map("profile_id") @db.Uuid
+  styleId   String @map("style_id") @db.Uuid
+
+  profile Profile    @relation(fields: [profileId], references: [userId], onDelete: Cascade)
+  style   DanceStyle @relation(fields: [styleId], references: [id], onDelete: Cascade)
+
+  @@id([profileId, styleId])
+  @@map("profile_dance_styles")
+}
+
+model EventDanceStyle {
+  eventId String @map("event_id") @db.Uuid
+  styleId String @map("style_id") @db.Uuid
+
+  event Event      @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  style DanceStyle @relation(fields: [styleId], references: [id], onDelete: Cascade)
+
+  @@id([eventId, styleId])
+  @@map("event_dance_styles")
+}
+
+model Organizer {
+  id                 String                      @id @default(uuid()) @db.Uuid
+  orgName            String                      @map("org_name")
+  slug               String                      @unique
+  type               OrganizerType               @default(independent)
+  city               String?
+  verificationStatus OrganizerVerificationStatus @default(pending) @map("verification_status")
+  bio                String?
+  bannerUrl          String?                     @map("banner_url")
+  logoUrl            String?                     @map("logo_url")
+  instagram          String?
+  createdById        String                      @map("created_by") @db.Uuid
+  createdBy          User                        @relation("OrganizerCreator", fields: [createdById], references: [id])
+  createdAt          DateTime                    @default(now()) @map("created_at")
+  updatedAt          DateTime                    @updatedAt @map("updated_at")
+
+  members OrganizerMember[]
+  events  Event[]
+
+  @@map("organizers")
+}
+
+model OrganizerMember {
+  organizerId String              @map("organizer_id") @db.Uuid
+  userId      String              @map("user_id") @db.Uuid
+  role        OrganizerMemberRole
+  createdAt   DateTime            @default(now()) @map("created_at")
+
+  organizer Organizer @relation(fields: [organizerId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([organizerId, userId])
+  @@index([userId], map: "organizer_members_user_id_idx")
+  @@map("organizer_members")
+}
+
+model Event {
+  id                   String                      @id @default(uuid()) @db.Uuid
+  organizerId          String                      @map("organizer_id") @db.Uuid
+  slug                 String                      @unique
+  title                String
+  description          String?
+  eventType            EventType                   @default(battle) @map("event_type")
+  city                 String
+  venue                String?
+  location             Unsupported("geography(Point, 4326)")?
+  startTime            DateTime                    @map("start_time")
+  endTime              DateTime?                   @map("end_time")
+  registrationOpensAt  DateTime?                   @map("registration_opens_at")
+  registrationClosesAt DateTime?                   @map("registration_closes_at")
+  posterUrl            String?                     @map("poster_url")
+  tags                 String[]                    @default([])
+  featured             Boolean                     @default(false)
+  status               EventStatus                 @default(draft)
+  createdAt            DateTime                    @default(now()) @map("created_at")
+  updatedAt            DateTime                    @updatedAt @map("updated_at")
+
+  organizer     Organizer          @relation(fields: [organizerId], references: [id], onDelete: Cascade)
+  categories    EventCategory[]
+  registrations Registration[]
+  videos        Video[]
+  mediaLinks    MediaLink[]
+  danceStyles   EventDanceStyle[]
+
+  @@index([status, startTime], map: "events_status_start_idx")
+  @@index([city, startTime], map: "events_city_start_idx")
+  @@index([organizerId, startTime], map: "events_organizer_start_idx")
+  @@map("events")
+}
+
+model EventCategory {
+  id             String            @id @default(uuid()) @db.Uuid
+  eventId        String            @map("event_id") @db.Uuid
+  name           String
+  entryType      CategoryEntryType @default(solo) @map("entry_type")
+  minTeamSize    Int               @default(1) @map("min_team_size")
+  maxTeamSize    Int               @default(1) @map("max_team_size")
+  priceMinor     Int               @default(0) @map("price_minor")
+  capacity       Int
+  reservedCount  Int               @default(0) @map("reserved_count")
+  confirmedCount Int               @default(0) @map("confirmed_count")
+  createdAt      DateTime          @default(now()) @map("created_at")
+  updatedAt      DateTime          @updatedAt @map("updated_at")
+
+  event         Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  registrations Registration[]
+  videos        Video[]
+  mediaLinks    MediaLink[]
+
+  @@index([eventId], map: "event_categories_event_id_idx")
+  @@map("event_categories")
+}
+
+model Registration {
+  id                   String                    @id @default(uuid()) @db.Uuid
+  userId               String                    @map("user_id") @db.Uuid
+  eventId              String                    @map("event_id") @db.Uuid
+  categoryId           String                    @map("category_id") @db.Uuid
+  entryName            String?                   @map("entry_name")
+  paymentStatus        RegistrationPaymentStatus @default(not_started) @map("payment_status")
+  registrationStatus   RegistrationStatus        @default(pending_payment) @map("registration_status")
+  reservationExpiresAt DateTime?                 @map("reservation_expires_at")
+  totalAmountMinor     Int                       @map("total_amount_minor")
+  currency             String                    @default("INR")
+  registrationCode     String                    @unique @map("registration_code")
+  ticketQrToken        String?                   @unique @map("ticket_qr_token")
+  createdAt            DateTime                  @default(now()) @map("created_at")
+  updatedAt            DateTime                  @updatedAt @map("updated_at")
+  confirmedAt          DateTime?                 @map("confirmed_at")
+
+  user          User                       @relation(fields: [userId], references: [id])
+  event         Event                      @relation(fields: [eventId], references: [id])
+  category      EventCategory              @relation(fields: [categoryId], references: [id])
+  participants  RegistrationParticipant[]
+  paymentOrders PaymentOrder[]
+
+  @@index([userId, categoryId], map: "registrations_user_category_idx")
+  @@index([userId, createdAt], map: "registrations_user_created_idx")
+  @@index([eventId, registrationStatus], map: "registrations_event_status_idx")
+  @@index([categoryId, registrationStatus], map: "registrations_category_status_idx")
+  @@index([reservationExpiresAt], map: "registrations_reservation_expires_idx")
+  @@map("registrations")
+}
+
+model RegistrationParticipant {
+  id             String   @id @default(uuid()) @db.Uuid
+  registrationId String   @map("registration_id") @db.Uuid
+  userId         String?  @map("user_id") @db.Uuid
+  displayName    String   @map("display_name")
+  dancerName     String?  @map("dancer_name")
+  email          String?
+  phoneNumber    String?  @map("phone_number")
+  isTeamCaptain  Boolean  @default(false) @map("is_team_captain")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  registration Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  user         User?        @relation(fields: [userId], references: [id])
+
+  @@map("registration_participants")
+}
+
+model PaymentOrder {
+  id              String             @id @default(uuid()) @db.Uuid
+  registrationId  String             @map("registration_id") @db.Uuid
+  provider        PaymentProvider    @default(razorpay)
+  providerOrderId String             @unique @map("provider_order_id")
+  amountMinor     Int                @map("amount_minor")
+  currency        String             @default("INR")
+  status          PaymentOrderStatus @default(created)
+  createdAt       DateTime           @default(now()) @map("created_at")
+  updatedAt       DateTime           @updatedAt @map("updated_at")
+
+  registration Registration @relation(fields: [registrationId], references: [id])
+  payments     Payment[]
+
+  @@index([registrationId], map: "payment_orders_registration_id_idx")
+  @@map("payment_orders")
+}
+
+model Payment {
+  id                String              @id @default(uuid()) @db.Uuid
+  paymentOrderId    String              @map("payment_order_id") @db.Uuid
+  providerPaymentId String              @unique @map("provider_payment_id")
+  amountMinor       Int                 @map("amount_minor")
+  status            PaymentRecordStatus
+  method            String?
+  capturedAt        DateTime?           @map("captured_at")
+  createdAt         DateTime            @default(now()) @map("created_at")
+  updatedAt         DateTime            @updatedAt @map("updated_at")
+
+  paymentOrder PaymentOrder @relation(fields: [paymentOrderId], references: [id])
+
+  @@index([paymentOrderId], map: "payments_payment_order_id_idx")
+  @@map("payments")
+}
+
+model PaymentWebhookEvent {
+  id               String                  @id @default(uuid()) @db.Uuid
+  provider         PaymentProvider
+  providerEventId  String                  @map("provider_event_id")
+  eventType        String                  @map("event_type")
+  payload          Json
+  processingStatus WebhookProcessingStatus @default(received) @map("processing_status")
+  receivedAt       DateTime                @default(now()) @map("received_at")
+  processedAt      DateTime?               @map("processed_at")
+  error            String?
+
+  @@unique([provider, providerEventId], map: "payment_webhook_events_provider_event_uidx")
+  @@index([processingStatus, receivedAt], map: "payment_webhook_events_status_received_idx")
+  @@map("payment_webhook_events")
+}
+
+model Video {
+  id           String          @id @default(uuid()) @db.Uuid
+  eventId      String          @map("event_id") @db.Uuid
+  categoryId   String?         @map("category_id") @db.Uuid
+  round        String?
+  title        String
+  youtubeId    String          @map("youtube_id")
+  thumbnailUrl String?         @map("thumbnail_url")
+  visibility   VideoVisibility @default(public)
+  publishedAt  DateTime?       @map("published_at")
+  createdAt    DateTime        @default(now()) @map("created_at")
+  updatedAt    DateTime        @updatedAt @map("updated_at")
+
+  event    Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  category EventCategory? @relation(fields: [categoryId], references: [id])
+
+  @@map("videos")
+}
+
+/// External media URLs for an event (YouTube / IG / Drive / other). Not hosted video.
+/// `battleId` reserved for Phase 3 battle↔media without a Competition FK yet.
+model MediaLink {
+  id         String        @id @default(uuid()) @db.Uuid
+  eventId    String        @map("event_id") @db.Uuid
+  categoryId String?       @map("category_id") @db.Uuid
+  battleId   String?       @map("battle_id") @db.Uuid
+  title      String
+  url        String
+  kind       MediaLinkKind @default(other)
+  sortOrder  Int           @default(0) @map("sort_order")
+  createdAt  DateTime      @default(now()) @map("created_at")
+  updatedAt  DateTime      @updatedAt @map("updated_at")
+
+  event    Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  category EventCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  @@index([eventId, sortOrder], map: "media_links_event_sort_idx")
+  @@index([categoryId], map: "media_links_category_id_idx")
+  @@map("media_links")
+}
+
+model AuditLog {
+  id          String   @id @default(uuid()) @db.Uuid
+  actorUserId String?  @map("actor_user_id") @db.Uuid
+  action      String
+  entityType  String   @map("entity_type")
+  entityId    String?  @map("entity_id") @db.Uuid
+  metadata    Json?
+  requestId   String?  @map("request_id")
+  ipAddress   String?  @map("ip_address")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  actor User? @relation(fields: [actorUserId], references: [id])
+
+  @@index([entityType, entityId], map: "audit_logs_entity_idx")
+  @@index([actorUserId, createdAt], map: "audit_logs_actor_created_idx")
+  @@index([createdAt], map: "audit_logs_created_idx")
+  @@map("audit_logs")
+}

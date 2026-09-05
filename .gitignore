@@ -70,13 +70,31 @@ web_modules/
 .env.*
 !.env.example
 
+# Local agent milestone tracker (never commit)
+MILESTONE_TRACKER.local.md
+
+# Uploaded posters (local Nest storage)
+apps/api/storage/
+
+# Supabase CLI
+supabase/.temp
+supabase/.branches
+
 # parcel-bundler cache (https://parceljs.org/)
 .cache
 .parcel-cache
 
-# Next.js build output
+# Next.js / Turbo / Expo
 .next
 out
+.turbo
+.expo
+*.tsbuildinfo
+dist
+
+# Prisma
+prisma/*.db
+prisma/*.db-journal
 
 # Nuxt.js build / generate output
 .nuxt
