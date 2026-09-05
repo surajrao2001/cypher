@@ -66,7 +66,7 @@ function OrganizeHomeInner() {
         <EmptyState
           kicker="No crews yet"
           title="Start an organizer"
-          body="Any signed-in dancer can create an org. Milestone A is owner-only — invites come later."
+          body="Any signed-in dancer can create an organizer. You are the owner; teammate invites come later."
         >
           <Button asChild>
             <Link href={`${routes.organize}/new`}>Create organizer</Link>

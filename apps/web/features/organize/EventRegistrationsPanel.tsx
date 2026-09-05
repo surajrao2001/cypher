@@ -88,7 +88,15 @@ export function EventRegistrationsPanel({
       </ul>
 
       {data.items.length === 0 ? (
-        <p className="text-sm text-text-secondary">No registrations yet for this event.</p>
+        <div className="rounded-md border border-dashed border-border bg-elevated px-4 py-8">
+          <p className="kicker text-accent">Empty floor</p>
+          <p className="mt-2 font-display text-2xl uppercase tracking-[0.04em] text-text-primary">
+            No registrations yet
+          </p>
+          <p className="mt-2 text-sm text-text-secondary">
+            Share the public event link so dancers can hold a category spot.
+          </p>
+        </div>
       ) : (
         <ul className="divide-y divide-border rounded-md border border-border">
           {data.items.map((row) => (

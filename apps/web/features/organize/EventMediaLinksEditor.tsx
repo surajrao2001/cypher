@@ -71,7 +71,11 @@ export function EventMediaLinksEditor({
       </div>
 
       {links.length === 0 ? (
-        <p className="text-sm text-text-secondary">No media links yet.</p>
+        <div className="rounded-md border border-dashed border-border bg-elevated px-4 py-6">
+          <p className="text-sm text-text-secondary">
+            No media links yet. Add a YouTube, Instagram, or Drive URL below — Cypher does not host video.
+          </p>
+        </div>
       ) : (
         <ul className="divide-y divide-border rounded-md border border-border">
           {links.map((link) => (

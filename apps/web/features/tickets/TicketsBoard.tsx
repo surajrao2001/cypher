@@ -129,7 +129,7 @@ function TicketCard({ ticket }: { ticket: RegistrationDto }) {
           </div>
         )}
         <p className="mt-2 max-w-[11rem] break-all text-center text-[10px] text-text-muted">
-          Check-in scans this code later
+          Show this code at the door
         </p>
       </div>
     </article>
