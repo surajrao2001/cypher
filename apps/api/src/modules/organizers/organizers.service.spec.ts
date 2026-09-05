@@ -30,6 +30,12 @@ describe('OrganizersService', () => {
       count: jest.fn(),
       findMany: jest.fn(),
     },
+    mediaLink: {
+      create: jest.fn(),
+      findFirst: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+    },
   };
   const identity = { ensureProfile: jest.fn() };
   const service = new OrganizersService(prisma as never, identity as never);
@@ -108,6 +114,7 @@ describe('OrganizersService', () => {
       status: EventStatus.published,
       organizer: { orgName: 'MCB', slug: 'mcb' },
       danceStyles: [{ style: { id: 'style-1', slug: 'breaking', name: 'Breaking' } }],
+      mediaLinks: [],
       categories: [
         {
           id: 'cat-1',
@@ -184,6 +191,7 @@ describe('OrganizersService', () => {
         status: EventStatus.draft,
         organizer: { orgName: 'MCB', slug: 'mcb' },
         danceStyles: [{ style: { id: 'style-1', slug: 'breaking', name: 'Breaking' } }],
+        mediaLinks: [],
         categories: [
           {
             id: 'cat-2',
@@ -283,5 +291,80 @@ describe('OrganizersService', () => {
     await expect(
       service.listEventRegistrations('user-1', 'org-1', 'missing'),
     ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('adds a media link and infers youtube kind from the URL', async () => {
+    prisma.organizerMember.findUnique.mockResolvedValue({ role: OrganizerMemberRole.owner });
+    prisma.event.findFirst
+      .mockResolvedValueOnce({
+        id: 'evt-1',
+        organizerId: 'org-1',
+        categories: [{ id: 'cat-1' }],
+      })
+      .mockResolvedValueOnce({
+        id: 'evt-1',
+        organizerId: 'org-1',
+        slug: 'andheri-cypher',
+        title: 'Andheri Cypher',
+        description: null,
+        eventType: 'battle',
+        city: 'Mumbai',
+        venue: null,
+        startTime: new Date('2026-10-01T12:00:00.000Z'),
+        endTime: null,
+        registrationOpensAt: null,
+        registrationClosesAt: null,
+        posterUrl: null,
+        tags: [],
+        featured: false,
+        status: EventStatus.draft,
+        organizer: { orgName: 'MCB', slug: 'mcb' },
+        danceStyles: [],
+        mediaLinks: [
+          {
+            id: 'ml-1',
+            eventId: 'evt-1',
+            categoryId: null,
+            battleId: null,
+            title: 'Finals',
+            url: 'https://www.youtube.com/watch?v=abc',
+            kind: 'youtube',
+            sortOrder: 0,
+            createdAt: new Date('2026-09-05T12:00:00.000Z'),
+          },
+        ],
+        categories: [
+          {
+            id: 'cat-1',
+            name: '1v1',
+            priceMinor: 0,
+            capacity: 32,
+            reservedCount: 0,
+            confirmedCount: 0,
+            teamSize: 1,
+            entryType: 'solo',
+            minTeamSize: 1,
+            maxTeamSize: 1,
+          },
+        ],
+      });
+    prisma.mediaLink.create.mockResolvedValue({});
+
+    const result = await service.addMediaLink('user-1', 'org-1', 'evt-1', {
+      title: 'Finals',
+      url: 'https://www.youtube.com/watch?v=abc',
+    });
+
+    expect(prisma.mediaLink.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          title: 'Finals',
+          kind: 'youtube',
+          url: 'https://www.youtube.com/watch?v=abc',
+        }),
+      }),
+    );
+    expect(result.mediaLinks).toHaveLength(1);
+    expect(result.mediaLinks[0]?.kind).toBe('youtube');
   });
 });

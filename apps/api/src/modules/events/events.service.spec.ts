@@ -48,6 +48,7 @@ function eventRow(
         maxTeamSize: 1,
       },
     ],
+    mediaLinks: [],
   };
 }
 

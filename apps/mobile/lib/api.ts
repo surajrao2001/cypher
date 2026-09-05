@@ -40,6 +40,12 @@ export function toMobileDetail(event: EventDetailDto): MockEvent {
       minTeamSize: category.minTeamSize,
       maxTeamSize: category.maxTeamSize,
     })),
+    mediaLinks: (event.mediaLinks ?? []).map((link) => ({
+      id: link.id,
+      title: link.title,
+      url: link.url,
+      kind: link.kind,
+    })),
   };
 }
 

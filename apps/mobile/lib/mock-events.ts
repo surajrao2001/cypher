@@ -39,6 +39,12 @@ export interface MockEvent {
     minTeamSize: number;
     maxTeamSize: number;
   }>;
+  mediaLinks?: Array<{
+    id: string;
+    title: string;
+    url: string;
+    kind: string;
+  }>;
 }
 
 export const MOCK_EVENTS: MockEvent[] = [

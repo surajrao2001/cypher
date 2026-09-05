@@ -34,6 +34,8 @@ export default function EventManageScreen() {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [regs, setRegs] = useState<OrganizerEventRegistrationsResponse | null>(null);
+  const [mediaTitle, setMediaTitle] = useState('');
+  const [mediaUrl, setMediaUrl] = useState('');
 
   function sync(detail: OrganizerEventDetailDto) {
     setEvent(detail);
@@ -176,6 +178,47 @@ export default function EventManageScreen() {
       setMessage(updated.status === 'published' ? 'Published to Discover.' : 'Unpublished.');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Publish failed');
+    } finally {
+      setPending(false);
+    }
+  }
+
+  async function addMediaLink() {
+    if (!org || !event) return;
+    if (!mediaTitle.trim() || !mediaUrl.trim()) {
+      setError('Media title and URL required');
+      return;
+    }
+    setPending(true);
+    setMessage(null);
+    setError(null);
+    try {
+      const updated = await auth.api.addOrganizerEventMediaLink(org.id, event.id, {
+        title: mediaTitle.trim(),
+        url: mediaUrl.trim(),
+      });
+      sync(updated);
+      setMediaTitle('');
+      setMediaUrl('');
+      setMessage('Media link added.');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not add media link');
+    } finally {
+      setPending(false);
+    }
+  }
+
+  async function removeMediaLink(mediaLinkId: string) {
+    if (!org || !event) return;
+    setPending(true);
+    setMessage(null);
+    setError(null);
+    try {
+      const updated = await auth.api.deleteOrganizerEventMediaLink(org.id, event.id, mediaLinkId);
+      sync(updated);
+      setMessage('Media link removed.');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not remove media link');
     } finally {
       setPending(false);
     }
@@ -327,6 +370,48 @@ export default function EventManageScreen() {
         </View>
         <Button loading={pending} variant="secondary" onPress={() => void addCategory()}>
           Add category
+        </Button>
+
+        <Text variant="label" className="mt-2">
+          Event media
+        </Text>
+        <Text variant="caption">YouTube / IG / Drive links — not hosted video.</Text>
+        {(event.mediaLinks ?? []).map((link) => (
+          <View key={link.id} className="gap-2 border border-border px-3 py-2">
+            <Text variant="body" className="font-semibold">
+              {link.title}
+            </Text>
+            <Text variant="caption">
+              {link.kind} · {link.url}
+            </Text>
+            <Button
+              loading={pending}
+              variant="ghost"
+              onPress={() => void removeMediaLink(link.id)}
+            >
+              Remove
+            </Button>
+          </View>
+        ))}
+        <TextInput
+          value={mediaTitle}
+          onChangeText={setMediaTitle}
+          placeholder="Link title"
+          placeholderTextColor={colors.muted}
+          className="h-11 rounded-md border border-border bg-elevated px-3"
+          style={{ color: colors.ink }}
+        />
+        <TextInput
+          value={mediaUrl}
+          onChangeText={setMediaUrl}
+          placeholder="https://..."
+          autoCapitalize="none"
+          placeholderTextColor={colors.muted}
+          className="h-11 rounded-md border border-border bg-elevated px-3"
+          style={{ color: colors.ink }}
+        />
+        <Button loading={pending} variant="secondary" onPress={() => void addMediaLink()}>
+          Add media link
         </Button>
 
         <Text variant="label" className="mt-2">

@@ -17,6 +17,8 @@ import type {
   UpdateOrganizerEventBody,
   CreateEventCategoryBody,
   UpdateEventCategoryBody,
+  CreateEventMediaLinkBody,
+  UpdateEventMediaLinkBody,
   OrganizerEventRegistrationsResponse,
 } from '@cypher/contracts';
 
@@ -219,6 +221,40 @@ export class CypherApiClient {
   ): Promise<OrganizerEventDetailDto> {
     return this.request<OrganizerEventDetailDto>(
       `/v1/organizers/${encodeURIComponent(organizerId)}/events/${encodeURIComponent(eventId)}/categories/${encodeURIComponent(categoryId)}`,
+      { method: 'DELETE' },
+    );
+  }
+
+  async addOrganizerEventMediaLink(
+    organizerId: string,
+    eventId: string,
+    body: CreateEventMediaLinkBody,
+  ): Promise<OrganizerEventDetailDto> {
+    return this.request<OrganizerEventDetailDto>(
+      `/v1/organizers/${encodeURIComponent(organizerId)}/events/${encodeURIComponent(eventId)}/media-links`,
+      { method: 'POST', body: JSON.stringify(body) },
+    );
+  }
+
+  async updateOrganizerEventMediaLink(
+    organizerId: string,
+    eventId: string,
+    mediaLinkId: string,
+    body: UpdateEventMediaLinkBody,
+  ): Promise<OrganizerEventDetailDto> {
+    return this.request<OrganizerEventDetailDto>(
+      `/v1/organizers/${encodeURIComponent(organizerId)}/events/${encodeURIComponent(eventId)}/media-links/${encodeURIComponent(mediaLinkId)}`,
+      { method: 'PATCH', body: JSON.stringify(body) },
+    );
+  }
+
+  async deleteOrganizerEventMediaLink(
+    organizerId: string,
+    eventId: string,
+    mediaLinkId: string,
+  ): Promise<OrganizerEventDetailDto> {
+    return this.request<OrganizerEventDetailDto>(
+      `/v1/organizers/${encodeURIComponent(organizerId)}/events/${encodeURIComponent(eventId)}/media-links/${encodeURIComponent(mediaLinkId)}`,
       { method: 'DELETE' },
     );
   }
