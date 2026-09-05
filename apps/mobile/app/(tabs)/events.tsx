@@ -1,30 +1,40 @@
 import { useEffect, useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { ActivityIndicator, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { EventCard } from '@/components/EventCard';
+import { EmptyState } from '@/components/EmptyState';
 import { Text } from '@/components/ui/Text';
 import { mobileApi, toMobileEvent } from '@/lib/api';
-import { MOCK_EVENTS, upcomingEvents, type MockEvent } from '@/lib/mock-events';
+import { upcomingEvents, type MobileEvent } from '@/lib/events';
+import { colors } from '@/lib/theme';
 
 export default function EventsScreen() {
-  const [events, setEvents] = useState<MockEvent[]>(upcomingEvents());
+  const [events, setEvents] = useState<MobileEvent[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
     void mobileApi()
       .listEvents({ pageSize: 50 })
       .then((result) => {
-        if (result.items.length > 0) {
-          setEvents(
-            result.items
-              .map((item) => toMobileEvent(item))
-              .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime()),
-          );
-        }
+        if (cancelled) return;
+        setEvents(upcomingEvents(result.items.map((item) => toMobileEvent(item))));
+        setError(null);
       })
-      .catch(() => {
-        setEvents(upcomingEvents(MOCK_EVENTS));
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        setEvents([]);
+        setError(err instanceof Error ? err.message : 'Could not load events');
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
       });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   return (
@@ -40,13 +50,25 @@ export default function EventsScreen() {
             Events
           </Text>
           <Text variant="caption" className="mt-2">
-            {events.length} upcoming nights. Tap through for tickets, capacity, and the sticky register bar.
+            {loading
+              ? 'Loading upcoming nights…'
+              : `${events.length} upcoming nights. Tap through for tickets, capacity, and register.`}
           </Text>
         </View>
         <View className="mt-6 gap-3">
-          {events.map((event) => (
-            <EventCard key={event.id} event={event} />
-          ))}
+          {loading ? (
+            <ActivityIndicator className="mt-8" color={colors.lime} />
+          ) : error ? (
+            <EmptyState kicker="Offline" title="Could not load" body={error} />
+          ) : events.length === 0 ? (
+            <EmptyState
+              kicker="Empty calendar"
+              title="No events yet"
+              body="When organizers publish battles, they will show up here."
+            />
+          ) : (
+            events.map((event) => <EventCard key={event.id} event={event} />)
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>

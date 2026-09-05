@@ -6,10 +6,10 @@ import { Badge } from '@/components/ui/Badge';
 import { PressableCard } from '@/components/ui/Card';
 import { Text } from '@/components/ui/Text';
 import { formatEventDate, spotsLeft } from '@/lib/format';
-import type { MockEvent } from '@/lib/mock-events';
+import type { MobileEvent } from '@/lib/events';
 
 type Props = {
-  event: MockEvent;
+  event: MobileEvent;
 };
 
 export function EventCard({ event }: Props) {

@@ -8,7 +8,7 @@ import Link from 'next/link';
 
 import { Badge } from '@/components/ui/badge';
 import { EventPoster } from '@/features/discovery/EventPoster';
-import { spotsTone } from '@/features/discovery/mock-events';
+import { spotsTone } from '@/features/discovery/catalog';
 
 interface EventCardProps {
   event: EventCardDto;

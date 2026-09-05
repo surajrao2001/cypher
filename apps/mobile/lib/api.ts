@@ -1,13 +1,13 @@
 import { createApiClient } from '@cypher/api-client';
 import type { EventCardDto, EventDetailDto } from '@cypher/contracts';
 
-import type { MockEvent } from '@/lib/mock-events';
+import type { MobileEvent } from '@/lib/events';
 
 export function apiBaseUrl(): string {
   return process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3001';
 }
 
-export function toMobileEvent(event: EventCardDto, description = ''): MockEvent {
+export function toMobileEvent(event: EventCardDto, description = ''): MobileEvent {
   return {
     id: event.id,
     slug: event.slug,
@@ -27,7 +27,7 @@ export function toMobileEvent(event: EventCardDto, description = ''): MockEvent 
   };
 }
 
-export function toMobileDetail(event: EventDetailDto): MockEvent {
+export function toMobileDetail(event: EventDetailDto): MobileEvent {
   return {
     ...toMobileEvent(event, event.description ?? ''),
     categories: event.categories.map((category) => ({

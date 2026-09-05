@@ -11,7 +11,7 @@ import {
   DropdownTrigger,
 } from '@/components/ui/dropdown';
 import { Input } from '@/components/ui/input';
-import { CITIES } from '@/features/discovery/mock-events';
+import { CITIES } from '@/features/discovery/catalog';
 import { useDiscoverQuery } from '@/features/discovery/use-discover-query';
 
 export function SearchBar() {

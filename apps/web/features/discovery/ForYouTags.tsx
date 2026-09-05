@@ -2,7 +2,7 @@
 
 import { motion, useReducedMotion } from 'framer-motion';
 
-import { FOR_YOU_TAGS } from '@/features/discovery/mock-events';
+import { FOR_YOU_TAGS } from '@/features/discovery/catalog';
 import { useDiscoverQuery } from '@/features/discovery/use-discover-query';
 
 export function ForYouTags() {

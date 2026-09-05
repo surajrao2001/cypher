@@ -5,11 +5,11 @@ import { Pressable, View } from 'react-native';
 import { Badge } from '@/components/ui/Badge';
 import { Text } from '@/components/ui/Text';
 import { formatEventDate, spotsLeft } from '@/lib/format';
-import type { MockEvent } from '@/lib/mock-events';
+import type { MobileEvent } from '@/lib/events';
 import { colors } from '@/lib/theme';
 
 type Props = {
-  event: MockEvent;
+  event: MobileEvent;
 };
 
 export function FeaturedEventHero({ event }: Props) {

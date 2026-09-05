@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { Linking, Pressable, ScrollView, View } from 'react-native';
+import { ActivityIndicator, Linking, Pressable, ScrollView, View } from 'react-native';
 
 import { EventPoster } from '@/components/EventPoster';
 import { RegisterNowBar } from '@/components/RegisterNowBar';
@@ -10,36 +10,49 @@ import { Chip } from '@/components/ui/Chip';
 import { Text } from '@/components/ui/Text';
 import { useAuth } from '@/lib/auth';
 import { toMobileDetail, mobileApi } from '@/lib/api';
+import type { MobileEvent } from '@/lib/events';
 import { formatEventDate, formatMinorUnits, spotsLeft } from '@/lib/format';
-import { getEventById, type MockEvent } from '@/lib/mock-events';
+import { colors } from '@/lib/theme';
 
 export default function EventDetailScreen() {
   const router = useRouter();
   const { token, me, api } = useAuth();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const [event, setEvent] = useState<MockEvent | undefined>(
-    typeof id === 'string' ? getEventById(id) : undefined,
-  );
+  const [event, setEvent] = useState<MobileEvent | null>(null);
+  const [loading, setLoading] = useState(true);
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof id !== 'string') {
+      setEvent(null);
+      setLoading(false);
       return;
     }
+    let cancelled = false;
+    setLoading(true);
     void mobileApi()
       .getEvent(id)
       .then((row) => {
+        if (cancelled) return;
         if (row) {
           const detail = toMobileDetail(row);
           setEvent(detail);
           setCategoryId(detail.categories?.[0]?.id ?? null);
+        } else {
+          setEvent(null);
         }
       })
       .catch(() => {
-        setEvent(getEventById(id));
+        if (!cancelled) setEvent(null);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
       });
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
   const category = useMemo(
@@ -98,6 +111,14 @@ export default function EventDetailScreen() {
     } finally {
       setBusy(false);
     }
+  }
+
+  if (loading) {
+    return (
+      <View className="flex-1 items-center justify-center bg-bg">
+        <ActivityIndicator color={colors.lime} />
+      </View>
+    );
   }
 
   if (!event) {
