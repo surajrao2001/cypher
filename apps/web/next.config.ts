@@ -5,6 +5,9 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   outputFileTracingRoot: path.join(__dirname, '../..'),
   transpilePackages: ['@cypher/tokens', '@cypher/utils', '@cypher/contracts', '@cypher/api-client', '@cypher/validation'],
+  async redirects() {
+    return [{ source: '/', destination: '/discover', permanent: false }];
+  },
   images: {
     remotePatterns: [
       {
