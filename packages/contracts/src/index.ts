@@ -2,6 +2,14 @@ export type PlatformRole = 'user' | 'admin';
 export type ProfileStatus = 'active' | 'suspended' | 'deleted';
 export type OrganizerVerificationStatus = 'pending' | 'verified' | 'rejected';
 export type OrganizerMemberRole = 'owner' | 'manager' | 'editor';
+export type CategoryEntryType = 'solo' | 'team';
+export type OrganizerType =
+  | 'independent'
+  | 'collective'
+  | 'college'
+  | 'studio'
+  | 'community'
+  | 'other';
 export type EventType =
   | 'battle'
   | 'workshop'
@@ -131,6 +139,10 @@ export interface EventCategoryPublicDto {
   capacity: number;
   reservedCount: number;
   confirmedCount: number;
+  entryType: CategoryEntryType;
+  minTeamSize: number;
+  maxTeamSize: number;
+  /** @deprecated use maxTeamSize */
   teamSize: number;
 }
 
@@ -155,6 +167,7 @@ export interface OrganizerDto {
   id: string;
   orgName: string;
   slug: string;
+  type: OrganizerType;
   city: string | null;
   bio: string | null;
   instagram: string | null;
@@ -166,6 +179,7 @@ export interface OrganizerDto {
 export interface CreateOrganizerBody {
   orgName: string;
   slug?: string;
+  type?: OrganizerType;
   city?: string;
   bio?: string;
   instagram?: string;
@@ -173,6 +187,7 @@ export interface CreateOrganizerBody {
 
 export interface UpdateOrganizerBody {
   orgName?: string;
+  type?: OrganizerType;
   city?: string | null;
   bio?: string | null;
   instagram?: string | null;
@@ -194,6 +209,10 @@ export interface CreateOrganizerEventBody {
     name: string;
     priceMinor?: number;
     capacity: number;
+    entryType?: CategoryEntryType;
+    minTeamSize?: number;
+    maxTeamSize?: number;
+    /** @deprecated prefer min/max */
     teamSize?: number;
   }>;
 }
@@ -216,6 +235,10 @@ export interface CreateEventCategoryBody {
   name: string;
   priceMinor?: number;
   capacity: number;
+  entryType?: CategoryEntryType;
+  minTeamSize?: number;
+  maxTeamSize?: number;
+  /** @deprecated prefer min/max */
   teamSize?: number;
 }
 
@@ -223,7 +246,68 @@ export interface UpdateEventCategoryBody {
   name?: string;
   priceMinor?: number;
   capacity?: number;
+  entryType?: CategoryEntryType;
+  minTeamSize?: number;
+  maxTeamSize?: number;
+  /** @deprecated prefer min/max */
   teamSize?: number;
+}
+
+export interface RegistrationParticipantDto {
+  id: string;
+  userId: string | null;
+  displayName: string;
+  dancerName: string | null;
+  isTeamCaptain: boolean;
+}
+
+export interface RegistrationDto {
+  id: string;
+  eventId: string;
+  categoryId: string;
+  entryName: string | null;
+  registrationStatus: RegistrationStatus;
+  paymentStatus: RegistrationPaymentStatus;
+  reservationExpiresAt: string | null;
+  totalAmountMinor: number;
+  currency: string;
+  registrationCode: string;
+  confirmedAt: string | null;
+  createdAt: string;
+  event: {
+    id: string;
+    slug: string;
+    title: string;
+    city: string;
+    startTime: string;
+    organizerName: string;
+  };
+  category: {
+    id: string;
+    name: string;
+    entryType: CategoryEntryType;
+    minTeamSize: number;
+    maxTeamSize: number;
+    priceMinor: number;
+  };
+  participants: RegistrationParticipantDto[];
+}
+
+export interface CreateRegistrationBody {
+  categoryId: string;
+  entryName?: string;
+  participants: Array<{
+    displayName: string;
+    dancerName?: string;
+    email?: string;
+    phoneNumber?: string;
+    userId?: string;
+    isTeamCaptain?: boolean;
+  }>;
+}
+
+export interface RegistrationListResponse {
+  items: RegistrationDto[];
 }
 
 export interface OrganizerEventDetailDto extends EventDetailDto {

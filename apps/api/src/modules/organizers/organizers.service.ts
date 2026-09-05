@@ -8,7 +8,9 @@ import {
 import {
   EventStatus,
   EventType,
+  CategoryEntryType,
   OrganizerMemberRole,
+  OrganizerType,
   OrganizerVerificationStatus,
   type Prisma,
 } from '@prisma/client';
@@ -22,6 +24,7 @@ import type { OrganizerEventDetailDto } from '../events/events.types';
 export type CreateOrganizerInput = {
   orgName: string;
   slug?: string;
+  type?: string;
   city?: string;
   bio?: string;
   instagram?: string;
@@ -29,6 +32,7 @@ export type CreateOrganizerInput = {
 
 export type UpdateOrganizerInput = {
   orgName?: string;
+  type?: string;
   city?: string | null;
   bio?: string | null;
   instagram?: string | null;
@@ -38,6 +42,9 @@ export type CategoryInput = {
   name: string;
   priceMinor?: number;
   capacity: number;
+  entryType?: string;
+  minTeamSize?: number;
+  maxTeamSize?: number;
   teamSize?: number;
 };
 
@@ -45,6 +52,9 @@ export type UpdateCategoryInput = {
   name?: string;
   priceMinor?: number;
   capacity?: number;
+  entryType?: string;
+  minTeamSize?: number;
+  maxTeamSize?: number;
   teamSize?: number;
 };
 
@@ -93,6 +103,7 @@ export class OrganizersService {
       data: {
         orgName,
         slug,
+        type: resolveOrganizerType(input.type),
         city: input.city?.trim(),
         bio: input.bio?.trim(),
         instagram: input.instagram?.replace(/^@/, '').trim(),
@@ -134,6 +145,7 @@ export class OrganizersService {
       where: { id: organizerId },
       data: {
         orgName: input.orgName?.trim(),
+        type: input.type === undefined ? undefined : resolveOrganizerType(input.type),
         city: input.city === undefined ? undefined : input.city?.trim() || null,
         bio: input.bio === undefined ? undefined : input.bio?.trim() || null,
         instagram:
@@ -208,12 +220,17 @@ export class OrganizersService {
         tags: input.tags ?? [],
         status: EventStatus.draft,
         categories: {
-          create: categories.map((category) => ({
-            name: category.name.trim(),
-            priceMinor: category.priceMinor ?? 0,
-            capacity: category.capacity,
-            teamSize: category.teamSize ?? 1,
-          })),
+          create: categories.map((category) => {
+            const sizes = resolveCategorySizes(category);
+            return {
+              name: category.name.trim(),
+              priceMinor: category.priceMinor ?? 0,
+              capacity: category.capacity,
+              entryType: sizes.entryType,
+              minTeamSize: sizes.minTeamSize,
+              maxTeamSize: sizes.maxTeamSize,
+            };
+          }),
         },
       },
       include: eventInclude,
@@ -341,13 +358,16 @@ export class OrganizersService {
     if (!existing) {
       throw new NotFoundException('Event not found');
     }
+    const sizes = resolveCategorySizes(input);
     await this.prisma.eventCategory.create({
       data: {
         eventId,
         name: input.name.trim(),
         priceMinor: input.priceMinor ?? 0,
         capacity: input.capacity,
-        teamSize: input.teamSize ?? 1,
+        entryType: sizes.entryType,
+        minTeamSize: sizes.minTeamSize,
+        maxTeamSize: sizes.maxTeamSize,
       },
     });
     return this.getEvent(userId, organizerId, eventId);
@@ -376,13 +396,27 @@ export class OrganizersService {
     if (nextCapacity < occupied) {
       throw new BadRequestException(`Capacity cannot be below ${String(occupied)} occupied spots`);
     }
+    const sizes =
+      input.entryType !== undefined ||
+      input.minTeamSize !== undefined ||
+      input.maxTeamSize !== undefined ||
+      input.teamSize !== undefined
+        ? resolveCategorySizes({
+            entryType: input.entryType ?? category.entryType,
+            minTeamSize: input.minTeamSize ?? category.minTeamSize,
+            maxTeamSize: input.maxTeamSize ?? category.maxTeamSize,
+            teamSize: input.teamSize,
+          })
+        : null;
     await this.prisma.eventCategory.update({
       where: { id: categoryId },
       data: {
         name: input.name === undefined ? undefined : input.name.trim(),
         priceMinor: input.priceMinor,
         capacity: input.capacity,
-        teamSize: input.teamSize,
+        entryType: sizes?.entryType,
+        minTeamSize: sizes?.minTeamSize,
+        maxTeamSize: sizes?.maxTeamSize,
       },
     });
     return this.getEvent(userId, organizerId, eventId);
@@ -465,6 +499,7 @@ export class OrganizersService {
       id: string;
       orgName: string;
       slug: string;
+      type: OrganizerType;
       city: string | null;
       bio: string | null;
       instagram: string | null;
@@ -477,6 +512,7 @@ export class OrganizersService {
       id: organizer.id,
       orgName: organizer.orgName,
       slug: organizer.slug,
+      type: organizer.type,
       city: organizer.city,
       bio: organizer.bio,
       instagram: organizer.instagram,
@@ -495,4 +531,34 @@ function resolveEventType(value?: string): EventType {
     return value as EventType;
   }
   throw new BadRequestException(`Unsupported eventType: ${value}`);
+}
+
+function resolveOrganizerType(value?: string): OrganizerType {
+  if (!value) {
+    return OrganizerType.independent;
+  }
+  if ((Object.values(OrganizerType) as string[]).includes(value)) {
+    return value as OrganizerType;
+  }
+  throw new BadRequestException(`Unsupported organizer type: ${value}`);
+}
+
+function resolveCategorySizes(input: {
+  entryType?: string;
+  minTeamSize?: number;
+  maxTeamSize?: number;
+  teamSize?: number;
+}): { entryType: CategoryEntryType; minTeamSize: number; maxTeamSize: number } {
+  const maxTeamSize = Math.max(1, input.maxTeamSize ?? input.teamSize ?? input.minTeamSize ?? 1);
+  const minTeamSize = Math.max(1, Math.min(input.minTeamSize ?? maxTeamSize, maxTeamSize));
+  let entryType: CategoryEntryType;
+  if (input.entryType === 'solo' || input.entryType === 'team') {
+    entryType = input.entryType;
+  } else {
+    entryType = maxTeamSize > 1 ? CategoryEntryType.team : CategoryEntryType.solo;
+  }
+  if (entryType === CategoryEntryType.solo && (minTeamSize !== 1 || maxTeamSize !== 1)) {
+    return { entryType: CategoryEntryType.solo, minTeamSize: 1, maxTeamSize: 1 };
+  }
+  return { entryType, minTeamSize, maxTeamSize };
 }

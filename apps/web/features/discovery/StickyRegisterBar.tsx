@@ -1,12 +1,12 @@
 'use client';
 
-import type { EventCardDto } from '@cypher/contracts';
+import type { EventDetailDto } from '@cypher/contracts';
 import { formatMinorUnits } from '@cypher/utils';
 
 import { RegisterCta } from '@/features/discovery/RegisterCta';
 
 interface StickyRegisterBarProps {
-  event: EventCardDto;
+  event: EventDetailDto;
   spotsLeft: number;
 }
 
@@ -20,7 +20,7 @@ export function StickyRegisterBar({ event, spotsLeft }: StickyRegisterBarProps) 
         <div className="min-w-0">
           <p className="kicker text-text-muted">{soldOut ? 'Category full' : 'Register'}</p>
           <p className="truncate font-display text-2xl uppercase tracking-[0.04em] text-text-primary md:text-3xl">
-            {soldOut ? 'Waitlist' : price}
+            {soldOut ? 'Sold out' : price}
           </p>
         </div>
         <RegisterCta event={event} spotsLeft={spotsLeft} />

@@ -1,6 +1,7 @@
 import type {
   CreateOrganizerBody,
   CreateOrganizerEventBody,
+  CreateRegistrationBody,
   CurrentUserDto,
   EventDetailDto,
   EventListResponse,
@@ -10,6 +11,8 @@ import type {
   OrganizerEventListResponse,
   OtpRequestResponse,
   OtpVerifyResponse,
+  RegistrationDto,
+  RegistrationListResponse,
   UpdateOrganizerBody,
   UpdateOrganizerEventBody,
   CreateEventCategoryBody,
@@ -208,6 +211,27 @@ export class CypherApiClient {
       `/v1/organizers/${encodeURIComponent(organizerId)}/events/${encodeURIComponent(eventId)}/categories/${encodeURIComponent(categoryId)}`,
       { method: 'DELETE' },
     );
+  }
+
+  async createRegistration(body: CreateRegistrationBody): Promise<RegistrationDto> {
+    return this.request<RegistrationDto>('/v1/registrations', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    });
+  }
+
+  async listMyRegistrations(): Promise<RegistrationListResponse> {
+    return this.request<RegistrationListResponse>('/v1/registrations/mine');
+  }
+
+  async getRegistration(id: string): Promise<RegistrationDto> {
+    return this.request<RegistrationDto>(`/v1/registrations/${encodeURIComponent(id)}`);
+  }
+
+  async cancelRegistration(id: string): Promise<RegistrationDto> {
+    return this.request<RegistrationDto>(`/v1/registrations/${encodeURIComponent(id)}/cancel`, {
+      method: 'POST',
+    });
   }
 
   async uploadPoster(file: Blob, filename = 'poster.jpg'): Promise<{ url: string; filename: string }> {

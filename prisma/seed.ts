@@ -341,6 +341,7 @@ async function main() {
     }
 
     await prisma.eventCategory.deleteMany({ where: { eventId: event.id } });
+    const size = item.categoryName.includes('2v2') ? 2 : 1;
     await prisma.eventCategory.create({
       data: {
         eventId: event.id,
@@ -349,7 +350,9 @@ async function main() {
         capacity: item.spotsCapacity,
         reservedCount: 0,
         confirmedCount: item.spotsConfirmed,
-        teamSize: item.categoryName.includes('2v2') ? 2 : 1,
+        entryType: size > 1 ? 'team' : 'solo',
+        minTeamSize: size,
+        maxTeamSize: size,
       },
     });
   }
