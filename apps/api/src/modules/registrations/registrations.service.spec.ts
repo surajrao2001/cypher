@@ -8,7 +8,7 @@ import { RegistrationsService } from './registrations.service';
 
 describe('RegistrationsService', () => {
   const profile = {
-    id: 'user-1',
+    userId: 'user-1',
     name: 'Suraj',
     dancerName: 'Cypher',
   };

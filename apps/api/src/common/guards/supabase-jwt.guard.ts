@@ -1,5 +1,4 @@
 import {
-  ForbiddenException,
   Injectable,
   UnauthorizedException,
   type CanActivate,
@@ -52,15 +51,13 @@ export class SupabaseJwtGuard implements CanActivate {
       throw new UnauthorizedException('Missing bearer token');
     }
 
-    const principal = await this.verifier.verify(token);
-    const profile = await this.identity.ensureProfile(principal.userId);
-    if (profile.status !== 'active') {
-      throw new ForbiddenException('Account is not active');
-    }
+    const verified = await this.verifier.verify(token);
+    const resolved = await this.identity.resolveOrProvisionUser(verified.providerUserId);
     request.auth = {
-      ...principal,
-      platformRole: profile.platformRole,
-      status: profile.status,
+      userId: resolved.userId,
+      jwtRole: verified.jwtRole,
+      platformRole: resolved.profile.platformRole,
+      status: resolved.profile.status,
     };
     return true;
   }
