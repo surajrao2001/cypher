@@ -63,7 +63,15 @@ describe('RegistrationsService', () => {
     ensureProfile: jest.fn(),
   };
 
-  const service = new RegistrationsService(prisma as never, identity as never);
+  const tickets = {
+    issueHash: jest.fn((id: string) => ({
+      payload: `cy1.${id}.sig`,
+      hash: `hash-${id}`,
+    })),
+    buildPayload: jest.fn((id: string) => `cy1.${id}.sig`),
+  };
+
+  const service = new RegistrationsService(prisma as never, identity as never, tickets as never);
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -197,6 +205,7 @@ describe('RegistrationsService', () => {
       registrationStatus: RegistrationStatus.confirmed,
       reservationExpiresAt: null,
       confirmedAt: new Date('2026-10-01T12:01:00.000Z'),
+      ticketQrToken: 'hash-reg-1',
     };
 
     prisma.$transaction.mockImplementation(async (fn: (tx: typeof prisma) => unknown) =>
@@ -213,6 +222,8 @@ describe('RegistrationsService', () => {
     const result = await service.confirmFree('user-1', 'reg-1');
     expect(result.registrationStatus).toBe('confirmed');
     expect(result.confirmedAt).toBeTruthy();
+    expect(result.ticketQrPayload).toBe('cy1.reg-1.sig');
+    expect(tickets.issueHash).toHaveBeenCalledWith('reg-1');
   });
 
   it('rejects free confirm for paid holds', async () => {

@@ -123,7 +123,7 @@ export function RegisterCta({ event, spotsLeft }: RegisterCtaProps) {
           </DialogTitle>
           <DialogDescription>
             {isConfirmed
-              ? 'Your free entry is confirmed. Ticket / My Events comes next.'
+              ? 'Your free entry is confirmed. Open Tickets for your QR pass.'
               : held
                 ? held.totalAmountMinor === 0
                   ? 'Confirm your free entry to lock the spot.'

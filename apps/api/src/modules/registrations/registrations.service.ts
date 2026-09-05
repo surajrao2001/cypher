@@ -13,6 +13,7 @@ import {
 import { randomBytes } from 'node:crypto';
 import { PrismaService } from '../../common/prisma.service';
 import { IdentityService } from '../identity/identity.service';
+import { TicketsService } from '../tickets/tickets.service';
 
 const HOLD_MS = 15 * 60 * 1000;
 const ACTIVE_STATUSES: RegistrationStatus[] = [
@@ -47,6 +48,7 @@ export class RegistrationsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly identity: IdentityService,
+    private readonly tickets: TicketsService,
   ) {}
 
   async createHold(userId: string, input: CreateRegistrationInput) {
@@ -164,7 +166,7 @@ export class RegistrationsService {
         });
       });
 
-      return toRegistrationDto(registration);
+      return toRegistrationDto(registration, this.tickets);
     } catch (error) {
       if (
         error instanceof ConflictException ||
@@ -192,7 +194,7 @@ export class RegistrationsService {
       orderBy: { createdAt: 'desc' },
       take: 50,
     });
-    return { items: rows.map(toRegistrationDto) };
+    return { items: rows.map((row) => toRegistrationDto(row, this.tickets)) };
   }
 
   async getMine(userId: string, registrationId: string) {
@@ -203,7 +205,7 @@ export class RegistrationsService {
     if (!row) {
       throw new NotFoundException('Registration not found');
     }
-    return toRegistrationDto(row);
+    return toRegistrationDto(row, this.tickets);
   }
 
   async cancelHold(userId: string, registrationId: string) {
@@ -233,7 +235,7 @@ export class RegistrationsService {
         data: { reservedCount: { decrement: 1 } },
       });
 
-      return toRegistrationDto(updated);
+      return toRegistrationDto(updated, this.tickets);
     });
   }
 
@@ -258,7 +260,16 @@ export class RegistrationsService {
         }
 
         if (row.registrationStatus === RegistrationStatus.confirmed) {
-          return toRegistrationDto(row);
+          if (!row.ticketQrToken) {
+            const issued = this.tickets.issueHash(row.id);
+            const patched = await tx.registration.update({
+              where: { id: row.id },
+              data: { ticketQrToken: issued.hash },
+              include: registrationInclude,
+            });
+            return toRegistrationDto(patched, this.tickets);
+          }
+          return toRegistrationDto(row, this.tickets);
         }
         if (row.registrationStatus !== RegistrationStatus.pending_payment) {
           throw new BadRequestException('Only pending holds can be confirmed');
@@ -271,6 +282,8 @@ export class RegistrationsService {
           SELECT id FROM event_categories WHERE id = ${row.categoryId}::uuid FOR UPDATE
         `;
 
+        const issued = this.tickets.issueHash(row.id);
+
         const updated = await tx.registration.update({
           where: { id: row.id },
           data: {
@@ -278,6 +291,7 @@ export class RegistrationsService {
             paymentStatus: RegistrationPaymentStatus.not_started,
             reservationExpiresAt: null,
             confirmedAt: new Date(),
+            ticketQrToken: issued.hash,
           },
           include: registrationInclude,
         });
@@ -290,7 +304,7 @@ export class RegistrationsService {
           },
         });
 
-        return toRegistrationDto(updated);
+        return toRegistrationDto(updated, this.tickets);
       });
     } catch (error) {
       if (
@@ -357,7 +371,11 @@ function validateTeamSize(min: number, max: number, count: number) {
 
 type RegistrationRecord = Prisma.RegistrationGetPayload<{ include: typeof registrationInclude }>;
 
-export function toRegistrationDto(row: RegistrationRecord) {
+export function toRegistrationDto(row: RegistrationRecord, tickets?: TicketsService) {
+  const confirmed = row.registrationStatus === RegistrationStatus.confirmed;
+  const ticketQrPayload =
+    confirmed && tickets ? tickets.buildPayload(row.id) : null;
+
   return {
     id: row.id,
     eventId: row.eventId,
@@ -369,6 +387,8 @@ export function toRegistrationDto(row: RegistrationRecord) {
     totalAmountMinor: row.totalAmountMinor,
     currency: row.currency,
     registrationCode: row.registrationCode,
+    ticketQrPayload,
+    hasTicket: Boolean(row.ticketQrToken) || Boolean(ticketQrPayload),
     confirmedAt: row.confirmedAt?.toISOString() ?? null,
     createdAt: row.createdAt.toISOString(),
     event: {
