@@ -72,6 +72,7 @@ web_modules/
 
 # Local agent milestone tracker (never commit)
 MILESTONE_TRACKER.local.md
+TEST_FLOW.local.md
 
 # Uploaded posters (local Nest storage)
 apps/api/storage/
