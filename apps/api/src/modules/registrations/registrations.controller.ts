@@ -37,4 +37,12 @@ export class RegistrationsController {
   ) {
     return this.registrations.cancelHold(getAuthUserId(request), id);
   }
+
+  @Post(':id/confirm-free')
+  confirmFree(
+    @Req() request: FastifyRequest & { auth?: AuthPrincipal },
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.registrations.confirmFree(getAuthUserId(request), id);
+  }
 }

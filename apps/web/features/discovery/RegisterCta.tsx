@@ -71,7 +71,7 @@ export function RegisterCta({ event, spotsLeft }: RegisterCtaProps) {
     setBusy(true);
     setError(null);
     try {
-      const registration = await api.createRegistration({
+      let registration = await api.createRegistration({
         categoryId: category.id,
         entryName: entryName.trim() || undefined,
         participants: trimmed.map((displayName, index) => ({
@@ -81,13 +81,33 @@ export function RegisterCta({ event, spotsLeft }: RegisterCtaProps) {
           isTeamCaptain: index === 0,
         })),
       });
+      if (registration.totalAmountMinor === 0) {
+        registration = await api.confirmFreeRegistration(registration.id);
+      }
       setHeld(registration);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not hold a spot');
+      setError(err instanceof Error ? err.message : 'Could not register');
     } finally {
       setBusy(false);
     }
   }
+
+  async function confirmHeld() {
+    if (!held || held.totalAmountMinor !== 0) {
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      setHeld(await api.confirmFreeRegistration(held.id));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not confirm');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const isConfirmed = held?.registrationStatus === 'confirmed';
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -98,11 +118,17 @@ export function RegisterCta({ event, spotsLeft }: RegisterCtaProps) {
       </DialogTrigger>
       <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{held ? 'Spot held' : 'Choose category'}</DialogTitle>
+          <DialogTitle>
+            {isConfirmed ? 'Registered' : held ? 'Spot held' : 'Choose category'}
+          </DialogTitle>
           <DialogDescription>
-            {held
-              ? 'Your entry is reserved. Free confirm ships next; paid checkout later.'
-              : 'Register for one category entry. Capacity counts teams, not dancers.'}
+            {isConfirmed
+              ? 'Your free entry is confirmed. Ticket / My Events comes next.'
+              : held
+                ? held.totalAmountMinor === 0
+                  ? 'Confirm your free entry to lock the spot.'
+                  : 'Paid checkout is not wired yet — hold only for now.'
+                : 'Register for one category entry. Capacity counts teams, not dancers.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -117,17 +143,16 @@ export function RegisterCta({ event, spotsLeft }: RegisterCtaProps) {
           <div className="space-y-3 rounded-md border border-border bg-elevated p-4 text-sm">
             <p className="font-display text-2xl uppercase tracking-[0.06em]">{held.category.name}</p>
             <p className="text-text-secondary">Code {held.registrationCode}</p>
-            <p className="text-text-secondary">
-              Hold expires{' '}
-              {held.reservationExpiresAt
-                ? new Date(held.reservationExpiresAt).toLocaleString()
-                : 'soon'}
-            </p>
+            <p className="text-text-secondary">Status {held.registrationStatus}</p>
+            {!isConfirmed && held.reservationExpiresAt ? (
+              <p className="text-text-secondary">
+                Hold expires {new Date(held.reservationExpiresAt).toLocaleString()}
+              </p>
+            ) : null}
             <p className="text-text-primary">
-              {held.totalAmountMinor === 0
-                ? 'Free entry — confirm path comes next'
-                : formatMinorUnits(held.totalAmountMinor)}
+              {held.totalAmountMinor === 0 ? 'Free entry' : formatMinorUnits(held.totalAmountMinor)}
             </p>
+            {error ? <p className="text-sm text-red-400">{error}</p> : null}
           </div>
         ) : (
           <div className="space-y-4">
@@ -196,7 +221,12 @@ export function RegisterCta({ event, spotsLeft }: RegisterCtaProps) {
         <DialogFooter>
           {token && me && !held ? (
             <Button onClick={() => void submit()} disabled={busy || soldOut}>
-              {busy ? 'Holding…' : 'Hold spot'}
+              {busy ? 'Working…' : category?.priceMinor === 0 ? 'Register free' : 'Hold spot'}
+            </Button>
+          ) : null}
+          {token && me && held && !isConfirmed && held.totalAmountMinor === 0 ? (
+            <Button onClick={() => void confirmHeld()} disabled={busy}>
+              {busy ? 'Confirming…' : 'Confirm free entry'}
             </Button>
           ) : null}
         </DialogFooter>
