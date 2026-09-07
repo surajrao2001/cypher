@@ -1,16 +1,18 @@
 'use client';
 
 import { routes } from '@cypher/contracts';
-import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { EmptyState } from '@/features/shell/EmptyState';
 import { useAuth } from '@/features/auth/AuthProvider';
+import { safeNextPath } from '@/lib/auth-routes';
 
 export function ProfilePanel() {
   const auth = useAuth();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [dancerName, setDancerName] = useState('');
   const [city, setCity] = useState('');
   const [crew, setCrew] = useState('');
@@ -19,22 +21,12 @@ export function ProfilePanel() {
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
-  if (!auth.ready) {
+  if (auth.status === 'loading') {
     return <p className="px-6 py-16 text-sm text-text-muted">Loading session…</p>;
   }
 
-  if (!auth.token || !auth.me) {
-    return (
-      <EmptyState
-        kicker="Profile"
-        title="Sign in with your phone"
-        body="OTP lands on this number. After verify, we create your dancer row if it does not exist yet."
-      >
-        <Button asChild size="lg">
-          <Link href={routes.login}>Enter with OTP</Link>
-        </Button>
-      </EmptyState>
-    );
+  if (auth.status !== 'authenticated' || !auth.me) {
+    return <p className="px-6 py-16 text-sm text-text-muted">Loading your dancer card…</p>;
   }
 
   async function saveOnboarding() {
@@ -51,6 +43,8 @@ export function ProfilePanel() {
           .filter(Boolean),
         instagram: instagram || undefined,
       });
+      const next = safeNextPath(searchParams.get('next'), routes.discover);
+      router.replace(next);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Could not save profile.');
     } finally {
@@ -98,6 +92,7 @@ export function ProfilePanel() {
           </Button>
         </form>
         {message ? <p className="text-sm text-error">{message}</p> : null}
+        {auth.error ? <p className="text-sm text-error">{auth.error}</p> : null}
       </div>
     );
   }
@@ -128,7 +123,7 @@ export function ProfilePanel() {
           <dd>{auth.me.organizerMemberships.length || 'None yet'}</dd>
         </div>
       </dl>
-      <Button variant="outline" onClick={() => auth.signOut()}>
+      <Button variant="outline" onClick={() => void auth.signOut()}>
         Sign out
       </Button>
     </div>

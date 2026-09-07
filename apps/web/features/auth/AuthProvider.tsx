@@ -2,29 +2,35 @@
 
 import { createApiClient } from '@cypher/api-client';
 import type { CurrentUserDto } from '@cypher/contracts';
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react';
 
-const TOKEN_KEY = 'cypher.accessToken';
+import { readAccessToken, writeAccessToken } from '@/lib/auth-token';
+import { createBrowserSupabase, type SocialProvider } from '@/lib/supabase/browser';
 
 function apiBaseUrl(): string {
   return process.env.NEXT_PUBLIC_API_URL ?? 'http://127.0.0.1:3001';
 }
 
-function readToken(): string | null {
-  if (typeof window === 'undefined') {
-    return null;
-  }
-  return window.localStorage.getItem(TOKEN_KEY);
-}
+export type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated';
 
 type AuthContextValue = {
+  status: AuthStatus;
   ready: boolean;
   token: string | null;
   me: CurrentUserDto | null;
   error: string | null;
   api: ReturnType<typeof createApiClient>;
-  requestOtp: (phone: string) => Promise<void>;
-  verifyOtp: (phone: string, code: string) => Promise<void>;
+  signInWithProvider: (provider: SocialProvider) => Promise<void>;
+  /** Passwordless magic link — enable Email provider in Supabase Auth. */
+  signInWithEmail: (email: string) => Promise<void>;
   completeOnboarding: (input: {
     dancerName: string;
     city: string;
@@ -32,14 +38,43 @@ type AuthContextValue = {
     styles?: string[];
     instagram?: string;
   }) => Promise<void>;
-  signOut: () => void;
+  signOut: () => Promise<void>;
   refresh: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+async function readSupabaseAccessToken(): Promise<string | null> {
+  try {
+    const supabase = createBrowserSupabase();
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token ?? null;
+    if (token) {
+      writeAccessToken(token);
+    }
+    return token ?? readAccessToken();
+  } catch {
+    return readAccessToken();
+  }
+}
+
+async function refreshSupabaseAccessToken(): Promise<string | null> {
+  try {
+    const supabase = createBrowserSupabase();
+    const { data, error } = await supabase.auth.refreshSession();
+    if (error) {
+      return null;
+    }
+    const token = data.session?.access_token ?? null;
+    writeAccessToken(token);
+    return token;
+  } catch {
+    return null;
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [ready, setReady] = useState(false);
+  const [status, setStatus] = useState<AuthStatus>('loading');
   const [token, setToken] = useState<string | null>(null);
   const [me, setMe] = useState<CurrentUserDto | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -48,63 +83,176 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     () =>
       createApiClient({
         baseUrl: apiBaseUrl(),
-        getAccessToken: readToken,
+        getAccessToken: readAccessToken,
+        refreshAccessToken: refreshSupabaseAccessToken,
       }),
     [],
   );
 
+  const applySession = useCallback(
+    async (accessToken: string | null) => {
+      if (!accessToken) {
+        writeAccessToken(null);
+        setToken(null);
+        setMe(null);
+        setStatus('unauthenticated');
+        return;
+      }
+
+      writeAccessToken(accessToken);
+      setToken(accessToken);
+      try {
+        const user = await client.me();
+        setMe(user);
+        setError(null);
+        setStatus('authenticated');
+      } catch (firstError) {
+        const refreshed = await refreshSupabaseAccessToken();
+        if (refreshed && refreshed !== accessToken) {
+          writeAccessToken(refreshed);
+          setToken(refreshed);
+          try {
+            const user = await client.me();
+            setMe(user);
+            setError(null);
+            setStatus('authenticated');
+            return;
+          } catch {
+            // fall through
+          }
+        }
+        // Keep session; show error but do not bounce to login.
+        setError(firstError instanceof Error ? firstError.message : 'Could not load profile');
+        setMe(null);
+        setStatus('authenticated');
+      }
+    },
+    [client],
+  );
+
   const refresh = useCallback(async () => {
-    const current = readToken();
-    if (!current) {
-      setToken(null);
-      setMe(null);
-      return;
-    }
-    setToken(current);
-    try {
-      setMe(await client.me());
-      setError(null);
-    } catch {
-      window.localStorage.removeItem(TOKEN_KEY);
-      setToken(null);
-      setMe(null);
-    }
-  }, [client]);
+    const accessToken = await readSupabaseAccessToken();
+    await applySession(accessToken);
+  }, [applySession]);
 
   useEffect(() => {
-    void refresh().finally(() => setReady(true));
-  }, [refresh]);
+    let cancelled = false;
+    let unsubscribe: (() => void) | undefined;
+
+    void (async () => {
+      try {
+        const supabase = createBrowserSupabase();
+        const { data } = await supabase.auth.getSession();
+        if (cancelled) {
+          return;
+        }
+        await applySession(data.session?.access_token ?? readAccessToken());
+
+        const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
+          if (cancelled) {
+            return;
+          }
+          // INITIAL_SESSION is handled by getSession above; avoid double-clear races.
+          if (event === 'INITIAL_SESSION') {
+            return;
+          }
+          if (event === 'SIGNED_OUT') {
+            void applySession(null);
+            return;
+          }
+          if (session?.access_token) {
+            writeAccessToken(session.access_token);
+            void applySession(session.access_token);
+          }
+        });
+        unsubscribe = () => listener.subscription.unsubscribe();
+      } catch {
+        if (!cancelled) {
+          await applySession(readAccessToken());
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      unsubscribe?.();
+    };
+  }, [applySession]);
 
   const value = useMemo<AuthContextValue>(
     () => ({
-      ready,
+      status,
+      ready: status !== 'loading',
       token,
       me,
       error,
       api: client,
-      requestOtp: async (phone) => {
+      signInWithProvider: async (provider) => {
         setError(null);
-        await client.requestOtp(phone);
+        const supabase = createBrowserSupabase();
+        const next =
+          typeof window !== 'undefined' ? window.sessionStorage.getItem('cypher.authNext') : null;
+        const redirectTo = new URL(`${window.location.origin}/auth/callback`);
+        if (next?.startsWith('/')) {
+          redirectTo.searchParams.set('next', next);
+        }
+        const { error: oauthError } = await supabase.auth.signInWithOAuth({
+          provider,
+          options: {
+            redirectTo: redirectTo.toString(),
+            skipBrowserRedirect: false,
+          },
+        });
+        if (oauthError) {
+          setError(oauthError.message);
+          throw oauthError;
+        }
       },
-      verifyOtp: async (phone, code) => {
+      signInWithEmail: async (email) => {
         setError(null);
-        const session = await client.verifyOtp(phone, code);
-        window.localStorage.setItem(TOKEN_KEY, session.accessToken);
-        setToken(session.accessToken);
-        setMe(await client.me());
+        const trimmed = email.trim().toLowerCase();
+        if (!trimmed.includes('@')) {
+          const err = new Error('Enter a valid email address.');
+          setError(err.message);
+          throw err;
+        }
+        const supabase = createBrowserSupabase();
+        const next =
+          typeof window !== 'undefined' ? window.sessionStorage.getItem('cypher.authNext') : null;
+        const redirectTo = new URL(`${window.location.origin}/auth/callback`);
+        if (next?.startsWith('/')) {
+          redirectTo.searchParams.set('next', next);
+        }
+        const { error: otpError } = await supabase.auth.signInWithOtp({
+          email: trimmed,
+          options: {
+            emailRedirectTo: redirectTo.toString(),
+            shouldCreateUser: true,
+          },
+        });
+        if (otpError) {
+          setError(otpError.message);
+          throw otpError;
+        }
       },
       completeOnboarding: async (input) => {
         setError(null);
-        setMe(await client.completeOnboarding(input));
+        const user = await client.completeOnboarding(input);
+        setMe(user);
+        setStatus('authenticated');
       },
-      signOut: () => {
-        window.localStorage.removeItem(TOKEN_KEY);
-        setToken(null);
-        setMe(null);
+      signOut: async () => {
+        try {
+          const supabase = createBrowserSupabase();
+          await supabase.auth.signOut();
+        } catch {
+          // Still clear local session.
+        }
+        await applySession(null);
       },
       refresh,
     }),
-    [client, error, me, ready, refresh, token],
+    [applySession, client, error, me, refresh, status, token],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

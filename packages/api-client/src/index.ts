@@ -29,6 +29,8 @@ import type {
 export interface ApiClientOptions {
   baseUrl: string;
   getAccessToken?: () => Promise<string | null> | string | null;
+  /** Called once on HTTP 401 to refresh the bearer token and retry the request. */
+  refreshAccessToken?: () => Promise<string | null>;
 }
 
 export class CypherApiClient {
@@ -348,7 +350,7 @@ export class CypherApiClient {
     return (await response.json()) as { url: string; filename: string };
   }
 
-  private async request<T>(path: string, init: RequestInit = {}): Promise<T> {
+  private async request<T>(path: string, init: RequestInit = {}, didRefresh = false): Promise<T> {
     const token = await this.options.getAccessToken?.();
     const headers = new Headers(init.headers);
     headers.set('Accept', 'application/json');
@@ -365,6 +367,13 @@ export class CypherApiClient {
       cache: 'no-store',
       signal: init.signal ?? AbortSignal.timeout(8_000),
     });
+
+    if (response.status === 401 && !didRefresh && this.options.refreshAccessToken) {
+      const refreshed = await this.options.refreshAccessToken();
+      if (refreshed) {
+        return this.request<T>(path, init, true);
+      }
+    }
 
     if (!response.ok) {
       let message = `API ${response.status}`;

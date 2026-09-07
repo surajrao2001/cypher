@@ -1,144 +1,126 @@
 'use client';
 
-import { indianPhoneSchema } from '@cypher/validation';
-import { useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/features/auth/AuthProvider';
+import type { SocialProvider } from '@/lib/supabase/browser';
 
-function toE164(local: string): string {
-  const digits = local.replace(/\D/g, '');
-  return `+91${digits}`;
-}
+type Pending = SocialProvider | 'email' | null;
 
 export function LoginForm() {
-  const router = useRouter();
   const auth = useAuth();
-  const [localPhone, setLocalPhone] = useState('');
-  const [code, setCode] = useState('');
-  const [step, setStep] = useState<'phone' | 'otp'>('phone');
-  const [pending, setPending] = useState(false);
+  const searchParams = useSearchParams();
+  const [pending, setPending] = useState<Pending>(null);
   const [message, setMessage] = useState<string | null>(null);
-  const [cooldown, setCooldown] = useState(0);
+  const [info, setInfo] = useState<string | null>(null);
+  const [showEmail, setShowEmail] = useState(false);
+  const [email, setEmail] = useState('');
 
-  async function sendCode() {
-    const phone = toE164(localPhone);
-    const parsed = indianPhoneSchema.safeParse(phone);
-    if (!parsed.success) {
-      setMessage('Enter a 10-digit Indian mobile starting with 6–9.');
-      return;
-    }
-    setPending(true);
-    setMessage(null);
-    try {
-      await auth.requestOtp(phone);
-      setStep('otp');
-      setCooldown(45);
-      const timer = window.setInterval(() => {
-        setCooldown((value) => {
-          if (value <= 1) {
-            window.clearInterval(timer);
-            return 0;
-          }
-          return value - 1;
-        });
-      }, 1000);
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Could not send the code.');
-    } finally {
-      setPending(false);
+  function rememberNext() {
+    const next = searchParams.get('next');
+    if (next?.startsWith('/')) {
+      window.sessionStorage.setItem('cypher.authNext', next);
+    } else {
+      window.sessionStorage.removeItem('cypher.authNext');
     }
   }
 
-  async function verify() {
-    const phone = toE164(localPhone);
-    setPending(true);
+  async function continueWith(provider: SocialProvider) {
+    setPending(provider);
     setMessage(null);
+    setInfo(null);
     try {
-      await auth.verifyOtp(phone, code.trim());
-      router.push('/profile');
+      rememberNext();
+      await auth.signInWithProvider(provider);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Could not verify the code.');
+      setMessage(error instanceof Error ? error.message : 'Could not start sign-in.');
+      setPending(null);
+    }
+  }
+
+  async function continueWithEmail() {
+    setPending('email');
+    setMessage(null);
+    setInfo(null);
+    try {
+      rememberNext();
+      await auth.signInWithEmail(email);
+      setInfo(`Check ${email.trim()} for a sign-in link. You can close this tab after you click it.`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Could not send email link.');
     } finally {
-      setPending(false);
+      setPending(null);
     }
   }
 
   return (
     <div className="mx-auto w-full max-w-md space-y-6">
       <div className="space-y-2">
-        <p className="kicker text-accent">Phone OTP</p>
+        <p className="kicker text-accent">Sign in</p>
         <h1 className="display-title text-5xl">Enter the floor</h1>
         <p className="text-sm text-text-secondary">
-          We text a one-time code. The number stays private — it never lands on your dancer card.
+          Continue with Google or email. Your dancer card stays separate from your login
+          account.
         </p>
       </div>
 
-      {step === 'phone' ? (
+      <div className="space-y-3">
+        <Button
+          type="button"
+          size="lg"
+          className="w-full"
+          disabled={pending !== null}
+          onClick={() => void continueWith('google')}
+        >
+          {pending === 'google' ? 'Opening Google…' : 'Continue with Google'}
+        </Button>
+        <Button
+          type="button"
+          size="lg"
+          variant="ghost"
+          className="w-full"
+          disabled={pending !== null}
+          onClick={() => {
+            setShowEmail(true);
+            setInfo(null);
+            setMessage(null);
+          }}
+        >
+          Continue with Email
+        </Button>
+      </div>
+
+      {showEmail ? (
         <form
-          className="space-y-4"
+          className="space-y-3 border-t border-border pt-4"
           onSubmit={(event) => {
             event.preventDefault();
-            void sendCode();
+            void continueWithEmail();
           }}
         >
           <label className="block space-y-2 text-sm text-text-secondary">
-            Mobile
-            <div className="flex gap-2">
-              <span className="flex h-10 items-center rounded-md border border-border bg-elevated px-3 text-text-muted">
-                +91
-              </span>
-              <Input
-                inputMode="numeric"
-                autoComplete="tel"
-                maxLength={10}
-                placeholder="9876543210"
-                value={localPhone}
-                onChange={(event) => setLocalPhone(event.target.value.replace(/\D/g, '').slice(0, 10))}
-              />
-            </div>
-          </label>
-          <Button type="submit" size="lg" className="w-full" disabled={pending}>
-            {pending ? 'Sending…' : 'Send code'}
-          </Button>
-        </form>
-      ) : (
-        <form
-          className="space-y-4"
-          onSubmit={(event) => {
-            event.preventDefault();
-            void verify();
-          }}
-        >
-          <label className="block space-y-2 text-sm text-text-secondary">
-            Code
+            Email
             <Input
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              maxLength={8}
-              placeholder="6-digit code"
-              value={code}
-              onChange={(event) => setCode(event.target.value.replace(/\D/g, '').slice(0, 8))}
+              type="email"
+              autoComplete="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              required
             />
           </label>
-          <Button type="submit" size="lg" className="w-full" disabled={pending || code.length < 6}>
-            {pending ? 'Checking…' : 'Verify'}
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            className="w-full"
-            disabled={pending || cooldown > 0}
-            onClick={() => void sendCode()}
-          >
-            {cooldown > 0 ? `Resend in ${cooldown}s` : 'Resend code'}
+          <Button type="submit" size="lg" className="w-full" disabled={pending !== null || !email.trim()}>
+            {pending === 'email' ? 'Sending link…' : 'Email me a sign-in link'}
           </Button>
         </form>
-      )}
+      ) : null}
 
+      {info ? <p className="text-sm text-text-secondary">{info}</p> : null}
       {message ? <p className="text-sm text-error">{message}</p> : null}
+      {auth.error && !message ? <p className="text-sm text-error">{auth.error}</p> : null}
     </div>
   );
 }

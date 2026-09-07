@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { Suspense } from 'react';
 
 import { LoginForm } from '@/features/auth/LoginForm';
+import { RequireGuest } from '@/features/auth/AuthGates';
 
 export const metadata: Metadata = { title: 'Enter' };
 
@@ -11,7 +13,11 @@ export default function LoginPage() {
       <Link href="/discover" className="kicker mb-10 text-text-muted hover:text-accent">
         Night Cypher
       </Link>
-      <LoginForm />
+      <Suspense fallback={<p className="text-sm text-text-muted">Loading…</p>}>
+        <RequireGuest>
+          <LoginForm />
+        </RequireGuest>
+      </Suspense>
     </div>
   );
 }

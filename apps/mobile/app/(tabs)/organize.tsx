@@ -8,17 +8,20 @@ import { Button } from '@/components/ui/Button';
 import { Text } from '@/components/ui/Text';
 import { EmptyState } from '@/components/EmptyState';
 import { useAuth } from '@/lib/auth';
+import type { SocialProvider } from '@/lib/supabase';
 import { colors } from '@/lib/theme';
+
+type Pending = SocialProvider | 'email' | null;
 
 export default function OrganizeTab() {
   const auth = useAuth();
   const router = useRouter();
-  const [phone, setPhone] = useState('+91');
-  const [code, setCode] = useState('');
-  const [otpSent, setOtpSent] = useState(false);
   const [orgs, setOrgs] = useState<OrganizerDto[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [pending, setPending] = useState(false);
+  const [info, setInfo] = useState<string | null>(null);
+  const [pending, setPending] = useState<Pending>(null);
+  const [showEmail, setShowEmail] = useState(false);
+  const [email, setEmail] = useState('');
 
   const loadOrgs = useCallback(async () => {
     if (!auth.token) {
@@ -37,31 +40,31 @@ export default function OrganizeTab() {
     void loadOrgs();
   }, [loadOrgs]);
 
-  async function sendOtp() {
-    setPending(true);
+  async function continueWith(provider: SocialProvider) {
+    setPending(provider);
     setError(null);
+    setInfo(null);
     try {
-      await auth.requestOtp(phone.trim());
-      setOtpSent(true);
+      await auth.signInWithProvider(provider);
+      await loadOrgs();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'OTP request failed');
+      setError(err instanceof Error ? err.message : 'Sign-in failed');
     } finally {
-      setPending(false);
+      setPending(null);
     }
   }
 
-  async function verify() {
-    setPending(true);
+  async function continueWithEmail() {
+    setPending('email');
     setError(null);
+    setInfo(null);
     try {
-      await auth.verifyOtp(phone.trim(), code.trim());
-      setOtpSent(false);
-      setCode('');
-      await loadOrgs();
+      await auth.signInWithEmail(email);
+      setInfo(`Check ${email.trim()} for a sign-in link, then return here.`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Verify failed');
+      setError(err instanceof Error ? err.message : 'Could not send email link');
     } finally {
-      setPending(false);
+      setPending(null);
     }
   }
 
@@ -78,39 +81,55 @@ export default function OrganizeTab() {
           </Text>
         </View>
 
-        {!auth.token ? (
+        {!auth.ready ? (
+          <Text variant="caption" className="mt-8">
+            Loading session…
+          </Text>
+        ) : !auth.token ? (
           <View className="mt-8 gap-3">
-            <Text variant="label">Phone</Text>
-            <TextInput
-              value={phone}
-              onChangeText={setPhone}
-              keyboardType="phone-pad"
-              placeholder="+9198…"
-              placeholderTextColor={colors.muted}
-              className="h-12 rounded-md border border-border bg-elevated px-3 text-ink"
-              style={{ color: colors.ink }}
-            />
-            {otpSent ? (
-              <>
-                <Text variant="label">OTP</Text>
+            <Text variant="caption">Continue with Google or email to organize.</Text>
+            <Button
+              loading={pending === 'google'}
+              disabled={pending !== null}
+              onPress={() => void continueWith('google')}
+            >
+              Continue with Google
+            </Button>
+            <Button
+              variant="ghost"
+              disabled={pending !== null}
+              onPress={() => {
+                setShowEmail(true);
+                setError(null);
+                setInfo(null);
+              }}
+            >
+              Continue with Email
+            </Button>
+            {showEmail ? (
+              <View className="gap-3 border-t border-border pt-3">
+                <Text variant="label">Email</Text>
                 <TextInput
-                  value={code}
-                  onChangeText={setCode}
-                  keyboardType="number-pad"
-                  placeholder="6-digit code"
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  placeholder="you@example.com"
                   placeholderTextColor={colors.muted}
                   className="h-12 rounded-md border border-border bg-elevated px-3 text-ink"
                   style={{ color: colors.ink }}
                 />
-                <Button loading={pending} onPress={() => void verify()}>
-                  Verify
+                <Button
+                  loading={pending === 'email'}
+                  disabled={pending !== null || !email.trim()}
+                  onPress={() => void continueWithEmail()}
+                >
+                  Email me a sign-in link
                 </Button>
-              </>
-            ) : (
-              <Button loading={pending} onPress={() => void sendOtp()}>
-                Send OTP
-              </Button>
-            )}
+              </View>
+            ) : null}
+            {info ? <Text variant="caption">{info}</Text> : null}
           </View>
         ) : (
           <View className="mt-8 gap-4">
@@ -118,7 +137,7 @@ export default function OrganizeTab() {
               Signed in as {auth.me?.profile.dancerName ?? auth.me?.profile.name ?? 'dancer'}
             </Text>
             <Button onPress={() => router.push('/organize/new')}>New organizer</Button>
-            <Button variant="ghost" onPress={() => auth.signOut()}>
+            <Button variant="ghost" onPress={() => void auth.signOut()}>
               Sign out
             </Button>
 

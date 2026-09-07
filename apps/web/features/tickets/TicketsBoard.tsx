@@ -12,7 +12,7 @@ import { useAuth } from '@/features/auth/AuthProvider';
 import { EmptyState } from '@/features/shell/EmptyState';
 
 export function TicketsBoard() {
-  const { token, me, api, ready } = useAuth();
+  const { token, me, api, ready, status } = useAuth();
   const [items, setItems] = useState<RegistrationDto[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -39,11 +39,11 @@ export function TicketsBoard() {
       .finally(() => setLoading(false));
   }, [api, me, ready, token]);
 
-  if (!ready || loading) {
+  if (!ready || loading || status === 'loading') {
     return <p className="mt-10 text-sm text-text-secondary">Loading tickets…</p>;
   }
 
-  if (!token || !me) {
+  if (status !== 'authenticated' || !token || !me) {
     return (
       <EmptyState
         className="mt-10"

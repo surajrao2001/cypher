@@ -129,15 +129,15 @@ function AuthSlot({ onNavigate }: { onNavigate?: () => void }) {
   const auth = useAuth();
   const name = auth.me?.profile.dancerName ?? auth.me?.profile.name;
 
-  if (!auth.ready) {
+  if (auth.status === 'loading') {
     return <p className="px-3 text-xs text-text-muted">Session…</p>;
   }
 
-  if (!auth.token) {
+  if (auth.status !== 'authenticated') {
     return (
       <Button asChild variant="default" className="w-full">
         <Link href={routes.login} onClick={onNavigate}>
-          Enter with OTP
+          Sign in
         </Link>
       </Button>
     );
@@ -150,7 +150,7 @@ function AuthSlot({ onNavigate }: { onNavigate?: () => void }) {
       className="block rounded-md px-3 py-2 text-sm text-text-secondary hover:bg-elevated hover:text-text-primary"
     >
       <span className="kicker block text-[10px] text-accent">Signed in</span>
-      {name}
+      {name ?? 'Dancer'}
     </Link>
   );
 }

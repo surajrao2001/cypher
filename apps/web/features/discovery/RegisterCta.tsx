@@ -156,7 +156,7 @@ export function RegisterCta({ event, spotsLeft }: RegisterCtaProps) {
 
         {!token || !me ? (
           <div className="space-y-4">
-            <p className="text-sm text-text-secondary">Sign in with phone OTP to hold a spot.</p>
+            <p className="text-sm text-text-secondary">Sign in with Google or email to hold a spot.</p>
             <Button asChild>
               <Link href={`${routes.login}?next=/events/${event.slug}`}>Sign in</Link>
             </Button>
