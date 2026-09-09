@@ -24,14 +24,23 @@ const nextConfig: NextConfig = {
   outputFileTracingRoot: path.join(__dirname, '../..'),
   // Force-inline public env from root `.env` into the client bundle.
   env: {
-    NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL ?? '',
-    NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '',
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL ?? process.env.PUBLIC_API_URL ?? '',
-    NEXT_PUBLIC_CASHFREE_MODE: process.env.NEXT_PUBLIC_CASHFREE_MODE ?? '',
+    NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
+    // Prefer `||` so an empty bake-in from a cold loadEnv does not disable the API URL.
+    NEXT_PUBLIC_API_URL:
+      process.env.NEXT_PUBLIC_API_URL || process.env.PUBLIC_API_URL || 'http://127.0.0.1:3001',
+    NEXT_PUBLIC_CASHFREE_MODE: process.env.NEXT_PUBLIC_CASHFREE_MODE || '',
   },
   transpilePackages: ['@cypher/tokens', '@cypher/utils', '@cypher/contracts', '@cypher/api-client', '@cypher/validation'],
   async redirects() {
-    return [{ source: '/', destination: '/discover', permanent: false }];
+    return [
+      { source: '/', destination: '/discover', permanent: false },
+      { source: '/map', destination: '/discover', permanent: false },
+      { source: '/videos', destination: '/discover', permanent: false },
+      { source: '/organizers', destination: '/discover', permanent: false },
+      { source: '/saved', destination: '/discover', permanent: false },
+      { source: '/saved/:path*', destination: '/discover', permanent: false },
+    ];
   },
   images: {
     remotePatterns: [

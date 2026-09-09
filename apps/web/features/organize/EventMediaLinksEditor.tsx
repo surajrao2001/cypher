@@ -5,6 +5,7 @@ import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { toastCopy, toastPending, toastReject, toastResolve } from '@/components/ui/toaster';
 import { useAuth } from '@/features/auth/AuthProvider';
 
 export function EventMediaLinksEditor({
@@ -25,11 +26,10 @@ export function EventMediaLinksEditor({
   const [url, setUrl] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   async function addLink() {
     setPending(true);
-    setError(null);
+    const tid = toastPending(toastCopy.saving);
     try {
       const updated = await api.addOrganizerEventMediaLink(organizerId, eventId, {
         title: title.trim(),
@@ -40,8 +40,9 @@ export function EventMediaLinksEditor({
       setTitle('');
       setUrl('');
       setCategoryId('');
+      toastResolve(tid, toastCopy.mediaAdded);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not add link');
+      toastReject(tid, toastCopy.saveFailed, err instanceof Error ? err.message : undefined);
     } finally {
       setPending(false);
     }
@@ -49,12 +50,13 @@ export function EventMediaLinksEditor({
 
   async function removeLink(mediaLinkId: string) {
     setPending(true);
-    setError(null);
+    const tid = toastPending(toastCopy.saving);
     try {
       const updated = await api.deleteOrganizerEventMediaLink(organizerId, eventId, mediaLinkId);
       onUpdated(updated);
+      toastResolve(tid, toastCopy.mediaRemoved);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not delete link');
+      toastReject(tid, toastCopy.saveFailed, err instanceof Error ? err.message : undefined);
     } finally {
       setPending(false);
     }
@@ -66,14 +68,14 @@ export function EventMediaLinksEditor({
         <p className="kicker text-accent">Links</p>
         <h2 className="font-display text-3xl uppercase tracking-[0.04em]">Event media</h2>
         <p className="mt-1 text-sm text-text-secondary">
-          YouTube, Instagram, Drive, or other URLs — Cypher does not host video.
+          YouTube, Instagram, Drive, or other URLs — BYND8 does not host video.
         </p>
       </div>
 
       {links.length === 0 ? (
         <div className="rounded-md border border-dashed border-border bg-elevated px-4 py-6">
           <p className="text-sm text-text-secondary">
-            No media links yet. Add a YouTube, Instagram, or Drive URL below — Cypher does not host video.
+            No media links yet. Add a YouTube, Instagram, or Drive URL below — BYND8 does not host video.
           </p>
         </div>
       ) : (
@@ -144,7 +146,6 @@ export function EventMediaLinksEditor({
           </select>
         </div>
       ) : null}
-      {error ? <p className="text-sm text-error">{error}</p> : null}
       <Button
         type="button"
         variant="outline"

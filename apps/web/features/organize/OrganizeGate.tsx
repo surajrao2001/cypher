@@ -34,8 +34,8 @@ export function OrganizeGate({ children }: { children: ReactNode }) {
     return (
       <EmptyState
         kicker="Organize"
-        title="Finish your dancer card first"
-        body="Set a dancer name and city on Profile, then come back to create an organizer."
+        title="Tell us what to call you first"
+        body="Drop your name and city on Profile, then come back to run a crew."
       >
         <Button asChild size="lg">
           <Link href={`${routes.profile}?next=${encodeURIComponent(routes.organize)}`}>Open profile</Link>

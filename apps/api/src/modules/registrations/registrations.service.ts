@@ -6,12 +6,14 @@ import {
 } from '@nestjs/common';
 import {
   EventStatus,
+  CategoryEntryType,
   RegistrationPaymentStatus,
   RegistrationStatus,
   type Prisma,
 } from '@prisma/client';
 import { randomBytes } from 'node:crypto';
 import { PrismaService } from '../../common/prisma.service';
+import { resolveCategoryPrice } from '../../common/category-pricing';
 import { RESERVATION_HOLD_MS } from '../../common/queues/queue-names';
 import { ReservationJobsService } from '../../common/queues/reservation-jobs.service';
 import { IdentityService } from '../identity/identity.service';
@@ -60,7 +62,7 @@ export class RegistrationsService {
 
     const category = await this.prisma.eventCategory.findUnique({
       where: { id: input.categoryId },
-      include: { event: true },
+      include: { event: true, priceTiers: true },
     });
     if (!category) {
       throw new NotFoundException('Category not found');
@@ -78,8 +80,18 @@ export class RegistrationsService {
       throw new BadRequestException('Registration is closed');
     }
 
+    const resolved = resolveCategoryPrice(category.priceMinor, category.priceTiers, now);
+    const amountMinor = resolved.priceMinor;
+    const priceTierId = resolved.tier?.id ?? null;
+
     const participants = normalizeParticipants(input.participants, profile);
-    validateTeamSize(category.minTeamSize, category.maxTeamSize, participants.length);
+    if (category.entryType === CategoryEntryType.viewer) {
+      if (participants.length !== 1) {
+        throw new BadRequestException('Audience pass is for one person');
+      }
+    } else {
+      validateTeamSize(category.minTeamSize, category.maxTeamSize, participants.length);
+    }
 
     const linkedUserIds = participants
       .map((p) => p.userId)
@@ -146,12 +158,13 @@ export class RegistrationsService {
             categoryId: category.id,
             entryName: input.entryName?.trim() || null,
             paymentStatus:
-              category.priceMinor === 0
+              amountMinor === 0
                 ? RegistrationPaymentStatus.not_started
                 : RegistrationPaymentStatus.pending,
             registrationStatus: RegistrationStatus.pending_payment,
             reservationExpiresAt: expiresAt,
-            totalAmountMinor: category.priceMinor,
+            totalAmountMinor: amountMinor,
+            priceTierId,
             currency: 'INR',
             registrationCode,
             participants: {
@@ -388,6 +401,7 @@ export function toRegistrationDto(row: RegistrationRecord, tickets?: TicketsServ
     id: row.id,
     eventId: row.eventId,
     categoryId: row.categoryId,
+    priceTierId: row.priceTierId ?? null,
     entryName: row.entryName,
     registrationStatus: row.registrationStatus,
     paymentStatus: row.paymentStatus,

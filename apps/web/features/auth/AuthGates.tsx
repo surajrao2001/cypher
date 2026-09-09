@@ -10,6 +10,11 @@ function GateMessage({ children }: { children: ReactNode }) {
   return <p className="px-6 py-16 text-sm text-text-muted">{children}</p>;
 }
 
+/** Soft placeholder — avoid full-screen takeover copy during redirects / sign-out. */
+function GateQuiet() {
+  return <div className="min-h-[40vh] bg-bg" aria-busy="true" aria-label="Loading" />;
+}
+
 /** Blocks children until session is known; redirects anonymous users to login. */
 export function RequireAuth({
   children,
@@ -41,10 +46,10 @@ export function RequireAuth({
   }, [auth.me?.needsOnboarding, auth.status, pathname, requireOnboarded, router, searchParams]);
 
   if (auth.status === 'loading') {
-    return <GateMessage>Loading session…</GateMessage>;
+    return <GateQuiet />;
   }
   if (auth.status === 'unauthenticated') {
-    return <GateMessage>Redirecting to sign in…</GateMessage>;
+    return <GateQuiet />;
   }
   if (!auth.me) {
     return (
@@ -55,7 +60,7 @@ export function RequireAuth({
   }
   const mustOnboard = requireOnboarded || requiresOnboardingComplete(pathname);
   if (mustOnboard && auth.me.needsOnboarding) {
-    return <GateMessage>Finish your dancer card first…</GateMessage>;
+    return <GateQuiet />;
   }
   return <>{children}</>;
 }
@@ -75,10 +80,10 @@ export function RequireGuest({ children }: { children: ReactNode }) {
   }, [auth.me?.needsOnboarding, auth.status, router, searchParams]);
 
   if (auth.status === 'loading') {
-    return <GateMessage>Loading session…</GateMessage>;
+    return <GateQuiet />;
   }
   if (auth.status === 'authenticated') {
-    return <GateMessage>Already signed in…</GateMessage>;
+    return <GateQuiet />;
   }
   return <>{children}</>;
 }

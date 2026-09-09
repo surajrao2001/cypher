@@ -1,10 +1,10 @@
-import { EventEditor } from '@/features/organize/EventEditor';
+import { EventManageView } from '@/features/organize/EventManageView';
 
-export default async function EventEditPage({
+export default async function EventManagePage({
   params,
 }: {
   params: Promise<{ slug: string; eventId: string }>;
 }) {
   const { slug, eventId } = await params;
-  return <EventEditor slug={slug} eventId={eventId} />;
+  return <EventManageView slug={slug} eventId={eventId} />;
 }

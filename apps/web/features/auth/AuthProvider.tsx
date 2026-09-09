@@ -13,10 +13,11 @@ import {
 } from 'react';
 
 import { readAccessToken, writeAccessToken } from '@/lib/auth-token';
+import { openOAuthPopup, waitForOAuthPopupCode } from '@/lib/oauth-popup';
 import { createBrowserSupabase, type SocialProvider } from '@/lib/supabase/browser';
 
 function apiBaseUrl(): string {
-  return process.env.NEXT_PUBLIC_API_URL ?? 'http://127.0.0.1:3001';
+  return process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001';
 }
 
 export type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated';
@@ -142,20 +143,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     void (async () => {
       try {
         const supabase = createBrowserSupabase();
-        const { data } = await supabase.auth.getSession();
-        if (cancelled) {
-          return;
-        }
-        await applySession(data.session?.access_token ?? readAccessToken());
 
         const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
           if (cancelled) {
             return;
           }
-          // INITIAL_SESSION is handled by getSession above; avoid double-clear races.
-          if (event === 'INITIAL_SESSION') {
-            return;
-          }
+          // INITIAL_SESSION must be applied — getSession alone can race empty on cold start.
           if (event === 'SIGNED_OUT') {
             void applySession(null);
             return;
@@ -163,9 +156,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (session?.access_token) {
             writeAccessToken(session.access_token);
             void applySession(session.access_token);
+            return;
+          }
+          if (event === 'INITIAL_SESSION') {
+            void applySession(null);
           }
         });
         unsubscribe = () => listener.subscription.unsubscribe();
+
+        const { data } = await supabase.auth.getSession();
+        if (!cancelled) {
+          await applySession(data.session?.access_token ?? readAccessToken());
+        }
       } catch {
         if (!cancelled) {
           await applySession(readAccessToken());
@@ -193,19 +195,62 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const next =
           typeof window !== 'undefined' ? window.sessionStorage.getItem('cypher.authNext') : null;
         const redirectTo = new URL(`${window.location.origin}/auth/callback`);
+        redirectTo.searchParams.set('popup', '1');
         if (next?.startsWith('/')) {
           redirectTo.searchParams.set('next', next);
         }
-        const { error: oauthError } = await supabase.auth.signInWithOAuth({
+
+        const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
           provider,
           options: {
             redirectTo: redirectTo.toString(),
-            skipBrowserRedirect: false,
+            skipBrowserRedirect: true,
+            queryParams: {
+              prompt: 'select_account',
+            },
           },
         });
         if (oauthError) {
           setError(oauthError.message);
           throw oauthError;
+        }
+        if (!data.url) {
+          const err = new Error('No OAuth URL returned');
+          setError(err.message);
+          throw err;
+        }
+
+        const popup = openOAuthPopup(data.url);
+        if (!popup) {
+          // Popup blocked — fall back to full-tab OAuth.
+          window.location.assign(data.url);
+          return;
+        }
+
+        try {
+          const { code } = await waitForOAuthPopupCode(popup);
+          try {
+            popup.close();
+          } catch {
+            // ignore
+          }
+          const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+          if (exchangeError) {
+            setError(exchangeError.message);
+            throw exchangeError;
+          }
+          const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+          if (sessionError) {
+            setError(sessionError.message);
+            throw sessionError;
+          }
+          await applySession(sessionData.session?.access_token ?? null);
+        } catch (err) {
+          const message = err instanceof Error ? err.message : 'Could not complete sign-in.';
+          if (message !== 'Sign-in was cancelled') {
+            setError(message);
+          }
+          throw err instanceof Error ? err : new Error(message);
         }
       },
       signInWithEmail: async (email) => {

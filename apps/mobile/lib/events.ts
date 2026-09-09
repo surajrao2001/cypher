@@ -39,7 +39,18 @@ export interface MobileEvent {
     confirmedCount: number;
     minTeamSize: number;
     maxTeamSize: number;
+    entryType?: 'solo' | 'team' | 'viewer';
   }>;
+  audience?: {
+    enabled: boolean;
+    categoryId: string | null;
+    name: string;
+    priceMinor: number;
+    capacity: number;
+    reservedCount: number;
+    confirmedCount: number;
+    spotsLeft: number;
+  };
   mediaLinks?: Array<{
     id: string;
     title: string;

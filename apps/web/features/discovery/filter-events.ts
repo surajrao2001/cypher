@@ -1,11 +1,22 @@
 import type { EventCardDto } from '@cypher/contracts';
 
+import { normalizeStyleLabel } from '@/features/organize/event-taxonomy';
+
 export type DiscoverFilters = {
   q?: string | null;
   city?: string | null;
   tag?: string | null;
   type?: string | null;
 };
+
+function styleMatches(tag: string, styles: string[], tags: string[]): boolean {
+  if (tags.includes(tag) || styles.includes(tag)) return true;
+  const normalized = normalizeStyleLabel(tag).toLowerCase();
+  return (
+    styles.some((s) => normalizeStyleLabel(s).toLowerCase() === normalized) ||
+    tags.some((t) => normalizeStyleLabel(t).toLowerCase() === normalized)
+  );
+}
 
 export function applyDiscoverFilters(events: EventCardDto[], filters: DiscoverFilters): EventCardDto[] {
   const q = filters.q?.trim().toLowerCase();
@@ -20,7 +31,7 @@ export function applyDiscoverFilters(events: EventCardDto[], filters: DiscoverFi
     if (type && type !== 'all' && event.eventType !== type) {
       return false;
     }
-    if (tag && !event.tags.includes(tag) && !event.styles.includes(tag)) {
+    if (tag && !styleMatches(tag, event.styles, event.tags)) {
       return false;
     }
     if (q) {

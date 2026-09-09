@@ -1,6 +1,5 @@
 import { type ReactNode, Suspense } from 'react';
 
-import { NotificationBell } from '@/features/discovery/NotificationBell';
 import { SearchBar } from '@/features/discovery/SearchBar';
 import { DiscoverQueryProvider } from '@/features/discovery/use-discover-query';
 import { AppSidebar, MobileNav } from '@/features/navigation/AppSidebar';
@@ -23,7 +22,6 @@ export default function AppShellLayout({ children }: Readonly<{ children: ReactN
                 <Suspense fallback={<SearchBarFallback />}>
                   <SearchBar />
                 </Suspense>
-                <NotificationBell />
               </header>
               <main className="flex-1">{children}</main>
             </div>

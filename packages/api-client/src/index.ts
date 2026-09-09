@@ -19,6 +19,9 @@ import type {
   UpdateEventCategoryBody,
   CreateEventMediaLinkBody,
   UpdateEventMediaLinkBody,
+  ReplaceEventDaysBody,
+  ReplaceCategoryPriceTiersBody,
+  GenerateAudienceDayPassesBody,
   OrganizerEventRegistrationsResponse,
   OrganizerPaymentAccountDto,
   PaymentCheckoutSessionDto,
@@ -231,6 +234,52 @@ export class CypherApiClient {
     );
   }
 
+  async replaceOrganizerEventDays(
+    organizerId: string,
+    eventId: string,
+    body: ReplaceEventDaysBody,
+  ): Promise<OrganizerEventDetailDto> {
+    return this.request<OrganizerEventDetailDto>(
+      `/v1/organizers/${encodeURIComponent(organizerId)}/events/${encodeURIComponent(eventId)}/days`,
+      { method: 'PUT', body: JSON.stringify(body) },
+    );
+  }
+
+  async replaceOrganizerCategoryPriceTiers(
+    organizerId: string,
+    eventId: string,
+    categoryId: string,
+    body: ReplaceCategoryPriceTiersBody,
+  ): Promise<OrganizerEventDetailDto> {
+    return this.request<OrganizerEventDetailDto>(
+      `/v1/organizers/${encodeURIComponent(organizerId)}/events/${encodeURIComponent(eventId)}/categories/${encodeURIComponent(categoryId)}/price-tiers`,
+      { method: 'PUT', body: JSON.stringify(body) },
+    );
+  }
+
+  async setOrganizerCategoryValidDays(
+    organizerId: string,
+    eventId: string,
+    categoryId: string,
+    dayIds: string[],
+  ): Promise<OrganizerEventDetailDto> {
+    return this.request<OrganizerEventDetailDto>(
+      `/v1/organizers/${encodeURIComponent(organizerId)}/events/${encodeURIComponent(eventId)}/categories/${encodeURIComponent(categoryId)}/valid-days`,
+      { method: 'PUT', body: JSON.stringify({ dayIds }) },
+    );
+  }
+
+  async generateAudienceDayPasses(
+    organizerId: string,
+    eventId: string,
+    body: GenerateAudienceDayPassesBody,
+  ): Promise<OrganizerEventDetailDto> {
+    return this.request<OrganizerEventDetailDto>(
+      `/v1/organizers/${encodeURIComponent(organizerId)}/events/${encodeURIComponent(eventId)}/generate-audience-day-passes`,
+      { method: 'POST', body: JSON.stringify(body) },
+    );
+  }
+
   async addOrganizerEventMediaLink(
     organizerId: string,
     eventId: string,
@@ -301,6 +350,21 @@ export class CypherApiClient {
       `/v1/registrations/${encodeURIComponent(id)}/checkout`,
       { method: 'POST', body: JSON.stringify(body) },
     );
+  }
+
+  /** Confirm paid registration after Cashfree success (webhook fallback for local/dev). */
+  async reconcileRegistrationCheckout(id: string): Promise<RegistrationDto> {
+    return this.request<RegistrationDto>(
+      `/v1/registrations/${encodeURIComponent(id)}/checkout/reconcile`,
+      { method: 'POST' },
+    );
+  }
+
+  async reconcileCashfreeOrder(orderId: string): Promise<RegistrationDto> {
+    return this.request<RegistrationDto>('/v1/payments/cashfree/reconcile', {
+      method: 'POST',
+      body: JSON.stringify({ orderId }),
+    });
   }
 
   async getOrganizerPaymentAccount(organizerId: string): Promise<OrganizerPaymentAccountDto> {

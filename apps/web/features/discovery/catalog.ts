@@ -1,4 +1,7 @@
 import { spotsLeft } from '@cypher/utils';
+import type { EventType } from '@cypher/contracts';
+
+import { EVENT_TYPE_GROUPS, normalizeStyleLabel } from '@/features/organize/event-taxonomy';
 
 export const CITIES = ['Mumbai', 'Delhi', 'Bengaluru', 'Pune'] as const;
 
@@ -6,7 +9,7 @@ export type City = (typeof CITIES)[number];
 
 export const DANCE_STYLES = [
   'Breaking',
-  'Hip-Hop',
+  'Hip Hop',
   'Popping',
   'Locking',
   'House',
@@ -16,13 +19,15 @@ export const DANCE_STYLES = [
 
 export type DanceStyle = (typeof DANCE_STYLES)[number];
 
-export const EVENT_TYPES = ['battle', 'jam', 'workshop', 'showcase'] as const;
+export const EVENT_TYPES = EVENT_TYPE_GROUPS.flatMap((g) => g.types.map((t) => t.value));
 
-export type EventType = (typeof EVENT_TYPES)[number];
+export type { EventType };
+
+export const EVENT_TYPE_FILTER_GROUPS = EVENT_TYPE_GROUPS.filter((g) => g.id !== 'other');
 
 export const FOR_YOU_TAGS = [
   'Breaking',
-  'Hip-Hop',
+  'Hip Hop',
   'Popping',
   'Locking',
   'House',
@@ -35,6 +40,10 @@ export const FOR_YOU_TAGS = [
 ] as const;
 
 export type ForYouTag = (typeof FOR_YOU_TAGS)[number];
+
+export function normalizeDiscoverStyle(tag: string): string {
+  return normalizeStyleLabel(tag);
+}
 
 export function spotsTone(
   confirmed: number,

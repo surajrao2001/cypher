@@ -17,7 +17,7 @@ import type { AuthPrincipal } from '../../common/auth/auth.types';
 import { Public } from '../../common/auth/public.decorator';
 import { getAuthUserId } from '../../common/guards/supabase-jwt.guard';
 import { PrismaService } from '../../common/prisma.service';
-import { CreateCheckoutDto, StartPayoutSetupDto } from './payments.dto';
+import { CreateCheckoutDto, ReconcileCashfreeOrderDto, StartPayoutSetupDto } from './payments.dto';
 import { PaymentsService } from './payments.service';
 
 @ApiTags('payments')
@@ -62,6 +62,28 @@ export class PaymentsController {
     @Body() body: CreateCheckoutDto,
   ) {
     return this.payments.createCheckoutSession(getAuthUserId(request), id, body.customerPhone);
+  }
+
+  @Post('registrations/:id/checkout/reconcile')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Confirm paid hold by fetching Cashfree order status (local/webhook fallback)',
+  })
+  reconcileCheckout(
+    @Req() request: FastifyRequest & { auth?: AuthPrincipal },
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.payments.reconcileCheckout(getAuthUserId(request), id);
+  }
+
+  @Post('payments/cashfree/reconcile')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Confirm paid hold by Cashfree order_id (return URL fallback)' })
+  reconcileByOrder(
+    @Req() request: FastifyRequest & { auth?: AuthPrincipal },
+    @Body() body: ReconcileCashfreeOrderDto,
+  ) {
+    return this.payments.reconcileCheckoutByOrderId(getAuthUserId(request), body.orderId);
   }
 
   @Public()

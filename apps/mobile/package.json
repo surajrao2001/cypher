@@ -16,6 +16,7 @@
   "dependencies": {
     "@cypher/api-client": "workspace:*",
     "@cypher/contracts": "workspace:*",
+    "@cypher/utils": "workspace:*",
     "@expo-google-fonts/barlow": "^0.4.1",
     "@expo-google-fonts/bebas-neue": "^0.4.1",
     "@expo/vector-icons": "^14.1.0",

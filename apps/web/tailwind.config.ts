@@ -34,7 +34,7 @@ const config: Config = {
       },
       boxShadow: {
         poster: '0 24px 60px -28px rgba(0, 0, 0, 0.85)',
-        glow: '0 0 0 1px var(--accent-primary), 0 12px 40px -16px rgba(255, 77, 0, 0.55)',
+        glow: '0 0 0 1px var(--accent-primary), 0 12px 40px -16px rgba(255, 104, 0, 0.55)',
       },
       keyframes: {
         'fade-in': {

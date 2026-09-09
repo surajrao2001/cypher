@@ -21,8 +21,23 @@ import { PrismaService } from '../../common/prisma.service';
 import { ReservationJobsService } from '../../common/queues/reservation-jobs.service';
 import { PaymentSplitJobsService } from '../../common/queues/payment-split-jobs.service';
 import type { Env } from '../../config/env.validation';
+import { toRegistrationDto } from '../registrations/registrations.service';
 import { TicketsService } from '../tickets/tickets.service';
-import { CashfreeClient } from './cashfree.client';
+import { CashfreeClient, CASHFREE_SANDBOX_BANK } from './cashfree.client';
+
+/**
+ * Cashfree Easy Split `vendor_id` must be alphanumeric.
+ * Our organizer slugs often include hyphens (`suraj-1d85`), which Cashfree rejects.
+ */
+function toCashfreeVendorId(organizerId: string, slug: string): string {
+  const slugPart = slug.replace(/[^a-zA-Z0-9]/g, '').toLowerCase().slice(0, 32);
+  const idPart = organizerId.replace(/[^a-zA-Z0-9]/g, '').slice(-10);
+  return `org${slugPart}${idPart}`.slice(0, 50);
+}
+
+function isValidCashfreeVendorId(value: string | null | undefined): boolean {
+  return Boolean(value && /^[a-zA-Z0-9]+$/.test(value));
+}
 
 @Injectable()
 export class PaymentsService {
@@ -60,7 +75,16 @@ export class PaymentsService {
    */
   async startOrganizerPayoutSetup(
     organizerId: string,
-    input: { displayName: string; contactEmail: string; contactPhone: string },
+    input: {
+      displayName: string;
+      contactEmail: string;
+      contactPhone: string;
+      pan: string;
+      bankAccountNumber?: string;
+      bankAccountHolder?: string;
+      bankIfsc?: string;
+      upiVpa?: string;
+    },
   ) {
     if (!this.cashfree.isConfigured()) {
       throw new ServiceUnavailableException('Cashfree is not configured');
@@ -71,7 +95,54 @@ export class PaymentsService {
       throw new NotFoundException('Organizer not found');
     }
 
-    const vendorId = `org_${organizer.slug}`.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 50);
+    const pan = input.pan.trim().toUpperCase();
+    if (!/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(pan)) {
+      throw new BadRequestException('pan must be a valid 10-character PAN');
+    }
+
+    const cashfreeEnv = this.config.get('CASHFREE_ENV', { infer: true }) ?? 'sandbox';
+    const sandbox = cashfreeEnv !== 'production';
+    const bankAccountNumber = input.bankAccountNumber?.trim();
+    const bankIfsc = input.bankIfsc?.trim().toUpperCase();
+    const bankAccountHolder = input.bankAccountHolder?.trim() || input.displayName.trim();
+    // Prefer explicit UPI when provided; otherwise bank (incl. sandbox test bank).
+    const wantsUpi = Boolean(input.upiVpa?.trim());
+
+    let bank:
+      | { accountNumber: string; accountHolder: string; ifsc: string }
+      | undefined;
+    if (!wantsUpi && bankAccountNumber && bankIfsc) {
+      bank = {
+        accountNumber: bankAccountNumber,
+        accountHolder: bankAccountHolder || CASHFREE_SANDBOX_BANK.accountHolder,
+        ifsc: bankIfsc,
+      };
+    } else if (!wantsUpi && sandbox) {
+      bank = {
+        accountNumber: CASHFREE_SANDBOX_BANK.accountNumber,
+        accountHolder: bankAccountHolder || CASHFREE_SANDBOX_BANK.accountHolder,
+        ifsc: CASHFREE_SANDBOX_BANK.ifsc,
+      };
+    }
+
+    const upi = wantsUpi
+      ? {
+          vpa: input.upiVpa!.trim(),
+          accountHolder: bankAccountHolder || input.displayName.trim(),
+        }
+      : undefined;
+
+    if (wantsUpi && !upi?.vpa) {
+      throw new BadRequestException('upiVpa is required when settling via UPI');
+    }
+
+    if (!bank && !upi) {
+      throw new BadRequestException(
+        'Provide bank account + IFSC (or UPI VPA). Required by Cashfree for vendor settlements.',
+      );
+    }
+
+    const vendorId = toCashfreeVendorId(organizer.id, organizer.slug);
     let account = await this.prisma.organizerPaymentAccount.findUnique({
       where: { organizerId },
     });
@@ -89,6 +160,12 @@ export class PaymentsService {
           contactPhone: input.contactPhone,
         },
       });
+    } else if (!isValidCashfreeVendorId(account.providerVendorId)) {
+      // Older rows used slug with hyphens (e.g. org_suraj-1d85) — Cashfree rejects those.
+      account = await this.prisma.organizerPaymentAccount.update({
+        where: { organizerId },
+        data: { providerVendorId: vendorId },
+      });
     }
 
     try {
@@ -97,8 +174,10 @@ export class PaymentsService {
         name: input.displayName,
         email: input.contactEmail,
         phone: input.contactPhone,
+        pan,
+        bank,
+        upi,
       });
-      const sandbox = this.config.get('CASHFREE_ENV', { infer: true }) === 'sandbox';
       account = await this.prisma.organizerPaymentAccount.update({
         where: { organizerId },
         data: {
@@ -236,6 +315,76 @@ export class PaymentsService {
       amountMinor: registration.totalAmountMinor,
       currency: registration.currency,
     };
+  }
+
+  /**
+   * Confirm paid registration by asking Cashfree for order status.
+   * Needed locally because Cashfree webhooks cannot reach 127.0.0.1.
+   */
+  async reconcileCheckout(userId: string, registrationId: string) {
+    const registration = await this.prisma.registration.findFirst({
+      where: { id: registrationId, userId },
+    });
+    if (!registration) {
+      throw new NotFoundException('Registration not found');
+    }
+    if (registration.registrationStatus === RegistrationStatus.confirmed) {
+      return this.registrationsDto(userId, registrationId);
+    }
+
+    const paymentOrder = await this.prisma.paymentOrder.findFirst({
+      where: {
+        registrationId,
+        provider: PaymentProvider.cashfree,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (!paymentOrder) {
+      throw new BadRequestException('No Cashfree order for this registration');
+    }
+
+    const order = await this.cashfree.getOrder(paymentOrder.providerOrderId);
+    const paid =
+      order.orderStatus.toUpperCase() === 'PAID' ||
+      order.orderStatus.toUpperCase() === 'SUCCESS';
+
+    if (paid) {
+      await this.confirmPaidOrder(paymentOrder.providerOrderId, {
+        data: {
+          payment: {
+            cf_payment_id: order.cfOrderId || `reconcile_${paymentOrder.providerOrderId}`,
+          },
+        },
+      });
+    }
+
+    return this.registrationsDto(userId, registrationId);
+  }
+
+  async reconcileCheckoutByOrderId(userId: string, orderId: string) {
+    const paymentOrder = await this.prisma.paymentOrder.findUnique({
+      where: { providerOrderId: orderId },
+      include: { registration: true },
+    });
+    if (!paymentOrder || paymentOrder.registration.userId !== userId) {
+      throw new NotFoundException('Payment order not found');
+    }
+    return this.reconcileCheckout(userId, paymentOrder.registrationId);
+  }
+
+  private async registrationsDto(userId: string, registrationId: string) {
+    const row = await this.prisma.registration.findFirst({
+      where: { id: registrationId, userId },
+      include: {
+        category: true,
+        event: { include: { organizer: true } },
+        participants: { orderBy: { createdAt: 'asc' } },
+      },
+    });
+    if (!row) {
+      throw new NotFoundException('Registration not found');
+    }
+    return toRegistrationDto(row, this.tickets);
   }
 
   async handleCashfreeWebhook(rawBody: string, timestamp: string, signature: string) {

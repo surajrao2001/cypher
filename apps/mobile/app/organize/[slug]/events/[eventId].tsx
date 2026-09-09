@@ -1,66 +1,60 @@
-import { useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
-import { Alert, ScrollView, TextInput, View } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Linking, Pressable, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import type { OrganizerDto, OrganizerEventDetailDto, OrganizerEventRegistrationsResponse } from '@cypher/contracts';
+import type {
+  OrganizerDto,
+  OrganizerEventDetailDto,
+  OrganizerEventRegistrationsResponse,
+} from '@cypher/contracts';
 
-import { PosterPicker } from '@/components/PosterPicker';
 import { Button } from '@/components/ui/Button';
 import { Text } from '@/components/ui/Text';
 import { useAuth } from '@/lib/auth';
-import { colors } from '@/lib/theme';
+import { cn } from '@/lib/format';
+import { webBaseUrl } from '@/lib/web';
 
-type CategoryEdit = {
-  id: string;
-  name: string;
-  capacity: string;
-  priceRupees: string;
-  teamSize: string;
-  occupied: number;
-};
+type TabId = 'overview' | 'registrations' | 'media' | 'payouts';
+
+const TABS: Array<{ id: TabId; label: string }> = [
+  { id: 'overview', label: 'Overview' },
+  { id: 'registrations', label: 'Registrations' },
+  { id: 'media', label: 'Media' },
+  { id: 'payouts', label: 'Payouts' },
+];
+
+function formatPrice(priceMinor: number): string {
+  return priceMinor === 0 ? 'Free' : `₹${Math.round(priceMinor / 100)}`;
+}
 
 export default function EventManageScreen() {
   const { slug, eventId } = useLocalSearchParams<{ slug: string; eventId: string }>();
   const auth = useAuth();
+  const router = useRouter();
+  const [tab, setTab] = useState<TabId>('overview');
   const [org, setOrg] = useState<OrganizerDto | null>(null);
   const [event, setEvent] = useState<OrganizerEventDetailDto | null>(null);
-  const [posterUrl, setPosterUrl] = useState('');
-  const [categoryEdits, setCategoryEdits] = useState<CategoryEdit[]>([]);
-  const [newCatName, setNewCatName] = useState('');
-  const [newCatCapacity, setNewCatCapacity] = useState('32');
-  const [newCatPrice, setNewCatPrice] = useState('0');
-  const [newCatTeam, setNewCatTeam] = useState('1');
+  const [regs, setRegs] = useState<OrganizerEventRegistrationsResponse | null>(null);
+  const [payoutReady, setPayoutReady] = useState(false);
+  const [payoutStatus, setPayoutStatus] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [regs, setRegs] = useState<OrganizerEventRegistrationsResponse | null>(null);
-  const [mediaTitle, setMediaTitle] = useState('');
-  const [mediaUrl, setMediaUrl] = useState('');
-
-  function sync(detail: OrganizerEventDetailDto) {
-    setEvent(detail);
-    setPosterUrl(detail.posterUrl ?? '');
-    setCategoryEdits(
-      detail.categories.map((cat) => ({
-        id: cat.id,
-        name: cat.name,
-        capacity: String(cat.capacity),
-        priceRupees: String(Math.round(cat.priceMinor / 100)),
-        teamSize: String(cat.teamSize),
-        occupied: cat.reservedCount + cat.confirmedCount,
-      })),
-    );
-  }
 
   const load = useCallback(async () => {
     if (!slug || !eventId || !auth.token) return;
     try {
       const organizer = await auth.api.getMyOrganizerBySlug(slug);
-      const detail = await auth.api.getOrganizerEvent(organizer.id, eventId);
-      const registrations = await auth.api.listOrganizerEventRegistrations(organizer.id, eventId);
+      const [detail, registrations, payout] = await Promise.all([
+        auth.api.getOrganizerEvent(organizer.id, eventId),
+        auth.api.listOrganizerEventRegistrations(organizer.id, eventId),
+        auth.api.getOrganizerPaymentAccount(organizer.id).catch(() => null),
+      ]);
       setOrg(organizer);
-      sync(detail);
+      setEvent(detail);
       setRegs(registrations);
+      setPayoutReady(Boolean(payout?.payoutReady));
+      setPayoutStatus(payout?.status ?? null);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Load failed');
@@ -71,98 +65,14 @@ export default function EventManageScreen() {
     void load();
   }, [load]);
 
-  async function savePosterAndEvent() {
-    if (!org || !event) return;
-    setPending(true);
-    setMessage(null);
-    setError(null);
-    try {
-      const updated = await auth.api.updateOrganizerEvent(org.id, event.id, {
-        posterUrl: posterUrl.trim() || null,
-      });
-      sync(updated);
-      setMessage('Event saved.');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Save failed');
-    } finally {
-      setPending(false);
-    }
-  }
-
-  async function saveCategory(row: CategoryEdit) {
-    if (!org || !event) return;
-    setPending(true);
-    setMessage(null);
-    setError(null);
-    try {
-      const updated = await auth.api.updateOrganizerEventCategory(org.id, event.id, row.id, {
-        name: row.name.trim(),
-        capacity: Number(row.capacity),
-        priceMinor: Math.round(Number(row.priceRupees || 0) * 100),
-        teamSize: Number(row.teamSize || 1),
-      });
-      sync(updated);
-      setMessage(`Updated ${row.name.trim()}.`);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not update category');
-    } finally {
-      setPending(false);
-    }
-  }
-
-  function confirmDelete(row: CategoryEdit) {
-    Alert.alert('Delete category', `Delete “${row.name}”?`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: () => void removeCategory(row),
-      },
-    ]);
-  }
-
-  async function removeCategory(row: CategoryEdit) {
-    if (!org || !event) return;
-    setPending(true);
-    setMessage(null);
-    setError(null);
-    try {
-      const updated = await auth.api.deleteOrganizerEventCategory(org.id, event.id, row.id);
-      sync(updated);
-      setMessage(`Deleted ${row.name}.`);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not delete category');
-    } finally {
-      setPending(false);
-    }
-  }
-
-  async function addCategory() {
-    if (!org || !event) return;
-    const name = newCatName.trim();
-    if (!name) {
-      setError('Category name required');
-      return;
-    }
-    setPending(true);
-    setMessage(null);
-    setError(null);
-    try {
-      const updated = await auth.api.addOrganizerEventCategory(org.id, event.id, {
-        name,
-        capacity: Number(newCatCapacity),
-        priceMinor: Math.round(Number(newCatPrice || 0) * 100),
-        teamSize: Number(newCatTeam || 1),
-      });
-      sync(updated);
-      setNewCatName('');
-      setMessage('Category added.');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not add category');
-    } finally {
-      setPending(false);
-    }
-  }
+  const competeCats = useMemo(
+    () => (event?.categories ?? []).filter((c) => c.entryType !== 'viewer'),
+    [event],
+  );
+  const audienceCat = useMemo(
+    () => (event?.categories ?? []).find((c) => c.entryType === 'viewer') ?? null,
+    [event],
+  );
 
   async function togglePublish() {
     if (!org || !event) return;
@@ -174,51 +84,10 @@ export default function EventManageScreen() {
         event.status === 'published'
           ? await auth.api.unpublishOrganizerEvent(org.id, event.id)
           : await auth.api.publishOrganizerEvent(org.id, event.id);
-      sync(updated);
+      setEvent(updated);
       setMessage(updated.status === 'published' ? 'Published to Discover.' : 'Unpublished.');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Publish failed');
-    } finally {
-      setPending(false);
-    }
-  }
-
-  async function addMediaLink() {
-    if (!org || !event) return;
-    if (!mediaTitle.trim() || !mediaUrl.trim()) {
-      setError('Media title and URL required');
-      return;
-    }
-    setPending(true);
-    setMessage(null);
-    setError(null);
-    try {
-      const updated = await auth.api.addOrganizerEventMediaLink(org.id, event.id, {
-        title: mediaTitle.trim(),
-        url: mediaUrl.trim(),
-      });
-      sync(updated);
-      setMediaTitle('');
-      setMediaUrl('');
-      setMessage('Media link added.');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not add media link');
-    } finally {
-      setPending(false);
-    }
-  }
-
-  async function removeMediaLink(mediaLinkId: string) {
-    if (!org || !event) return;
-    setPending(true);
-    setMessage(null);
-    setError(null);
-    try {
-      const updated = await auth.api.deleteOrganizerEventMediaLink(org.id, event.id, mediaLinkId);
-      sync(updated);
-      setMessage('Media link removed.');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not remove media link');
     } finally {
       setPending(false);
     }
@@ -234,7 +103,7 @@ export default function EventManageScreen() {
     );
   }
 
-  if (!event) {
+  if (!event || !org) {
     return (
       <SafeAreaView className="flex-1 bg-bg px-4">
         <Text variant="caption" className="mt-8">
@@ -244,6 +113,8 @@ export default function EventManageScreen() {
     );
   }
 
+  const editHref = `/organize/${slug}/events/${eventId}/edit`;
+
   return (
     <SafeAreaView className="flex-1 bg-bg" edges={['bottom']}>
       <ScrollView contentContainerClassName="gap-3 px-4 pb-10 pt-2">
@@ -252,211 +123,18 @@ export default function EventManageScreen() {
           {event.title}
         </Text>
         <Text variant="caption">
-          {event.city} · {new Date(event.startTime).toLocaleString()}
+          {event.city}
+          {event.venue ? ` · ${event.venue}` : ''} · {new Date(event.startTime).toLocaleString()}
         </Text>
 
-        <PosterPicker value={posterUrl} onChange={setPosterUrl} disabled={pending} />
-        <Button loading={pending} variant="secondary" onPress={() => void savePosterAndEvent()}>
-          Save poster
-        </Button>
-
-        <Text variant="label" className="mt-2">
-          Registration categories
-        </Text>
-        {categoryEdits.map((row) => {
-          const canDelete = categoryEdits.length > 1 && row.occupied === 0;
-          return (
-            <View key={row.id} className="gap-2 border border-border p-3">
-              <Text variant="caption">Category name</Text>
-              <TextInput
-                value={row.name}
-                onChangeText={(name) =>
-                  setCategoryEdits((rows) =>
-                    rows.map((item) => (item.id === row.id ? { ...item, name } : item)),
-                  )
-                }
-                placeholder="e.g. Open"
-                placeholderTextColor={colors.muted}
-                className="h-11 rounded-md border border-border bg-elevated px-3"
-                style={{ color: colors.ink }}
-              />
-              <Text variant="caption">Max spots · Fee (₹) · Dancers per entry</Text>
-              <View className="flex-row gap-2">
-                <TextInput
-                  value={row.capacity}
-                  onChangeText={(capacity) =>
-                    setCategoryEdits((rows) =>
-                      rows.map((item) => (item.id === row.id ? { ...item, capacity } : item)),
-                    )
-                  }
-                  keyboardType="number-pad"
-                  className="h-11 flex-1 rounded-md border border-border bg-elevated px-3"
-                  style={{ color: colors.ink }}
-                />
-                <TextInput
-                  value={row.priceRupees}
-                  onChangeText={(priceRupees) =>
-                    setCategoryEdits((rows) =>
-                      rows.map((item) => (item.id === row.id ? { ...item, priceRupees } : item)),
-                    )
-                  }
-                  keyboardType="number-pad"
-                  className="h-11 flex-1 rounded-md border border-border bg-elevated px-3"
-                  style={{ color: colors.ink }}
-                />
-                <TextInput
-                  value={row.teamSize}
-                  onChangeText={(teamSize) =>
-                    setCategoryEdits((rows) =>
-                      rows.map((item) => (item.id === row.id ? { ...item, teamSize } : item)),
-                    )
-                  }
-                  keyboardType="number-pad"
-                  className="h-11 flex-1 rounded-md border border-border bg-elevated px-3"
-                  style={{ color: colors.ink }}
-                />
-              </View>
-              <Button loading={pending} variant="secondary" onPress={() => void saveCategory(row)}>
-                Save category
-              </Button>
-              <Button
-                disabled={!canDelete || pending}
-                variant="ghost"
-                onPress={() => confirmDelete(row)}
-              >
-                Delete category
-              </Button>
-            </View>
-          );
-        })}
-
-        <Text variant="label">Add category</Text>
-        <TextInput
-          value={newCatName}
-          onChangeText={setNewCatName}
-          placeholder="Category name"
-          placeholderTextColor={colors.muted}
-          className="h-11 rounded-md border border-border bg-elevated px-3"
-          style={{ color: colors.ink }}
-        />
-        <View className="flex-row gap-2">
-          <TextInput
-            value={newCatCapacity}
-            onChangeText={setNewCatCapacity}
-            keyboardType="number-pad"
-            placeholder="Spots"
-            placeholderTextColor={colors.muted}
-            className="h-11 flex-1 rounded-md border border-border bg-elevated px-3"
-            style={{ color: colors.ink }}
-          />
-          <TextInput
-            value={newCatPrice}
-            onChangeText={setNewCatPrice}
-            keyboardType="number-pad"
-            placeholder="₹"
-            placeholderTextColor={colors.muted}
-            className="h-11 flex-1 rounded-md border border-border bg-elevated px-3"
-            style={{ color: colors.ink }}
-          />
-          <TextInput
-            value={newCatTeam}
-            onChangeText={setNewCatTeam}
-            keyboardType="number-pad"
-            placeholder="Team"
-            placeholderTextColor={colors.muted}
-            className="h-11 flex-1 rounded-md border border-border bg-elevated px-3"
-            style={{ color: colors.ink }}
-          />
+        <View className="mt-2 flex-row flex-wrap gap-2">
+          <Button variant="secondary" onPress={() => router.push(editHref)}>
+            Edit
+          </Button>
+          <Button loading={pending} variant="lime" onPress={() => void togglePublish()}>
+            {event.status === 'published' ? 'Unpublish' : 'Publish'}
+          </Button>
         </View>
-        <Button loading={pending} variant="secondary" onPress={() => void addCategory()}>
-          Add category
-        </Button>
-
-        <Text variant="label" className="mt-2">
-          Event media
-        </Text>
-        <Text variant="caption">YouTube / IG / Drive links — not hosted video.</Text>
-        {(event.mediaLinks ?? []).map((link) => (
-          <View key={link.id} className="gap-2 border border-border px-3 py-2">
-            <Text variant="body" className="font-semibold">
-              {link.title}
-            </Text>
-            <Text variant="caption">
-              {link.kind} · {link.url}
-            </Text>
-            <Button
-              loading={pending}
-              variant="ghost"
-              onPress={() => void removeMediaLink(link.id)}
-            >
-              Remove
-            </Button>
-          </View>
-        ))}
-        <TextInput
-          value={mediaTitle}
-          onChangeText={setMediaTitle}
-          placeholder="Link title"
-          placeholderTextColor={colors.muted}
-          className="h-11 rounded-md border border-border bg-elevated px-3"
-          style={{ color: colors.ink }}
-        />
-        <TextInput
-          value={mediaUrl}
-          onChangeText={setMediaUrl}
-          placeholder="https://..."
-          autoCapitalize="none"
-          placeholderTextColor={colors.muted}
-          className="h-11 rounded-md border border-border bg-elevated px-3"
-          style={{ color: colors.ink }}
-        />
-        <Button loading={pending} variant="secondary" onPress={() => void addMediaLink()}>
-          Add media link
-        </Button>
-
-        <Text variant="label" className="mt-2">
-          Registrations
-        </Text>
-        {regs ? (
-          <>
-            <Text variant="caption">
-              Pending {regs.totals.pending} · Confirmed {regs.totals.confirmed}
-              {regs.totals.other > 0 ? ` · Other ${regs.totals.other}` : ''}
-            </Text>
-            {regs.categories.map((cat) => (
-              <View key={cat.id} className="border border-border px-3 py-2">
-                <Text variant="body" className="font-semibold">
-                  {cat.name}
-                </Text>
-                <Text variant="caption">
-                  {cat.confirmedCount} confirmed · {cat.reservedCount} held · {cat.capacity} cap
-                </Text>
-              </View>
-            ))}
-            {regs.items.length === 0 ? (
-              <Text variant="caption">
-                No registrations yet. Share the public event link so dancers can hold a spot.
-              </Text>
-            ) : (
-              regs.items.map((row) => (
-                <View key={row.id} className="gap-1 border border-border px-3 py-2">
-                  <Text variant="body" className="font-semibold">
-                    {row.categoryName} · {row.registrationStatus.replaceAll('_', ' ')}
-                  </Text>
-                  {row.entryName ? <Text variant="caption">Entry {row.entryName}</Text> : null}
-                  <Text variant="caption">
-                    {row.participants
-                      .map((p) => `${p.displayName}${p.isTeamCaptain ? ' (captain)' : ''}`)
-                      .join(', ')}
-                  </Text>
-                  <Text variant="caption">{row.registrationCode}</Text>
-                </View>
-              ))
-            )}
-          </>
-        ) : (
-          <Text variant="caption">Loading registrations…</Text>
-        )}
 
         {message ? <Text variant="caption">{message}</Text> : null}
         {error ? (
@@ -464,9 +142,175 @@ export default function EventManageScreen() {
             {error}
           </Text>
         ) : null}
-        <Button loading={pending} variant="lime" onPress={() => void togglePublish()}>
-          {event.status === 'published' ? 'Unpublish' : 'Publish'}
-        </Button>
+
+        <View className="mt-2 flex-row flex-wrap gap-2 border-b border-border pb-2">
+          {TABS.map((item) => (
+            <Pressable
+              key={item.id}
+              onPress={() => setTab(item.id)}
+              className={cn(
+                'rounded-sm px-3 py-2',
+                tab === item.id ? 'bg-accent' : 'active:bg-elevated',
+              )}
+            >
+              <Text
+                variant="label"
+                className={cn(
+                  'text-[10px] tracking-[1.4px]',
+                  tab === item.id ? 'text-ink' : 'text-muted',
+                )}
+              >
+                {item.label}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+
+        {tab === 'overview' ? (
+          <View className="gap-4">
+            {event.description ? (
+              <View className="gap-1">
+                <Text variant="label">About</Text>
+                <Text variant="caption">{event.description}</Text>
+              </View>
+            ) : null}
+
+            <View className="gap-2">
+              <Text variant="label">Compete</Text>
+              {competeCats.length === 0 ? (
+                <Text variant="caption">No competition categories yet.</Text>
+              ) : (
+                competeCats.map((cat) => (
+                  <View key={cat.id} className="border border-border px-3 py-2">
+                    <Text variant="body" className="font-semibold">
+                      {cat.name}
+                    </Text>
+                    <Text variant="caption">
+                      {cat.entryType} · {cat.confirmedCount}/{cat.capacity} confirmed
+                      {cat.reservedCount ? ` · ${cat.reservedCount} held` : ''} ·{' '}
+                      {formatPrice(cat.priceMinor)}
+                    </Text>
+                  </View>
+                ))
+              )}
+            </View>
+
+            <View className="gap-2">
+              <Text variant="label">Audience</Text>
+              {audienceCat ? (
+                <View className="border border-border bg-elevated/40 px-3 py-2">
+                  <Text variant="body" className="font-semibold">
+                    Watch / audience
+                  </Text>
+                  <Text variant="caption">
+                    {formatPrice(audienceCat.priceMinor)} · {audienceCat.confirmedCount}/
+                    {audienceCat.capacity} confirmed
+                    {audienceCat.reservedCount ? ` · ${audienceCat.reservedCount} held` : ''}
+                  </Text>
+                </View>
+              ) : (
+                <Text variant="caption">
+                  No audience pass — enable one when you edit this event.
+                </Text>
+              )}
+            </View>
+          </View>
+        ) : null}
+
+        {tab === 'registrations' ? (
+          <View className="gap-2">
+            {regs ? (
+              <>
+                <Text variant="caption">
+                  Pending {regs.totals.pending} · Confirmed {regs.totals.confirmed}
+                  {regs.totals.other > 0 ? ` · Other ${regs.totals.other}` : ''}
+                </Text>
+                {regs.categories.map((cat) => (
+                  <View key={cat.id} className="border border-border px-3 py-2">
+                    <Text variant="body" className="font-semibold">
+                      {cat.name}
+                    </Text>
+                    <Text variant="caption">
+                      {cat.confirmedCount} confirmed · {cat.reservedCount} held · {cat.capacity}{' '}
+                      cap
+                    </Text>
+                  </View>
+                ))}
+                {regs.items.length === 0 ? (
+                  <Text variant="caption">
+                    No registrations yet. Share the public event link so dancers can hold a spot.
+                  </Text>
+                ) : (
+                  regs.items.map((row) => (
+                    <View key={row.id} className="gap-1 border border-border px-3 py-2">
+                      <Text variant="body" className="font-semibold">
+                        {row.categoryName} · {row.registrationStatus.replaceAll('_', ' ')}
+                      </Text>
+                      {row.entryName ? (
+                        <Text variant="caption">Entry {row.entryName}</Text>
+                      ) : null}
+                      <Text variant="caption">
+                        {row.participants
+                          .map((p) => `${p.displayName}${p.isTeamCaptain ? ' (captain)' : ''}`)
+                          .join(', ')}
+                      </Text>
+                      <Text variant="caption">{row.registrationCode}</Text>
+                    </View>
+                  ))
+                )}
+              </>
+            ) : (
+              <Text variant="caption">Loading registrations…</Text>
+            )}
+          </View>
+        ) : null}
+
+        {tab === 'media' ? (
+          <View className="gap-2">
+            <Text variant="caption">YouTube / IG / Drive links — not hosted video.</Text>
+            {(event.mediaLinks ?? []).length === 0 ? (
+              <Text variant="caption">No media links yet. Add them in Edit.</Text>
+            ) : (
+              (event.mediaLinks ?? []).map((link) => (
+                <View key={link.id} className="gap-1 border border-border px-3 py-2">
+                  <Text variant="body" className="font-semibold">
+                    {link.title}
+                  </Text>
+                  <Text variant="caption">
+                    {link.kind} · {link.url}
+                  </Text>
+                </View>
+              ))
+            )}
+          </View>
+        ) : null}
+
+        {tab === 'payouts' ? (
+          <View className="gap-3 rounded-sm border border-border bg-elevated/40 p-4">
+            <Text variant="kicker">Settlement</Text>
+            <Text variant="subtitle" className="text-[22px]">
+              {payoutReady ? 'Connected' : 'Pending'}
+            </Text>
+            {payoutStatus ? (
+              <Text variant="caption">Account status: {payoutStatus}</Text>
+            ) : null}
+            <Text variant="caption">
+              {payoutReady
+                ? 'Paid entry and audience fees settle to the connected bank or UPI. Settlement setup is managed on web.'
+                : 'Settlement is set up on web. Connect bank or UPI there before charging fees above ₹0. Free (₹0) events still work without it.'}
+            </Text>
+            <Button
+              variant="secondary"
+              onPress={() =>
+                void Linking.openURL(
+                  `${webBaseUrl().replace(/\/$/, '')}/organize/${org.slug}?payout=1`,
+                )
+              }
+            >
+              Open settlement on web
+            </Button>
+          </View>
+        ) : null}
       </ScrollView>
     </SafeAreaView>
   );

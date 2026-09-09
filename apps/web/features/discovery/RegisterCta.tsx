@@ -14,21 +14,41 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import {
+  toastCopy,
+  toastDismiss,
+  toastInfo,
+  toastPending,
+  toastReject,
+  toastResolve,
+} from '@/components/ui/toaster';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { openCashfreeCheckout } from '@/features/payments/cashfree-checkout';
+import { cn } from '@/lib/utils';
 
 interface RegisterCtaProps {
   event: EventDetailDto;
   spotsLeft: number;
 }
 
-export function RegisterCta({ event, spotsLeft }: RegisterCtaProps) {
+type Mode = 'compete' | 'watch';
+type Step = 'category' | 'details' | 'pay' | 'confirm';
+
+export function RegisterCta({ event }: RegisterCtaProps) {
   const { token, me, api } = useAuth();
-  const [open, setOpen] = useState(false);
-  const [categoryId, setCategoryId] = useState(event.categories[0]?.id ?? '');
+  const compete = event.competeCategories?.length
+    ? event.competeCategories
+    : event.categories.filter((c) => c.entryType !== 'viewer');
+  const viewers = event.viewerCategories?.length
+    ? event.viewerCategories
+    : event.categories.filter((c) => c.entryType === 'viewer');
+
+  const [mode, setMode] = useState<Mode | null>(null);
+  const [step, setStep] = useState<Step>('category');
+  const [categoryId, setCategoryId] = useState(compete[0]?.id ?? '');
+  const [viewerCategoryId, setViewerCategoryId] = useState(viewers[0]?.id ?? '');
   const [entryName, setEntryName] = useState('');
   const [names, setNames] = useState<string[]>(['']);
   const [customerPhone, setCustomerPhone] = useState('');
@@ -36,83 +56,130 @@ export function RegisterCta({ event, spotsLeft }: RegisterCtaProps) {
   const [error, setError] = useState<string | null>(null);
   const [held, setHeld] = useState<RegistrationDto | null>(null);
 
-  const category = useMemo(
-    () => event.categories.find((row) => row.id === categoryId) ?? event.categories[0],
-    [categoryId, event.categories],
-  );
+  const category = useMemo(() => {
+    if (mode === 'watch') {
+      return viewers.find((row) => row.id === viewerCategoryId) ?? viewers[0];
+    }
+    return compete.find((row) => row.id === categoryId) ?? compete[0];
+  }, [categoryId, compete, mode, viewerCategoryId, viewers]);
+
+  const sellPrice = category?.currentPriceMinor ?? category?.priceMinor ?? 0;
 
   const categorySpotsLeft = category
     ? calcSpotsLeft(category.capacity, category.confirmedCount + category.reservedCount)
     : 0;
-  const soldOut = spotsLeft === 0 || categorySpotsLeft === 0;
-  const minSize = category?.minTeamSize ?? 1;
-  const maxSize = category?.maxTeamSize ?? 1;
+  const soldOut = categorySpotsLeft === 0;
+  const minSize = mode === 'watch' ? 1 : (category?.minTeamSize ?? 1);
+  const maxSize = mode === 'watch' ? 1 : (category?.maxTeamSize ?? 1);
+  const open = mode !== null;
+  const isConfirmed = held?.registrationStatus === 'confirmed';
+  const needsPay = Boolean(held && !isConfirmed && held.totalAmountMinor > 0);
+
+  const stepList = useMemo(() => {
+    const steps: Array<{ id: Step; label: string }> = [];
+    if (mode === 'compete' || (mode === 'watch' && viewers.length > 1)) {
+      steps.push({ id: 'category', label: 'Category' });
+    }
+    steps.push({ id: 'details', label: 'Details' });
+    if (held && held.totalAmountMinor > 0) steps.push({ id: 'pay', label: 'Pay' });
+    if (held || isConfirmed) steps.push({ id: 'confirm', label: 'Confirm' });
+    return steps;
+  }, [held, isConfirmed, mode, viewers.length]);
+
+  function openMode(next: Mode) {
+    setMode(next);
+    setHeld(null);
+    setError(null);
+    setEntryName('');
+    setCustomerPhone('');
+    if (next === 'compete') {
+      const first = compete[0];
+      setCategoryId(first?.id ?? '');
+      setNames(Array.from({ length: first?.minTeamSize ?? 1 }, () => ''));
+      setStep(compete.length > 1 ? 'category' : 'details');
+    } else {
+      const first = viewers[0];
+      setViewerCategoryId(first?.id ?? '');
+      setNames(['']);
+      setStep(viewers.length > 1 ? 'category' : 'details');
+    }
+  }
 
   function syncParticipantSlots(nextCategoryId: string) {
-    const next = event.categories.find((row) => row.id === nextCategoryId);
+    const next = compete.find((row) => row.id === nextCategoryId);
     const size = next?.minTeamSize ?? 1;
     setCategoryId(nextCategoryId);
     setNames(Array.from({ length: size }, (_, index) => names[index] ?? ''));
     setError(null);
-    setHeld(null);
   }
 
   async function submit() {
-    if (!token || !me) {
-      return;
-    }
-    if (!category) {
+    if (!token || !me || !category) {
       setError('Choose a category');
       return;
     }
-    const trimmed = names.map((name) => name.trim()).filter(Boolean);
+    const trimmed =
+      mode === 'watch'
+        ? [(names[0] || me.profile.dancerName || me.profile.name || 'Guest').trim()].filter(Boolean)
+        : names.map((name) => name.trim()).filter(Boolean);
     if (trimmed.length < minSize || trimmed.length > maxSize) {
       setError(`Add ${minSize === maxSize ? minSize : `${minSize}-${maxSize}`} participants`);
       return;
     }
     setBusy(true);
     setError(null);
+    const tid = toastPending(toastCopy.registering);
     try {
       let registration = await api.createRegistration({
         categoryId: category.id,
-        entryName: entryName.trim() || undefined,
+        entryName: mode === 'compete' && entryName.trim() ? entryName.trim() : undefined,
         participants: trimmed.map((displayName, index) => ({
           displayName,
           dancerName: index === 0 ? me.profile.dancerName ?? undefined : undefined,
-          userId: index === 0 ? me.profile.id : undefined,
+          userId: index === 0 ? me.userId : undefined,
           isTeamCaptain: index === 0,
         })),
       });
       if (registration.totalAmountMinor === 0) {
         registration = await api.confirmFreeRegistration(registration.id);
+        setHeld(registration);
+        setStep('confirm');
+        toastResolve(tid, toastCopy.confirmed);
+      } else {
+        setHeld(registration);
+        setStep('pay');
+        toastResolve(tid, toastCopy.registered);
       }
-      setHeld(registration);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not register');
+      const detail = err instanceof Error ? err.message : undefined;
+      toastReject(tid, toastCopy.registerFailed, detail);
+      setError(detail ?? 'Could not register');
     } finally {
       setBusy(false);
     }
   }
 
   async function confirmHeld() {
-    if (!held || held.totalAmountMinor !== 0) {
-      return;
-    }
+    if (!held || held.totalAmountMinor !== 0) return;
     setBusy(true);
     setError(null);
+    const tid = toastPending(toastCopy.registering);
     try {
-      setHeld(await api.confirmFreeRegistration(held.id));
+      const next = await api.confirmFreeRegistration(held.id);
+      setHeld(next);
+      setStep('confirm');
+      toastResolve(tid, toastCopy.confirmed);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not confirm');
+      const detail = err instanceof Error ? err.message : undefined;
+      toastReject(tid, toastCopy.registerFailed, detail);
+      setError(detail ?? 'Could not confirm');
     } finally {
       setBusy(false);
     }
   }
 
   async function payHeld() {
-    if (!held || held.totalAmountMinor <= 0) {
-      return;
-    }
+    if (!held || held.totalAmountMinor <= 0) return;
     const phone = customerPhone.replace(/\D/g, '').slice(-10);
     if (!/^[6-9]\d{9}$/.test(phone)) {
       setError('Enter a valid 10-digit Indian mobile for checkout');
@@ -120,62 +187,157 @@ export function RegisterCta({ event, spotsLeft }: RegisterCtaProps) {
     }
     setBusy(true);
     setError(null);
+    const tid = toastPending(toastCopy.paying);
     try {
       const session = await api.createRegistrationCheckout(held.id, { customerPhone: phone });
-      await openCashfreeCheckout(session.paymentSessionId);
+      const checkout = await openCashfreeCheckout(session.paymentSessionId);
+      if (checkout.error) {
+        toastReject(tid, toastCopy.payCancelled, checkout.error.message);
+        setError(checkout.error.message || toastCopy.payCancelled);
+        return;
+      }
+      for (let attempt = 0; attempt < 12; attempt += 1) {
+        await new Promise((resolve) => window.setTimeout(resolve, attempt === 0 ? 800 : 1500));
+        try {
+          const latest = await api.reconcileRegistrationCheckout(held.id);
+          setHeld(latest);
+          if (latest.registrationStatus === 'confirmed') {
+            setStep('confirm');
+            toastResolve(tid, toastCopy.payDone);
+            return;
+          }
+        } catch {
+          const latest = await api.getRegistration(held.id);
+          setHeld(latest);
+          if (latest.registrationStatus === 'confirmed') {
+            setStep('confirm');
+            toastResolve(tid, toastCopy.payDone);
+            return;
+          }
+        }
+      }
+      toastInfo(toastCopy.payDone, 'If Tickets are quiet, give it a minute.');
+      toastDismiss(tid);
+      setError('Payment submitted — check Tickets shortly.');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not start payment');
+      const detail = err instanceof Error ? err.message : undefined;
+      toastReject(tid, toastCopy.payFailed, detail);
+      setError(detail ?? 'Could not start payment');
+    } finally {
       setBusy(false);
     }
   }
 
-  const isConfirmed = held?.registrationStatus === 'confirmed';
+  const competeSoldOut = compete.every(
+    (row) => calcSpotsLeft(row.capacity, row.confirmedCount + row.reservedCount) === 0,
+  );
+  const watchSoldOut =
+    viewers.length === 0 ||
+    viewers.every(
+      (row) => calcSpotsLeft(row.capacity, row.confirmedCount + row.reservedCount) === 0,
+    );
+  const watchFromPrice = viewers.reduce(
+    (min, row) => Math.min(min, row.currentPriceMinor ?? row.priceMinor),
+    viewers[0]?.currentPriceMinor ?? viewers[0]?.priceMinor ?? 0,
+  );
+  const feeMinor = held?.totalAmountMinor ?? sellPrice;
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button size="lg" disabled={soldOut && !held}>
-          {soldOut ? 'Sold out' : 'Register now'}
+    <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+      {compete.length > 0 ? (
+        <Button size="lg" disabled={competeSoldOut} onClick={() => openMode('compete')}>
+          {competeSoldOut ? 'Compete sold out' : 'Compete'}
         </Button>
-      </DialogTrigger>
-      <DialogContent className="max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>
-            {isConfirmed ? 'Registered' : held ? 'Spot held' : 'Choose category'}
-          </DialogTitle>
-          <DialogDescription>
-            {isConfirmed
-              ? 'Entry confirmed. Open Tickets for your QR pass.'
-              : held
-                ? held.totalAmountMinor === 0
-                  ? 'Confirm your free entry to lock the spot.'
-                  : 'Pay with Cashfree to confirm. The hold expires if payment does not complete.'
-                : 'Register for one category entry. Capacity counts teams, not dancers.'}
-          </DialogDescription>
-        </DialogHeader>
+      ) : null}
+      {viewers.length > 0 ? (
+        <Button
+          size="lg"
+          variant={compete.length > 0 ? 'outline' : 'default'}
+          disabled={watchSoldOut}
+          onClick={() => openMode('watch')}
+        >
+          {watchSoldOut
+            ? 'Viewers sold out'
+            : `Watch · ${watchFromPrice === 0 ? 'Free' : `from ${formatMinorUnits(watchFromPrice)}`}`}
+        </Button>
+      ) : null}
+      {compete.length === 0 && viewers.length === 0 ? (
+        <Button size="lg" disabled>
+          Registration closed
+        </Button>
+      ) : null}
 
-        {!token || !me ? (
-          <div className="space-y-4">
-            <p className="text-sm text-text-secondary">Sign in with Google or email to hold a spot.</p>
-            <Button asChild>
-              <Link href={`${routes.login}?next=/events/${event.slug}`}>Sign in</Link>
-            </Button>
-          </div>
-        ) : held ? (
-          <div className="space-y-3 rounded-md border border-border bg-elevated p-4 text-sm">
-            <p className="font-display text-2xl uppercase tracking-[0.06em]">{held.category.name}</p>
-            <p className="text-text-secondary">Code {held.registrationCode}</p>
-            <p className="text-text-secondary">Status {held.registrationStatus}</p>
-            {!isConfirmed && held.reservationExpiresAt ? (
-              <p className="text-text-secondary">
-                Hold expires {new Date(held.reservationExpiresAt).toLocaleString()}
-              </p>
-            ) : null}
-            <p className="text-text-primary">
-              {held.totalAmountMinor === 0 ? 'Free entry' : formatMinorUnits(held.totalAmountMinor)}
-            </p>
-            {!isConfirmed && held.totalAmountMinor > 0 ? (
-              <div className="space-y-1 pt-2">
+      <Dialog
+        open={open}
+        onOpenChange={(next) => {
+          if (!next) setMode(null);
+        }}
+      >
+        <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {isConfirmed
+                ? 'You’re in'
+                : mode === 'watch'
+                  ? 'Viewers pass'
+                  : 'Compete registration'}
+            </DialogTitle>
+            <DialogDescription>
+              {isConfirmed
+                ? 'Pass confirmed. Open Tickets for your QR.'
+                : mode === 'watch'
+                  ? 'One pass for the floor — no battle category needed.'
+                  : 'Pick a lane, add your crew, then confirm.'}
+            </DialogDescription>
+          </DialogHeader>
+
+          {stepList.length > 1 ? (
+            <ol className="flex flex-wrap gap-2 border-b border-border pb-3">
+              {stepList.map((item, index) => {
+                const active = item.id === step;
+                const done = stepList.findIndex((s) => s.id === step) > index;
+                return (
+                  <li
+                    key={item.id}
+                    className={cn(
+                      'text-[11px] font-semibold uppercase tracking-[0.12em]',
+                      active ? 'text-accent' : done ? 'text-text-secondary' : 'text-text-muted',
+                    )}
+                  >
+                    {index + 1}. {item.label}
+                    {index < stepList.length - 1 ? (
+                      <span className="ml-2 text-text-muted">/</span>
+                    ) : null}
+                  </li>
+                );
+              })}
+            </ol>
+          ) : null}
+
+          {!token || !me ? (
+            <div className="space-y-4">
+              <p className="text-sm text-text-secondary">Sign in to hold a spot.</p>
+              <Button asChild>
+                <Link href={`${routes.login}?next=/events/${event.slug}`}>Sign in</Link>
+              </Button>
+            </div>
+          ) : isConfirmed && held ? (
+            <SummaryCard
+              title={held.category.entryType === 'viewer' ? 'Viewers pass' : held.category.name}
+              code={held.registrationCode}
+              feeMinor={held.totalAmountMinor}
+              status="Confirmed"
+            />
+          ) : held && step === 'pay' ? (
+            <div className="space-y-4">
+              <SummaryCard
+                title={held.category.entryType === 'viewer' ? 'Viewers pass' : held.category.name}
+                code={held.registrationCode}
+                feeMinor={held.totalAmountMinor}
+                status="Spot held"
+                expiresAt={held.reservationExpiresAt}
+              />
+              <div className="space-y-1">
                 <label className="text-xs uppercase tracking-[0.14em] text-text-muted" htmlFor="pay-phone">
                   Mobile for payment
                 </label>
@@ -187,96 +349,247 @@ export function RegisterCta({ event, spotsLeft }: RegisterCtaProps) {
                   inputMode="numeric"
                 />
               </div>
-            ) : null}
-            {error ? <p className="text-sm text-red-400">{error}</p> : null}
-          </div>
-        ) : (
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <p className="text-xs uppercase tracking-[0.14em] text-text-muted">Category</p>
-              <select
-                className="flex h-10 w-full rounded-md border border-border bg-elevated px-3 text-sm"
-                value={category?.id}
-                onChange={(event) => syncParticipantSlots(event.target.value)}
-              >
-                {event.categories.map((row) => {
+              {error ? <p className="text-sm text-red-400">{error}</p> : null}
+            </div>
+          ) : held && !isConfirmed && held.totalAmountMinor === 0 ? (
+            <div className="space-y-4">
+              <SummaryCard
+                title={held.category.entryType === 'viewer' ? 'Viewers pass' : held.category.name}
+                code={held.registrationCode}
+                feeMinor={0}
+                status="Confirm free entry"
+                expiresAt={held.reservationExpiresAt}
+              />
+              {error ? <p className="text-sm text-red-400">{error}</p> : null}
+            </div>
+          ) : step === 'category' && mode === 'watch' ? (
+            <div className="space-y-3">
+              <p className="text-xs uppercase tracking-[0.14em] text-text-muted">Choose pass</p>
+              <ul className="space-y-2">
+                {viewers.map((row) => {
                   const left = calcSpotsLeft(row.capacity, row.confirmedCount + row.reservedCount);
+                  const price = row.currentPriceMinor ?? row.priceMinor;
+                  const selected = category?.id === row.id;
                   return (
-                    <option key={row.id} value={row.id} disabled={left === 0}>
-                      {row.name} · {row.priceMinor === 0 ? 'Free' : formatMinorUnits(row.priceMinor)} ·{' '}
-                      {left} left
-                    </option>
+                    <li key={row.id}>
+                      <button
+                        type="button"
+                        disabled={left === 0}
+                        onClick={() => {
+                          setViewerCategoryId(row.id);
+                          setError(null);
+                        }}
+                        className={cn(
+                          'flex w-full items-center gap-3 rounded-lg border px-4 py-3 text-left transition-colors',
+                          selected
+                            ? 'border-accent bg-accent/10'
+                            : 'border-border bg-elevated hover:border-accent/40',
+                          left === 0 && 'opacity-40',
+                        )}
+                      >
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-sm font-semibold text-text-primary">{row.name}</span>
+                          <span className="block text-xs text-text-muted">
+                            {price === 0 ? 'Free' : formatMinorUnits(price)}
+                            {row.activeTierName ? ` · ${row.activeTierName}` : ''} · {left} left
+                          </span>
+                        </span>
+                      </button>
+                    </li>
                   );
                 })}
-              </select>
+              </ul>
             </div>
+          ) : step === 'category' && mode === 'compete' ? (
+            <div className="space-y-3">
+              <p className="text-xs uppercase tracking-[0.14em] text-text-muted">Choose category</p>
+              <ul className="space-y-2">
+                {compete.map((row) => {
+                  const left = calcSpotsLeft(row.capacity, row.confirmedCount + row.reservedCount);
+                  const selected = category?.id === row.id;
+                  return (
+                    <li key={row.id}>
+                      <button
+                        type="button"
+                        disabled={left === 0}
+                        onClick={() => syncParticipantSlots(row.id)}
+                        className={cn(
+                          'flex w-full items-center gap-3 rounded-lg border px-4 py-3 text-left transition-colors',
+                          selected
+                            ? 'border-accent bg-accent/10'
+                            : 'border-border bg-elevated hover:border-accent/40',
+                          left === 0 && 'opacity-40',
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            'flex h-4 w-4 shrink-0 items-center justify-center rounded-full border',
+                            selected ? 'border-accent bg-accent' : 'border-border',
+                          )}
+                        >
+                          {selected ? <span className="h-1.5 w-1.5 rounded-full bg-white" /> : null}
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-sm font-semibold text-text-primary">{row.name}</span>
+                          <span className="block text-xs text-text-muted">
+                            {(row.currentPriceMinor ?? row.priceMinor) === 0
+                              ? 'Free'
+                              : formatMinorUnits(row.currentPriceMinor ?? row.priceMinor)}{' '}
+                            · {left} left
+                            {row.activeTierName ? ` · ${row.activeTierName}` : ''}
+                          </span>
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <SummaryCard
+                title={
+                  mode === 'watch'
+                    ? category?.name || 'Viewers pass'
+                    : category?.name ?? 'Category'
+                }
+                feeMinor={feeMinor}
+                status={`${categorySpotsLeft} spots left`}
+              />
+              {mode === 'watch' ? (
+                <label className="block space-y-2 text-sm text-text-secondary">
+                  Your name
+                  <Input
+                    value={names[0] ?? ''}
+                    onChange={(e) => setNames([e.target.value])}
+                    placeholder={me.profile.dancerName ?? me.profile.name ?? 'Name on the pass'}
+                  />
+                </label>
+              ) : (
+                <>
+                  {maxSize > 1 ? (
+                    <label className="block space-y-2 text-sm text-text-secondary">
+                      Team / entry name
+                      <Input
+                        value={entryName}
+                        onChange={(e) => setEntryName(e.target.value)}
+                        placeholder="Optional"
+                      />
+                    </label>
+                  ) : null}
+                  <div className="space-y-2">
+                    <p className="text-xs uppercase tracking-[0.14em] text-text-muted">
+                      Participants ({minSize === maxSize ? minSize : `${minSize}–${maxSize}`})
+                    </p>
+                    {names.map((name, index) => (
+                      <Input
+                        key={`p-${String(index)}`}
+                        value={name}
+                        placeholder={index === 0 ? 'Captain / you' : `Dancer ${String(index + 1)}`}
+                        onChange={(e) => {
+                          const next = [...names];
+                          next[index] = e.target.value;
+                          setNames(next);
+                        }}
+                      />
+                    ))}
+                    {names.length < maxSize ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setNames([...names, ''])}
+                      >
+                        Add dancer
+                      </Button>
+                    ) : null}
+                  </div>
+                </>
+              )}
+              {error ? <p className="text-sm text-red-400">{error}</p> : null}
+            </div>
+          )}
 
-            {maxSize > 1 ? (
-              <div className="space-y-2">
-                <p className="text-xs uppercase tracking-[0.14em] text-text-muted">Team / entry name</p>
-                <Input
-                  id="entryName"
-                  value={entryName}
-                  onChange={(event) => setEntryName(event.target.value)}
-                  placeholder="Optional"
-                />
-              </div>
-            ) : null}
-
-            <div className="space-y-2">
-              <p className="text-xs uppercase tracking-[0.14em] text-text-muted">
-                Participants ({minSize === maxSize ? minSize : `${minSize}–${maxSize}`})
-              </p>
-              {names.map((name, index) => (
-                <Input
-                  key={`p-${String(index)}`}
-                  value={name}
-                  placeholder={index === 0 ? 'Captain / you' : `Dancer ${String(index + 1)}`}
-                  onChange={(event) => {
-                    const next = [...names];
-                    next[index] = event.target.value;
-                    setNames(next);
-                  }}
-                />
-              ))}
-              {names.length < maxSize ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setNames([...names, ''])}
-                >
-                  Add dancer
+          <DialogFooter className="gap-2 sm:justify-between">
+            {token && me && step === 'category' && !held ? (
+              <>
+                <span />
+                <Button type="button" onClick={() => setStep('details')} disabled={!category || soldOut}>
+                  Continue
                 </Button>
-              ) : null}
-            </div>
-            {error ? <p className="text-sm text-red-400">{error}</p> : null}
-          </div>
-        )}
+              </>
+            ) : null}
+            {token && me && step === 'details' && !held ? (
+              <>
+                {(mode === 'compete' && compete.length > 1) || (mode === 'watch' && viewers.length > 1) ? (
+                  <Button type="button" variant="ghost" onClick={() => setStep('category')}>
+                    Back
+                  </Button>
+                ) : (
+                  <span />
+                )}
+                <Button onClick={() => void submit()} disabled={busy || soldOut}>
+                  {busy
+                    ? 'Working…'
+                    : sellPrice === 0
+                      ? mode === 'watch'
+                        ? 'Get free pass'
+                        : 'Register free'
+                      : 'Hold spot'}
+                </Button>
+              </>
+            ) : null}
+            {token && me && held && !isConfirmed && held.totalAmountMinor === 0 ? (
+              <Button onClick={() => void confirmHeld()} disabled={busy}>
+                {busy ? 'Confirming…' : 'Confirm free entry'}
+              </Button>
+            ) : null}
+            {token && me && needsPay ? (
+              <Button onClick={() => void payHeld()} disabled={busy}>
+                {busy ? 'Opening Cashfree…' : `Pay ${formatMinorUnits(held!.totalAmountMinor)}`}
+              </Button>
+            ) : null}
+            {isConfirmed ? (
+              <Button asChild>
+                <Link href={routes.tickets}>Open tickets</Link>
+              </Button>
+            ) : null}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
 
-        <DialogFooter>
-          {token && me && !held ? (
-            <Button onClick={() => void submit()} disabled={busy || soldOut}>
-              {busy ? 'Working…' : category?.priceMinor === 0 ? 'Register free' : 'Hold spot'}
-            </Button>
-          ) : null}
-          {token && me && held && !isConfirmed && held.totalAmountMinor === 0 ? (
-            <Button onClick={() => void confirmHeld()} disabled={busy}>
-              {busy ? 'Confirming…' : 'Confirm free entry'}
-            </Button>
-          ) : null}
-          {token && me && held && !isConfirmed && held.totalAmountMinor > 0 ? (
-            <Button onClick={() => void payHeld()} disabled={busy}>
-              {busy ? 'Opening Cashfree…' : `Pay ${formatMinorUnits(held.totalAmountMinor)}`}
-            </Button>
-          ) : null}
-          {isConfirmed ? (
-            <Button asChild>
-              <Link href={routes.tickets}>Open tickets</Link>
-            </Button>
-          ) : null}
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+function SummaryCard({
+  title,
+  code,
+  feeMinor,
+  status,
+  expiresAt,
+}: {
+  title: string;
+  code?: string;
+  feeMinor: number;
+  status: string;
+  expiresAt?: string | null;
+}) {
+  return (
+    <div className="rounded-lg border border-border bg-elevated p-4 text-sm">
+      <p className="font-display text-2xl uppercase tracking-[0.06em]">{title}</p>
+      {code ? <p className="mt-1 text-text-secondary">Code {code}</p> : null}
+      <p className="mt-1 text-text-secondary">{status}</p>
+      <div className="mt-3 flex items-baseline justify-between border-t border-border pt-3">
+        <span className="text-xs uppercase tracking-[0.14em] text-text-muted">Entry fee</span>
+        <span className="font-semibold text-text-primary">
+          {feeMinor === 0 ? 'Free' : formatMinorUnits(feeMinor)}
+        </span>
+      </div>
+      {expiresAt ? (
+        <p className="mt-2 text-xs text-accent">
+          Hold expires {new Date(expiresAt).toLocaleString()}
+        </p>
+      ) : null}
+    </div>
   );
 }

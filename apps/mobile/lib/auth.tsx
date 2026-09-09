@@ -23,6 +23,13 @@ type AuthContextValue = {
   api: CypherApiClient;
   signInWithProvider: (provider: SocialProvider) => Promise<void>;
   signInWithEmail: (email: string) => Promise<void>;
+  completeOnboarding: (input: {
+    dancerName: string;
+    city: string;
+    crew?: string;
+    styles?: string[];
+    instagram?: string;
+  }) => Promise<void>;
   signOut: () => Promise<void>;
   refresh: () => Promise<void>;
 };
@@ -205,6 +212,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (error) {
           throw error;
         }
+      },
+      completeOnboarding: async (input) => {
+        const user = await api.completeOnboarding(input);
+        setMe(user);
       },
       signOut: async () => {
         try {

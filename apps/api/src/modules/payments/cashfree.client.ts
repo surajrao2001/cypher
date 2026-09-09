@@ -2,6 +2,7 @@ import { createHmac, timingSafeEqual } from 'node:crypto';
 
 import {
   BadGatewayException,
+  BadRequestException,
   Injectable,
   ServiceUnavailableException,
 } from '@nestjs/common';
@@ -35,12 +36,33 @@ export type CashfreeCreateVendorInput = {
   name: string;
   email: string;
   phone: string;
+  /** Indian PAN — required by Easy Split create-vendor. */
+  pan: string;
+  accountType?: string;
+  businessType?: string;
+  /** At least one of bank or upi is required by Cashfree. */
+  bank?: {
+    accountNumber: string;
+    accountHolder: string;
+    ifsc: string;
+  };
+  upi?: {
+    vpa: string;
+    accountHolder: string;
+  };
 };
 
 export type CashfreeCreateVendorResult = {
   vendorId: string;
   status: string;
 };
+
+/** Cashfree sandbox success bank details — https://www.cashfree.com/docs/payments/split/data-to-test */
+export const CASHFREE_SANDBOX_BANK = {
+  accountNumber: '026291800001191',
+  accountHolder: 'John Doe',
+  ifsc: 'YESB0000262',
+} as const;
 
 @Injectable()
 export class CashfreeClient {
@@ -114,15 +136,74 @@ export class CashfreeClient {
     };
   }
 
+  async getOrder(orderId: string): Promise<{ orderId: string; orderStatus: string; cfOrderId: string }> {
+    const data = await this.request<Record<string, unknown>>(
+      'GET',
+      `/orders/${encodeURIComponent(orderId)}`,
+    );
+    return {
+      orderId: String(data.order_id ?? orderId),
+      orderStatus: String(data.order_status ?? ''),
+      cfOrderId: String(data.cf_order_id ?? ''),
+    };
+  }
+
   async createVendor(input: CashfreeCreateVendorInput): Promise<CashfreeCreateVendorResult> {
-    const body = {
+    const env = this.config.get('CASHFREE_ENV', { infer: true }) ?? 'sandbox';
+    // Cashfree: exactly one of bank or UPI — never both, never neither.
+    const bank =
+      input.bank ??
+      (env !== 'production' && !input.upi
+        ? {
+            accountNumber: CASHFREE_SANDBOX_BANK.accountNumber,
+            accountHolder: input.name?.trim() || CASHFREE_SANDBOX_BANK.accountHolder,
+            ifsc: CASHFREE_SANDBOX_BANK.ifsc,
+          }
+        : undefined);
+    const upi = bank ? undefined : input.upi;
+
+    if (!bank && !upi) {
+      throw new BadRequestException(
+        'Cashfree vendor requires bank account or UPI details. In production, pass bankAccountNumber + bankIfsc (or upiVpa).',
+      );
+    }
+
+    const body: Record<string, unknown> = {
       vendor_id: input.vendorId,
       status: 'ACTIVE',
       name: input.name,
       email: input.email,
       phone: input.phone,
       verify_account: false,
+      kyc_details: {
+        account_type: input.accountType ?? 'Individual',
+        business_type: input.businessType ?? 'Social Media and Entertainment',
+        pan: input.pan.toUpperCase(),
+      },
     };
+
+    if (bank) {
+      body.bank = {
+        account_number: String(bank.accountNumber),
+        account_holder: bank.accountHolder,
+        ifsc: bank.ifsc.toUpperCase(),
+      };
+    } else if (upi) {
+      body.upi = {
+        vpa: upi.vpa,
+        account_holder: upi.accountHolder,
+      };
+    }
+
+    writeLog({
+      level: 'info',
+      message: 'cashfree.create_vendor',
+      vendorId: input.vendorId,
+      hasBank: Boolean(body.bank),
+      hasUpi: Boolean(body.upi),
+      env,
+    });
+
     const data = await this.request<Record<string, unknown>>('POST', '/easy-split/vendors', body);
     return {
       vendorId: String(data.vendor_id ?? input.vendorId),
@@ -159,10 +240,11 @@ export class CashfreeClient {
     const response = await fetch(url, {
       method,
       headers: {
-        'Content-Type': 'application/json',
+        Accept: 'application/json',
         'x-client-id': appId,
         'x-client-secret': secret,
         'x-api-version': apiVersion,
+        ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
       },
       body: body === undefined ? undefined : JSON.stringify(body),
     });

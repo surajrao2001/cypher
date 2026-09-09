@@ -41,6 +41,9 @@ export default function NewEventScreen() {
     newCat({ name: '1v1', teamSize: '1' }),
     newCat({ name: '2v2', capacity: '16', teamSize: '2' }),
   ]);
+  const [audienceEnabled, setAudienceEnabled] = useState(false);
+  const [audiencePrice, setAudiencePrice] = useState('0');
+  const [audienceCapacity, setAudienceCapacity] = useState('100');
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -84,6 +87,12 @@ export default function NewEventScreen() {
         styles: ['Breaking'],
         posterUrl: posterUrl.trim() || undefined,
         categories: cleaned,
+        audiencePass: {
+          enabled: audienceEnabled,
+          priceMinor: Math.round(Number(audiencePrice || 0) * 100),
+          capacity: Number(audienceCapacity || 100),
+          name: 'Audience',
+        },
       });
       router.replace(`/organize/${org.slug}/events/${created.id}`);
     } catch (err) {
@@ -205,6 +214,38 @@ export default function NewEventScreen() {
         <Button variant="secondary" onPress={() => setCategories((rows) => [...rows, newCat()])}>
           Add another category
         </Button>
+
+        <Text variant="label" className="mt-2">
+          Audience pass
+        </Text>
+        <Button
+          variant={audienceEnabled ? 'lime' : 'secondary'}
+          onPress={() => setAudienceEnabled((v) => !v)}
+        >
+          {audienceEnabled ? 'Audience on' : 'Audience off'}
+        </Button>
+        {audienceEnabled ? (
+          <View className="flex-row gap-2">
+            <TextInput
+              value={audiencePrice}
+              onChangeText={setAudiencePrice}
+              keyboardType="number-pad"
+              placeholder="Fee ₹"
+              placeholderTextColor={colors.muted}
+              className="h-11 flex-1 rounded-md border border-border bg-elevated px-3"
+              style={{ color: colors.ink }}
+            />
+            <TextInput
+              value={audienceCapacity}
+              onChangeText={setAudienceCapacity}
+              keyboardType="number-pad"
+              placeholder="Capacity"
+              placeholderTextColor={colors.muted}
+              className="h-11 flex-1 rounded-md border border-border bg-elevated px-3"
+              style={{ color: colors.ink }}
+            />
+          </View>
+        ) : null}
 
         {error ? <Text variant="caption" className="text-danger">{error}</Text> : null}
         <Button
