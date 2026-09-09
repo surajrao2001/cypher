@@ -1,4 +1,4 @@
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { type Href, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Linking, Pressable, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -113,7 +113,7 @@ export default function EventManageScreen() {
     );
   }
 
-  const editHref = `/organize/${slug}/events/${eventId}/edit`;
+  const editHref = `/organize/${String(slug)}/events/${String(eventId)}/edit` as Href;
 
   return (
     <SafeAreaView className="flex-1 bg-bg" edges={['bottom']}>

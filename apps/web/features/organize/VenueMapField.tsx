@@ -125,7 +125,7 @@ export function VenueMapField({
       markerObj.current = null;
       mapObj.current = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Mount once — coords updates are handled by the marker effect below.
   }, []);
 
   useEffect(() => {

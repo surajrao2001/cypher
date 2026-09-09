@@ -72,6 +72,9 @@ export function LoginStoryCarousel() {
   }, [paused]);
 
   const slide = SLIDES[index] ?? SLIDES[0];
+  if (!slide) {
+    return null;
+  }
 
   return (
     <section
