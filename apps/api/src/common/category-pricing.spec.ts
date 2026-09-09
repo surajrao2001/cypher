@@ -15,6 +15,12 @@ describe('resolveCategoryPrice', () => {
     expect(resolved.tier).toBeNull();
   });
 
+  it('treats missing tiers as empty (legacy mocks / partial includes)', () => {
+    const resolved = resolveCategoryPrice(50000, undefined);
+    expect(resolved.priceMinor).toBe(50000);
+    expect(resolved.tier).toBeNull();
+  });
+
   it('picks active early bird before endsAt', () => {
     const now = new Date('2026-09-10T12:00:00.000Z');
     const tiers = [

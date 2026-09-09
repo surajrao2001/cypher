@@ -14,16 +14,17 @@ export type ResolvedPrice = {
  */
 export function resolveCategoryPrice(
   categoryPriceMinor: number,
-  tiers: CategoryPriceTier[],
+  tiers: CategoryPriceTier[] | null | undefined,
   now: Date = new Date(),
 ): ResolvedPrice {
-  const active = tiers.filter((tier) => isTierActive(tier, now));
+  const list = tiers ?? [];
+  const active = list.filter((tier) => isTierActive(tier, now));
   active.sort(compareTiers);
   const tier = active[0] ?? null;
 
-  const upcoming = tiers
+  const upcoming = list
     .filter((t) => t.startsAt && t.startsAt.getTime() > now.getTime())
-    .sort((a, b) => (a.startsAt!.getTime() - b.startsAt!.getTime()));
+    .sort((a, b) => a.startsAt!.getTime() - b.startsAt!.getTime());
 
   return {
     priceMinor: tier ? tier.priceMinor : categoryPriceMinor,
