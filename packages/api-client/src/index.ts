@@ -27,6 +27,15 @@ import type {
   PaymentCheckoutSessionDto,
   StartOrganizerPayoutSetupBody,
   CreatePaymentCheckoutBody,
+  CheckInDto,
+  CheckInListResponse,
+  CreateCheckInBody,
+  CreateEventUpdateBody,
+  EventUpdateDto,
+  EventLineupPersonDto,
+  ReplaceEventLineupBody,
+  UpdateEventUpdateBody,
+  UpdateProfileBody,
 } from '@cypher/contracts';
 
 export interface ApiClientOptions {
@@ -110,6 +119,13 @@ export class CypherApiClient {
     styles?: string[];
     instagram?: string;
   }): Promise<CurrentUserDto> {
+    return this.request<CurrentUserDto>('/v1/me', {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    });
+  }
+
+  async updateProfile(body: UpdateProfileBody): Promise<CurrentUserDto> {
     return this.request<CurrentUserDto>('/v1/me', {
       method: 'PATCH',
       body: JSON.stringify(body),
@@ -311,6 +327,79 @@ export class CypherApiClient {
     return this.request<OrganizerEventDetailDto>(
       `/v1/organizers/${encodeURIComponent(organizerId)}/events/${encodeURIComponent(eventId)}/media-links/${encodeURIComponent(mediaLinkId)}`,
       { method: 'DELETE' },
+    );
+  }
+
+  async checkIn(
+    organizerId: string,
+    eventId: string,
+    body: CreateCheckInBody,
+  ): Promise<CheckInDto> {
+    return this.request<CheckInDto>(
+      `/v1/organizers/${encodeURIComponent(organizerId)}/events/${encodeURIComponent(eventId)}/check-in`,
+      { method: 'POST', body: JSON.stringify(body) },
+    );
+  }
+
+  async listCheckIns(organizerId: string, eventId: string): Promise<CheckInListResponse> {
+    return this.request<CheckInListResponse>(
+      `/v1/organizers/${encodeURIComponent(organizerId)}/events/${encodeURIComponent(eventId)}/check-ins`,
+    );
+  }
+
+  async listEventUpdates(organizerId: string, eventId: string): Promise<{ items: EventUpdateDto[] }> {
+    return this.request<{ items: EventUpdateDto[] }>(
+      `/v1/organizers/${encodeURIComponent(organizerId)}/events/${encodeURIComponent(eventId)}/updates`,
+    );
+  }
+
+  async createEventUpdate(
+    organizerId: string,
+    eventId: string,
+    body: CreateEventUpdateBody,
+  ): Promise<EventUpdateDto> {
+    return this.request<EventUpdateDto>(
+      `/v1/organizers/${encodeURIComponent(organizerId)}/events/${encodeURIComponent(eventId)}/updates`,
+      { method: 'POST', body: JSON.stringify(body) },
+    );
+  }
+
+  async updateEventUpdate(
+    organizerId: string,
+    eventId: string,
+    updateId: string,
+    body: UpdateEventUpdateBody,
+  ): Promise<EventUpdateDto> {
+    return this.request<EventUpdateDto>(
+      `/v1/organizers/${encodeURIComponent(organizerId)}/events/${encodeURIComponent(eventId)}/updates/${encodeURIComponent(updateId)}`,
+      { method: 'PATCH', body: JSON.stringify(body) },
+    );
+  }
+
+  async deleteEventUpdate(organizerId: string, eventId: string, updateId: string): Promise<{ ok: true }> {
+    return this.request<{ ok: true }>(
+      `/v1/organizers/${encodeURIComponent(organizerId)}/events/${encodeURIComponent(eventId)}/updates/${encodeURIComponent(updateId)}`,
+      { method: 'DELETE' },
+    );
+  }
+
+  async listEventLineup(
+    organizerId: string,
+    eventId: string,
+  ): Promise<{ items: EventLineupPersonDto[] }> {
+    return this.request<{ items: EventLineupPersonDto[] }>(
+      `/v1/organizers/${encodeURIComponent(organizerId)}/events/${encodeURIComponent(eventId)}/lineup`,
+    );
+  }
+
+  async replaceEventLineup(
+    organizerId: string,
+    eventId: string,
+    body: ReplaceEventLineupBody,
+  ): Promise<{ items: EventLineupPersonDto[] }> {
+    return this.request<{ items: EventLineupPersonDto[] }>(
+      `/v1/organizers/${encodeURIComponent(organizerId)}/events/${encodeURIComponent(eventId)}/lineup`,
+      { method: 'PUT', body: JSON.stringify(body) },
     );
   }
 

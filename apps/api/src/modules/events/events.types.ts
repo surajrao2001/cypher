@@ -26,6 +26,7 @@ export type EventCardDto = {
   venueLatitude: number | null;
   venueLongitude: number | null;
   startTime: string;
+  createdAt: string;
   posterUrl: string | null;
   status: string;
   eventType: string;
@@ -70,6 +71,31 @@ export type EventMediaLinkDto = {
   createdAt: string;
 };
 
+export type EventUpdateDto = {
+  id: string;
+  eventId: string;
+  authorUserId: string;
+  kind: string;
+  title: string | null;
+  body: string;
+  posterUrl: string | null;
+  publishedAt: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type EventLineupPersonDto = {
+  id: string;
+  eventId: string;
+  name: string;
+  role: string;
+  categoryId: string | null;
+  instagram: string | null;
+  photoUrl: string | null;
+  blurb: string | null;
+  sortOrder: number;
+};
+
 export type EventDetailDto = EventCardDto & {
   description: string | null;
   endTime: string | null;
@@ -81,6 +107,8 @@ export type EventDetailDto = EventCardDto & {
   audience: EventAudiencePassDto;
   days: EventDayDto[];
   mediaLinks: EventMediaLinkDto[];
+  updates: EventUpdateDto[];
+  lineup: EventLineupPersonDto[];
 };
 
 export type EventAudiencePassDto = {

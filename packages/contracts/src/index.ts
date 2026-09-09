@@ -93,6 +93,7 @@ export interface CurrentUserDto {
     styles: string[];
     instagram: string | null;
     avatarUrl: string | null;
+    bio: string | null;
     platformRole: PlatformRole;
     status: ProfileStatus;
   };
@@ -128,6 +129,7 @@ export interface EventCardDto {
   venueLatitude: number | null;
   venueLongitude: number | null;
   startTime: string;
+  createdAt: string;
   posterUrl: string | null;
   status: EventStatus;
   eventType: EventType;
@@ -206,6 +208,8 @@ export interface EventDetailDto extends EventCardDto {
   audience: EventAudiencePassDto;
   days: EventDayDto[];
   mediaLinks: EventMediaLinkDto[];
+  updates: EventUpdateDto[];
+  lineup: EventLineupPersonDto[];
 }
 
 export type MediaLinkKind = 'youtube' | 'instagram' | 'drive' | 'other';
@@ -288,6 +292,8 @@ export interface CreateOrganizerEventBody {
   venueLongitude?: number | null;
   startTime: string;
   endTime?: string;
+  registrationOpensAt?: string | null;
+  registrationClosesAt?: string | null;
   posterUrl?: string;
   tags?: string[];
   styles?: string[];
@@ -320,6 +326,8 @@ export interface UpdateOrganizerEventBody {
   venueLongitude?: number | null;
   startTime?: string;
   endTime?: string | null;
+  registrationOpensAt?: string | null;
+  registrationClosesAt?: string | null;
   posterUrl?: string | null;
   tags?: string[];
   styles?: string[];
@@ -557,4 +565,117 @@ export const routes = {
   login: '/login',
   saved: '/saved',
   checkIn: '/check-in',
+  organizePayouts: (slug: string) => `/organize/${slug}/payouts` as const,
+  organizeEventCheckIn: (slug: string, eventId: string) =>
+    `/organize/${slug}/events/${eventId}/check-in` as const,
+  organizeEventUpdates: (slug: string, eventId: string) =>
+    `/organize/${slug}/events/${eventId}/updates` as const,
 } as const;
+
+export type CheckInChannel = 'SCAN' | 'MANUAL' | 'CODE';
+
+export type EventUpdateKind =
+  | 'GENERAL'
+  | 'LINEUP'
+  | 'MEDIA'
+  | 'SCHEDULE'
+  | 'RULES'
+  | 'OTHER';
+
+export type LineupRole =
+  | 'judge'
+  | 'choreographer'
+  | 'instructor'
+  | 'dj'
+  | 'emcee'
+  | 'guest'
+  | 'performer'
+  | 'other';
+
+export interface CheckInDto {
+  id: string;
+  eventId: string;
+  registrationId: string;
+  checkedInAt: string;
+  checkedInByUserId: string;
+  channel: CheckInChannel;
+  registrationCode?: string;
+  entryName?: string | null;
+  dancerName?: string | null;
+}
+
+export interface CheckInListResponse {
+  items: CheckInDto[];
+  totals: { checkedIn: number; confirmed: number };
+}
+
+export interface CreateCheckInBody {
+  qrToken?: string;
+  registrationCode?: string;
+  channel?: CheckInChannel;
+}
+
+export interface EventUpdateDto {
+  id: string;
+  eventId: string;
+  authorUserId: string;
+  kind: EventUpdateKind;
+  title: string | null;
+  body: string;
+  posterUrl: string | null;
+  publishedAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateEventUpdateBody {
+  kind?: EventUpdateKind;
+  title?: string | null;
+  body: string;
+  posterUrl?: string | null;
+}
+
+export interface UpdateEventUpdateBody {
+  kind?: EventUpdateKind;
+  title?: string | null;
+  body?: string;
+  posterUrl?: string | null;
+}
+
+export interface EventLineupPersonDto {
+  id: string;
+  eventId: string;
+  name: string;
+  role: LineupRole;
+  categoryId: string | null;
+  instagram: string | null;
+  photoUrl: string | null;
+  blurb: string | null;
+  sortOrder: number;
+}
+
+export interface UpsertEventLineupPersonBody {
+  name: string;
+  role: LineupRole;
+  categoryId?: string | null;
+  instagram?: string | null;
+  photoUrl?: string | null;
+  blurb?: string | null;
+  sortOrder?: number;
+}
+
+export interface ReplaceEventLineupBody {
+  people: UpsertEventLineupPersonBody[];
+  announce?: boolean;
+}
+
+export interface UpdateProfileBody {
+  dancerName?: string;
+  name?: string;
+  city?: string | null;
+  crew?: string | null;
+  instagram?: string | null;
+  styles?: string[];
+  bio?: string | null;
+  avatarUrl?: string | null;
+}

@@ -12,15 +12,12 @@ export default function CheckInStubPage() {
       <p className="kicker text-accent">Door ops</p>
       <h1 className="display-title text-5xl">Check-in</h1>
       <p className="text-sm leading-relaxed text-text-secondary">
-        Door QR check-in is coming in v1. You’ll scan dancer tickets here on the night — this page is a
-        placeholder so organizers can see where that flow will live.
+        Check-in belongs to a specific event. Open an event from your organizer dashboard to scan
+        tickets or enter registration codes.
       </p>
       <div className="flex flex-wrap gap-3">
         <Button asChild variant="outline">
           <Link href={routes.organize}>Back to Organize</Link>
-        </Button>
-        <Button asChild variant="ghost">
-          <Link href={routes.tickets}>My tickets</Link>
         </Button>
       </div>
     </div>

@@ -2,6 +2,7 @@
 
 import { routes } from '@cypher/contracts';
 import type { EventType, OrganizerDto, OrganizerEventDetailDto } from '@cypher/contracts';
+import { assertEndAfterStart, assertRegistrationWindow } from '@cypher/validation';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useMemo, useState } from 'react';
@@ -98,6 +99,8 @@ function EventEditorInner({ slug, eventId }: { slug: string; eventId?: string })
   const [eventType, setEventType] = useState<EventType>('battle');
   const [startTime, setStartTime] = useState(() => (isCreate ? defaultStartLocal() : ''));
   const [endTime, setEndTime] = useState('');
+  const [regOpensAt, setRegOpensAt] = useState('');
+  const [regClosesAt, setRegClosesAt] = useState('');
   const [description, setDescription] = useState('');
   const [posterUrl, setPosterUrl] = useState('');
   const [styles, setStyles] = useState<string[]>(() => (isCreate ? ['Breaking'] : []));
@@ -157,6 +160,8 @@ function EventEditorInner({ slug, eventId }: { slug: string; eventId?: string })
     setEventType(detail.eventType);
     setStartTime(toLocalInputValue(detail.startTime));
     setEndTime(toLocalInputValue(detail.endTime));
+    setRegOpensAt(toLocalInputValue(detail.registrationOpensAt));
+    setRegClosesAt(toLocalInputValue(detail.registrationClosesAt));
     setDescription(detail.description ?? '');
     setPosterUrl(detail.posterUrl ?? '');
     setStyles(detail.styles ?? []);
@@ -237,9 +242,14 @@ function EventEditorInner({ slug, eventId }: { slug: string; eventId?: string })
       }
       const startIso = toIsoFromLocal(startTime);
       const endIso = endTime ? toIsoFromLocal(endTime) : null;
-      if (endIso && new Date(endIso).getTime() < new Date(startIso).getTime()) {
-        throw new Error('End time must be after start time');
-      }
+      const opensIso = regOpensAt ? toIsoFromLocal(regOpensAt) : null;
+      const closesIso = regClosesAt ? toIsoFromLocal(regClosesAt) : null;
+      assertEndAfterStart(startIso, endIso);
+      assertRegistrationWindow({
+        opensAt: opensIso,
+        closesAt: closesIso,
+        startTime: startIso,
+      });
 
       if (!event) {
         const created = await auth.api.createOrganizerEvent(org.id, {
@@ -251,6 +261,8 @@ function EventEditorInner({ slug, eventId }: { slug: string; eventId?: string })
           eventType,
           startTime: startIso,
           endTime: endIso ?? undefined,
+          registrationOpensAt: opensIso,
+          registrationClosesAt: closesIso,
           description: description || undefined,
           posterUrl: posterUrl.trim() || undefined,
           styles,
@@ -271,6 +283,8 @@ function EventEditorInner({ slug, eventId }: { slug: string; eventId?: string })
         eventType,
         startTime: startIso,
         endTime: endIso,
+        registrationOpensAt: opensIso,
+        registrationClosesAt: closesIso,
         description: description || null,
         posterUrl: posterUrl.trim() || null,
         styles,
@@ -545,6 +559,29 @@ function EventEditorInner({ slug, eventId }: { slug: string; eventId?: string })
               <Input type="datetime-local" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
               <span className="block text-[11px] font-normal text-text-muted">
                 Optional — set end on another day for multi-day pricing
+              </span>
+            </label>
+            <label className="block space-y-2 text-sm font-semibold text-text-secondary">
+              Registration opens
+              <Input
+                type="datetime-local"
+                value={regOpensAt}
+                onChange={(e) => setRegOpensAt(e.target.value)}
+              />
+              <span className="block text-[11px] font-normal text-text-muted">
+                Optional — leave blank to open immediately when published
+              </span>
+            </label>
+            <label className="block space-y-2 text-sm font-semibold text-text-secondary">
+              Registration closes
+              <Input
+                type="datetime-local"
+                value={regClosesAt}
+                max={startTime || undefined}
+                onChange={(e) => setRegClosesAt(e.target.value)}
+              />
+              <span className="block text-[11px] font-normal text-text-muted">
+                Optional — must be before the night starts
               </span>
             </label>
           </div>

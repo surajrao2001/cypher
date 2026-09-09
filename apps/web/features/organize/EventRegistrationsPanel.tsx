@@ -1,11 +1,28 @@
 'use client';
 
-import type { OrganizerEventRegistrationsResponse } from '@cypher/contracts';
+import type {
+  OrganizerEventRegistrationsResponse,
+  OrganizerRegistrationItemDto,
+} from '@cypher/contracts';
 import { formatMinorUnits } from '@cypher/utils';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { useAuth } from '@/features/auth/AuthProvider';
+import { TabEmptyState } from '@/features/organize/TabEmptyState';
+import { Filter, Layers, Ticket } from 'lucide-react';
+
+type StatusFilter = 'all' | 'confirmed' | 'pending' | 'other';
+
+function statusBucket(status: string): Exclude<StatusFilter, 'all'> {
+  if (status === 'confirmed') return 'confirmed';
+  if (status === 'pending_payment') return 'pending';
+  return 'other';
+}
+
+const selectClass =
+  'flex h-10 w-full rounded-md border border-border bg-elevated px-3 font-body text-sm text-text-primary focus-visible:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40';
 
 export function EventRegistrationsPanel({
   organizerId,
@@ -18,6 +35,9 @@ export function EventRegistrationsPanel({
   const [data, setData] = useState<OrganizerEventRegistrationsResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [categoryId, setCategoryId] = useState<string | null>(null);
+  const [status, setStatus] = useState<StatusFilter>('confirmed');
+  const [query, setQuery] = useState('');
 
   useEffect(() => {
     let cancelled = false;
@@ -25,10 +45,13 @@ export function EventRegistrationsPanel({
     void api
       .listOrganizerEventRegistrations(organizerId, eventId)
       .then((res) => {
-        if (!cancelled) {
-          setData(res);
-          setError(null);
-        }
+        if (cancelled) return;
+        setData(res);
+        setError(null);
+        setCategoryId((prev) => {
+          if (prev && res.categories.some((cat) => cat.id === prev)) return prev;
+          return res.categories[0]?.id ?? null;
+        });
       })
       .catch((err: unknown) => {
         if (!cancelled) {
@@ -36,14 +59,35 @@ export function EventRegistrationsPanel({
         }
       })
       .finally(() => {
-        if (!cancelled) {
-          setLoading(false);
-        }
+        if (!cancelled) setLoading(false);
       });
     return () => {
       cancelled = true;
     };
   }, [api, eventId, organizerId]);
+
+  const activeCategory = useMemo(
+    () => data?.categories.find((cat) => cat.id === categoryId) ?? null,
+    [categoryId, data],
+  );
+
+  const filtered = useMemo(() => {
+    if (!data || !categoryId) return [] as OrganizerRegistrationItemDto[];
+    const q = query.trim().toLowerCase();
+    return data.items.filter((row) => {
+      if (row.categoryId !== categoryId) return false;
+      if (status !== 'all' && statusBucket(row.registrationStatus) !== status) return false;
+      if (!q) return true;
+      const hay = [
+        row.entryName ?? '',
+        row.registrationCode,
+        ...row.participants.map((p) => p.displayName),
+      ]
+        .join(' ')
+        .toLowerCase();
+      return hay.includes(q);
+    });
+  }, [categoryId, data, query, status]);
 
   if (loading) {
     return <p className="text-sm text-text-secondary">Loading registrations…</p>;
@@ -55,65 +99,125 @@ export function EventRegistrationsPanel({
     return null;
   }
 
+  if (data.categories.length === 0) {
+    return (
+      <TabEmptyState
+        icon={Layers}
+        kicker="Categories first"
+        title="Can’t register into thin air"
+        body="Add a compete category in Edit, then this list will fill like a cypher circle."
+      />
+    );
+  }
+
   return (
-    <section className="space-y-4 rounded-lg border border-border bg-surface p-5">
+    <section className="space-y-5 rounded-lg border border-border bg-surface p-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="kicker text-accent">Entries</p>
           <h2 className="font-display text-3xl uppercase tracking-[0.04em]">Registrations</h2>
-        </div>
-        <div className="flex flex-wrap gap-2 text-xs uppercase tracking-[0.12em] text-text-muted">
-          <span>Pending {data.totals.pending}</span>
-          <span>·</span>
-          <span>Confirmed {data.totals.confirmed}</span>
-          {data.totals.other > 0 ? (
-            <>
-              <span>·</span>
-              <span>Other {data.totals.other}</span>
-            </>
+          {activeCategory ? (
+            <p className="mt-1 text-sm text-text-secondary">
+              {activeCategory.name} · {activeCategory.confirmedCount}/{activeCategory.capacity}{' '}
+              confirmed
+              {activeCategory.reservedCount > 0
+                ? ` · ${activeCategory.reservedCount} held`
+                : ''}
+            </p>
           ) : null}
         </div>
+        <p className="text-xs uppercase tracking-[0.12em] text-text-muted">
+          {filtered.length} shown
+        </p>
       </div>
 
-      <ul className="grid gap-2 sm:grid-cols-2">
-        {data.categories.map((cat) => (
-          <li key={cat.id} className="rounded-md border border-border bg-elevated px-3 py-2 text-sm">
-            <p className="font-semibold text-text-primary">{cat.name}</p>
-            <p className="text-text-secondary">
-              {cat.confirmedCount} confirmed · {cat.reservedCount} held · {cat.capacity} cap ·{' '}
-              {cat.priceMinor === 0 ? 'Free' : formatMinorUnits(cat.priceMinor)}
-            </p>
-          </li>
-        ))}
-      </ul>
+      <div className="grid gap-3 sm:grid-cols-[minmax(0,1.2fr)_minmax(0,0.9fr)_minmax(0,1fr)]">
+        <label className="block space-y-2 text-sm text-text-secondary">
+          <span className="text-xs font-semibold uppercase tracking-[0.12em] text-text-muted">
+            Category
+          </span>
+          <select
+            className={selectClass}
+            value={categoryId ?? ''}
+            onChange={(e) => setCategoryId(e.target.value)}
+          >
+            {data.categories.map((cat) => (
+              <option key={cat.id} value={cat.id}>
+                {cat.name}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="block space-y-2 text-sm text-text-secondary">
+          <span className="text-xs font-semibold uppercase tracking-[0.12em] text-text-muted">
+            Status
+          </span>
+          <select
+            className={selectClass}
+            value={status}
+            onChange={(e) => setStatus(e.target.value as StatusFilter)}
+          >
+            <option value="confirmed">Confirmed</option>
+            <option value="pending">Pending</option>
+            <option value="other">Other</option>
+            <option value="all">Any status</option>
+          </select>
+        </label>
+
+        <label className="block space-y-2 text-sm text-text-secondary">
+          <span className="text-xs font-semibold uppercase tracking-[0.12em] text-text-muted">
+            Search
+          </span>
+          <Input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Name, entry, or code"
+          />
+        </label>
+      </div>
 
       {data.items.length === 0 ? (
-        <div className="rounded-md border border-dashed border-border bg-elevated px-4 py-8">
-          <p className="kicker text-accent">Empty floor</p>
-          <p className="mt-2 font-display text-2xl uppercase tracking-[0.04em] text-text-primary">
-            No registrations yet
-          </p>
-          <p className="mt-2 text-sm text-text-secondary">
-            Share the public event link so dancers can hold a category spot.
-          </p>
-        </div>
+        <TabEmptyState
+          icon={Ticket}
+          kicker="Empty floor"
+          title="Nobody’s locked a spot"
+          body="Share the public event link. Waiting for telepathy is not a growth strategy."
+        />
+      ) : filtered.length === 0 ? (
+        <TabEmptyState
+          icon={Filter}
+          kicker="Filters"
+          title="Nobody matches that combo"
+          body="Try another category or status — or clear search and stop gaslighting yourself."
+          className="py-8"
+        />
       ) : (
         <ul className="divide-y divide-border rounded-md border border-border">
-          {data.items.map((row) => (
-            <li key={row.id} className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-start sm:justify-between">
+          {filtered.map((row) => (
+            <li
+              key={row.id}
+              className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-start sm:justify-between"
+            >
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <p className="font-semibold text-text-primary">{row.categoryName}</p>
-                  <Badge variant="outline">{row.registrationStatus.replaceAll('_', ' ')}</Badge>
+                  <p className="font-semibold text-text-primary">
+                    {row.participants[0]?.displayName ?? row.entryName ?? row.registrationCode}
+                  </p>
+                  <Badge variant="outline">
+                    {row.registrationStatus.replaceAll('_', ' ')}
+                  </Badge>
                 </div>
                 {row.entryName ? (
                   <p className="mt-1 text-sm text-text-secondary">Entry {row.entryName}</p>
                 ) : null}
-                <p className="mt-1 text-sm text-text-secondary">
-                  {row.participants
-                    .map((p) => `${p.displayName}${p.isTeamCaptain ? ' (captain)' : ''}`)
-                    .join(', ')}
-                </p>
+                {row.participants.length > 1 ? (
+                  <p className="mt-1 text-sm text-text-secondary">
+                    {row.participants
+                      .map((p) => `${p.displayName}${p.isTeamCaptain ? ' (captain)' : ''}`)
+                      .join(', ')}
+                  </p>
+                ) : null}
                 <p className="mt-1 text-xs uppercase tracking-[0.12em] text-text-muted">
                   {row.registrationCode}
                   {row.reservationExpiresAt && row.registrationStatus === 'pending_payment'

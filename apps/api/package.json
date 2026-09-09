@@ -11,6 +11,7 @@
     "test": "jest"
   },
   "dependencies": {
+    "@cypher/validation": "workspace:*",
     "@fastify/multipart": "^10.1.1",
     "@fastify/static": "^10.1.2",
     "@nestjs/bullmq": "^11.0.2",

@@ -9,9 +9,12 @@ import { RequestIdMiddleware } from './common/request-id.middleware';
 import { validateEnv } from './config/env.validation';
 import { AdminModule } from './modules/admin/admin.module';
 import { AuditModule } from './modules/audit/audit.module';
+import { CheckInModule } from './modules/check-in/check-in.module';
+import { EventUpdatesModule } from './modules/event-updates/event-updates.module';
 import { EventsModule } from './modules/events/events.module';
 import { HealthModule } from './modules/health/health.module';
 import { IdentityModule } from './modules/identity/identity.module';
+import { LineupModule } from './modules/lineup/lineup.module';
 import { MediaModule } from './modules/media/media.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { OrganizersModule } from './modules/organizers/organizers.module';
@@ -36,6 +39,9 @@ import { UsersModule } from './modules/users/users.module';
     HealthModule,
     UsersModule,
     OrganizersModule,
+    CheckInModule,
+    EventUpdatesModule,
+    LineupModule,
     EventsModule,
     RegistrationsModule,
     PaymentsModule,

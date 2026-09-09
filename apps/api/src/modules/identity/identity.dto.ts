@@ -1,4 +1,4 @@
-import { IsArray, IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator';
+import { IsArray, IsOptional, IsString, IsUrl, Matches, MaxLength, MinLength } from 'class-validator';
 
 export class RequestOtpDto {
   @IsString()
@@ -49,4 +49,18 @@ export class CompleteOnboardingDto {
   @MaxLength(30)
   @Matches(/^@?[A-Za-z0-9._]+$/, { message: 'Instagram handle only' })
   instagram?: string;
+}
+
+export class UpdateProfileDto {
+  @IsOptional() @IsString() @MinLength(2) @MaxLength(80) name?: string;
+  @IsOptional() @IsString() @MinLength(2) @MaxLength(40) dancerName?: string;
+  @IsOptional() @IsString() @MaxLength(80) city?: string | null;
+  @IsOptional() @IsString() @MaxLength(80) crew?: string | null;
+  @IsOptional() @IsString() @MaxLength(30)
+  @Matches(/^@?[A-Za-z0-9._]+$/, { message: 'Instagram handle only' })
+  instagram?: string | null;
+  @IsOptional() @IsArray() @IsString({ each: true }) styles?: string[];
+  @IsOptional() @IsString() @MaxLength(1000) bio?: string | null;
+  @IsOptional() @IsUrl({ require_protocol: true, protocols: ['http', 'https'] })
+  avatarUrl?: string | null;
 }

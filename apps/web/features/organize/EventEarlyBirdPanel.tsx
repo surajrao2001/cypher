@@ -1,6 +1,7 @@
 'use client';
 
 import type { OrganizerEventDetailDto } from '@cypher/contracts';
+import { assertCategoryPriceTiers } from '@cypher/validation';
 import { useEffect, useMemo, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -113,6 +114,16 @@ export function EventEarlyBirdPanel({ organizerId, eventId, event, onUpdated }: 
         if (!row.endsAt) {
           throw new Error(`Say when early bird ends for “${labelFor(row.id)}”`);
         }
+        const cutoff = toIsoFromLocal(row.endsAt);
+        const earlyMinor = Math.round(Number(row.earlyPrice || 0) * 100);
+        const regularMinor = Math.round(Number(row.regularPrice || 0) * 100);
+        assertCategoryPriceTiers(
+          [
+            { name: 'Early bird', priceMinor: earlyMinor, endsAt: cutoff },
+            { name: 'Regular', priceMinor: regularMinor, startsAt: cutoff },
+          ],
+          { startTime: event.startTime, createdAt: event.createdAt },
+        );
       }
       let last = event;
       for (const row of targets) {
@@ -207,10 +218,15 @@ export function EventEarlyBirdPanel({ organizerId, eventId, event, onUpdated }: 
                       onChange={(e) => patchRow(row.id, { regularPrice: e.target.value })}
                     />
                   </FormField>
-                  <FormField label="Early bird ends" hint="Cutoff for this ticket" hintReserve>
+                  <FormField
+                    label="Early bird ends"
+                    hint="Before the night starts"
+                    hintReserve
+                  >
                     <Input
                       type="datetime-local"
                       value={row.endsAt}
+                      max={toLocalInputValue(event.startTime)}
                       onChange={(e) => patchRow(row.id, { endsAt: e.target.value })}
                     />
                   </FormField>

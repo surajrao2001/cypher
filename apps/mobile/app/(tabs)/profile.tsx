@@ -193,13 +193,80 @@ export default function ProfileScreen() {
               {profile?.dancerName ?? profile?.name ?? 'Dancer'}
             </Text>
             <Text variant="caption">{profile?.city ?? 'City not set'}</Text>
+            {profile?.bio ? <Text variant="caption">{profile.bio}</Text> : null}
           </View>
           <View className="mt-8 gap-3 rounded-sm border border-border bg-surface px-4 py-5">
             <Text variant="caption">Crew · {profile?.crew ?? '—'}</Text>
             <Text variant="caption">
               Styles · {profile?.styles?.length ? profile.styles.join(', ') : '—'}
             </Text>
+            <Text variant="caption">
+              Instagram · {profile?.instagram ? `@${profile.instagram}` : '—'}
+            </Text>
+            <Text variant="caption">
+              Orgs you run · {auth.me?.organizerMemberships.length ?? 0}
+            </Text>
           </View>
+          <Field label="Update dancer name">
+            <TextInput
+              value={name || profile?.dancerName || ''}
+              onChangeText={setName}
+              placeholder="Name on the floor"
+              placeholderTextColor={colors.muted}
+              className={inputClass}
+              style={{ fontFamily: fonts.bodyFamily, color: colors.ink }}
+            />
+          </Field>
+          <Field label="City">
+            <TextInput
+              value={city || profile?.city || ''}
+              onChangeText={setCity}
+              placeholder="City"
+              placeholderTextColor={colors.muted}
+              className={inputClass}
+              style={{ fontFamily: fonts.bodyFamily, color: colors.ink }}
+            />
+          </Field>
+          <Field label="Crew">
+            <TextInput
+              value={crew || profile?.crew || ''}
+              onChangeText={setCrew}
+              placeholder="Crew"
+              placeholderTextColor={colors.muted}
+              className={inputClass}
+              style={{ fontFamily: fonts.bodyFamily, color: colors.ink }}
+            />
+          </Field>
+          <Button
+            className="mt-6"
+            loading={pending}
+            onPress={() =>
+              void (async () => {
+                setPending(true);
+                setError(null);
+                try {
+                  await auth.api.updateProfile({
+                    dancerName: (name || profile?.dancerName || '').trim() || undefined,
+                    city: (city || profile?.city || '').trim() || null,
+                    crew: (crew || profile?.crew || '').trim() || null,
+                    styles: styles.length ? styles : profile?.styles,
+                  });
+                  await auth.refresh();
+                } catch (err) {
+                  setError(err instanceof Error ? err.message : 'Could not update');
+                } finally {
+                  setPending(false);
+                }
+              })()
+            }
+          >
+            Save profile
+          </Button>
+          {error ? (
+            <Text variant="caption" className="mt-3 text-danger">
+              {error}
+            </Text>
+          ) : null}
           <Button className="mt-8" variant="ghost" onPress={() => void auth.signOut()}>
             Sign out
           </Button>

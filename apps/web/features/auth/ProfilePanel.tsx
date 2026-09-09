@@ -2,6 +2,7 @@
 
 import { routes } from '@cypher/contracts';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -22,6 +23,9 @@ export function ProfilePanel() {
   const [crew, setCrew] = useState('');
   const [styles, setStyles] = useState('');
   const [instagram, setInstagram] = useState('');
+  const [bio, setBio] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState('');
+  const [editing, setEditing] = useState(false);
   const [pending, setPending] = useState(false);
   const [ticketCount, setTicketCount] = useState<number | null>(null);
   const [orgCount, setOrgCount] = useState<number | null>(null);
@@ -30,6 +34,13 @@ export function ProfilePanel() {
   useEffect(() => {
     if (auth.status !== 'authenticated' || !auth.me || auth.me.needsOnboarding) return;
     const me = auth.me;
+    setDancerName(me.profile.dancerName ?? me.profile.name ?? '');
+    setCity(me.profile.city ?? '');
+    setCrew(me.profile.crew ?? '');
+    setStyles(me.profile.styles.join(', '));
+    setInstagram(me.profile.instagram ?? '');
+    setBio(me.profile.bio ?? '');
+    setAvatarUrl(me.profile.avatarUrl ?? '');
     let cancelled = false;
     void (async () => {
       try {
@@ -92,6 +103,50 @@ export function ProfilePanel() {
         toastCopy.saveFailed,
         error instanceof Error ? error.message : undefined,
       );
+    } finally {
+      setPending(false);
+    }
+  }
+
+  async function saveProfileEdits() {
+    setPending(true);
+    const tid = toastPending(toastCopy.saving);
+    try {
+      await auth.api.updateProfile({
+        dancerName: dancerName.trim() || undefined,
+        city: city.trim() || null,
+        crew: crew.trim() || null,
+        styles: styles
+          .split(',')
+          .map((item) => item.trim())
+          .filter(Boolean),
+        instagram: instagram.trim() || null,
+        bio: bio.trim() || null,
+        avatarUrl: avatarUrl.trim() || null,
+      });
+      await auth.refresh();
+      setEditing(false);
+      toastResolve(tid, toastCopy.profileSaved);
+    } catch (error) {
+      toastReject(
+        tid,
+        toastCopy.saveFailed,
+        error instanceof Error ? error.message : undefined,
+      );
+    } finally {
+      setPending(false);
+    }
+  }
+
+  async function uploadAvatar(file: File) {
+    setPending(true);
+    const tid = toastPending(toastCopy.saving);
+    try {
+      const result = await auth.api.uploadPoster(file, file.name);
+      setAvatarUrl(result.url);
+      toastResolve(tid, 'Avatar uploaded');
+    } catch (error) {
+      toastReject(tid, 'Avatar upload failed', error instanceof Error ? error.message : undefined);
     } finally {
       setPending(false);
     }
@@ -223,10 +278,21 @@ export function ProfilePanel() {
   return (
     <div className="mx-auto max-w-5xl space-y-8">
       <header className="flex items-center gap-5 border-b border-border pb-7">
-        <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full border border-border bg-elevated font-display text-3xl text-text-secondary">
-          {initials || '·'}
+        <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-elevated font-display text-3xl text-text-secondary">
+          {profile.avatarUrl ? (
+            <Image
+              src={profile.avatarUrl}
+              alt=""
+              width={80}
+              height={80}
+              unoptimized
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            initials || '·'
+          )}
         </div>
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <p className="text-xs uppercase tracking-[0.16em] text-text-muted">They call you</p>
           <h1 className="display-title text-4xl md:text-5xl">{displayName}</h1>
           <p className="mt-1 text-sm text-text-secondary">
@@ -234,8 +300,72 @@ export function ProfilePanel() {
             {profile.crew ? ` · ${profile.crew}` : ''}
             {stylesLine ? ` · ${stylesLine}` : ''}
           </p>
+          {profile.bio ? (
+            <p className="mt-2 text-sm text-text-secondary">{profile.bio}</p>
+          ) : null}
         </div>
+        <Button type="button" variant="outline" size="sm" onClick={() => setEditing((v) => !v)}>
+          {editing ? 'Cancel' : 'Edit card'}
+        </Button>
       </header>
+
+      {editing ? (
+        <section className="space-y-4 rounded-lg border border-border bg-surface p-5">
+          <h2 className="text-sm font-bold text-text-primary">Edit your card</h2>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="block space-y-2 text-sm text-text-secondary">
+              <span className="font-semibold text-text-primary">Name on the floor</span>
+              <Input value={dancerName} onChange={(e) => setDancerName(e.target.value)} />
+            </label>
+            <label className="block space-y-2 text-sm text-text-secondary">
+              <span className="font-semibold text-text-primary">City</span>
+              <Input value={city} onChange={(e) => setCity(e.target.value)} />
+            </label>
+            <label className="block space-y-2 text-sm text-text-secondary">
+              <span className="font-semibold text-text-primary">Crew</span>
+              <Input value={crew} onChange={(e) => setCrew(e.target.value)} />
+            </label>
+            <label className="block space-y-2 text-sm text-text-secondary">
+              <span className="font-semibold text-text-primary">Instagram</span>
+              <Input value={instagram} onChange={(e) => setInstagram(e.target.value)} />
+            </label>
+            <label className="block space-y-2 text-sm text-text-secondary sm:col-span-2">
+              <span className="font-semibold text-text-primary">Styles</span>
+              <Input value={styles} onChange={(e) => setStyles(e.target.value)} placeholder="Breaking, Hip Hop" />
+            </label>
+            <label className="block space-y-2 text-sm text-text-secondary sm:col-span-2">
+              <span className="font-semibold text-text-primary">Bio</span>
+              <textarea
+                value={bio}
+                onChange={(e) => setBio(e.target.value)}
+                rows={3}
+                className="flex w-full rounded-md border border-border bg-elevated px-3 py-2 text-sm"
+              />
+            </label>
+            <label className="block space-y-2 text-sm text-text-secondary sm:col-span-2">
+              <span className="font-semibold text-text-primary">Avatar</span>
+              <Input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                disabled={pending}
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (!file) return;
+                  void uploadAvatar(file);
+                }}
+              />
+              <Input
+                value={avatarUrl}
+                onChange={(e) => setAvatarUrl(e.target.value)}
+                placeholder="Uploaded image URL"
+              />
+            </label>
+          </div>
+          <Button type="button" disabled={pending} onClick={() => void saveProfileEdits()}>
+            {pending ? 'Saving…' : 'Save profile'}
+          </Button>
+        </section>
+      ) : null}
 
       <div className="grid gap-5 lg:grid-cols-[1fr_280px]">
         <div className="space-y-5">
@@ -267,6 +397,10 @@ export function ProfilePanel() {
                 <dd className="mt-1 text-text-primary">
                   {profile.instagram ? `@${profile.instagram}` : '—'}
                 </dd>
+              </div>
+              <div className="sm:col-span-2">
+                <dt className="text-text-muted">Bio</dt>
+                <dd className="mt-1 text-text-primary">{profile.bio ?? '—'}</dd>
               </div>
             </dl>
           </section>

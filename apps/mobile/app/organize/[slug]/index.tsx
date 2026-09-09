@@ -103,7 +103,7 @@ export default function OrganizerScreen() {
               variant="secondary"
               onPress={() =>
                 void Linking.openURL(
-                  `${webBaseUrl().replace(/\/$/, '')}/organize/${org.slug}?payout=1`,
+                  `${webBaseUrl().replace(/\/$/, '')}/organize/${org.slug}/payouts`,
                 )
               }
             >

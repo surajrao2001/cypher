@@ -8,9 +8,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toastCopy, toastPending, toastReject, toastResolve } from '@/components/ui/toaster';
 import { useAuth } from '@/features/auth/AuthProvider';
+import { TabEmptyState } from '@/features/organize/TabEmptyState';
 import { cn } from '@/lib/utils';
+import { Wallet } from 'lucide-react';
 
-type SettlementMethod = 'bank' | 'upi';
+type PayoutMethod = 'bank' | 'upi';
 
 export function PayoutSetupPanel({
   organizerId,
@@ -26,11 +28,12 @@ export function PayoutSetupPanel({
 }) {
   const auth = useAuth();
   const [account, setAccount] = useState<OrganizerPaymentAccountDto | null>(null);
+  const [editing, setEditing] = useState(false);
   const [displayName, setDisplayName] = useState(orgName);
   const [contactEmail, setContactEmail] = useState('');
   const [contactPhone, setContactPhone] = useState('');
   const [pan, setPan] = useState('');
-  const [method, setMethod] = useState<SettlementMethod>('bank');
+  const [method, setMethod] = useState<PayoutMethod>('bank');
   const [bankAccountNumber, setBankAccountNumber] = useState('');
   const [bankAccountHolder, setBankAccountHolder] = useState('');
   const [bankIfsc, setBankIfsc] = useState('');
@@ -49,6 +52,8 @@ export function PayoutSetupPanel({
         if (row.displayName) setDisplayName(row.displayName);
         if (row.contactEmail) setContactEmail(row.contactEmail);
         if (row.contactPhone) setContactPhone(row.contactPhone);
+        // Ready accounts start collapsed; first-time setup stays open.
+        setEditing(!row.payoutReady);
       })
       .catch((err: unknown) => {
         if (!cancelled) {
@@ -84,6 +89,7 @@ export function PayoutSetupPanel({
       });
       setAccount(updated);
       onReadyChange?.(updated.payoutReady);
+      setEditing(!updated.payoutReady);
       toastResolve(tid, toastCopy.payoutStarted);
     } catch (err) {
       const detail = err instanceof Error ? err.message : undefined;
@@ -98,220 +104,283 @@ export function PayoutSetupPanel({
     return <p className="text-sm text-text-muted">Loading payouts…</p>;
   }
 
+  const statusLabel = account.payoutReady
+    ? 'Ready'
+    : account.status === 'pending'
+      ? 'Pending'
+      : account.status;
+
+  const summary = (
+    <div className="space-y-3 rounded-md border border-border bg-elevated/40 p-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <p className="text-sm font-semibold text-text-primary">
+            {account.payoutReady ? 'Ready to get paid' : 'Bank / UPI not set yet'}
+          </p>
+          <p className="mt-1 text-xs text-text-muted">
+            {account.payoutReady
+              ? 'Paid ticket money can go to your linked bank or UPI after dancers checkout.'
+              : 'Needed only if ticket prices are above ₹0. Free nights still work without this.'}
+          </p>
+        </div>
+        <Badge variant={account.payoutReady ? 'lime' : 'muted'}>{statusLabel}</Badge>
+      </div>
+      <dl className="grid gap-2 text-sm sm:grid-cols-2">
+        <div>
+          <dt className="text-xs text-text-muted">Name</dt>
+          <dd className="text-text-primary">{account.displayName ?? displayName ?? '—'}</dd>
+        </div>
+        <div>
+          <dt className="text-xs text-text-muted">Cashfree ID</dt>
+          <dd className="break-all text-text-primary">{account.providerVendorId ?? '—'}</dd>
+        </div>
+        <div>
+          <dt className="text-xs text-text-muted">Email</dt>
+          <dd className="break-all text-text-primary">{account.contactEmail ?? '—'}</dd>
+        </div>
+        <div>
+          <dt className="text-xs text-text-muted">Phone</dt>
+          <dd className="text-text-primary">{account.contactPhone ?? '—'}</dd>
+        </div>
+      </dl>
+      <Button
+        type="button"
+        variant={editing ? 'ghost' : account.payoutReady ? 'outline' : 'default'}
+        size="md"
+        onClick={() => setEditing((open) => !open)}
+      >
+        {editing
+          ? 'Hide form'
+          : account.payoutReady
+            ? 'Update bank / UPI'
+            : 'Add bank or UPI'}
+      </Button>
+    </div>
+  );
+
   const form = (
-    <>
-      {account.payoutReady ? (
-        <p className="text-sm text-text-primary">
-          Settlement connected ({account.providerVendorId ?? 'ready'}). Paid entry fees settle here
-          after dancers checkout.
+    <div className="grid gap-3 sm:grid-cols-2">
+      <div className="space-y-1 sm:col-span-2">
+        <label className="text-xs uppercase tracking-[0.14em] text-text-muted" htmlFor="payout-name">
+          Display name
+        </label>
+        <Input
+          id="payout-name"
+          value={displayName}
+          onChange={(e) => setDisplayName(e.target.value)}
+          placeholder={orgName}
+        />
+      </div>
+      <div className="space-y-1">
+        <label className="text-xs uppercase tracking-[0.14em] text-text-muted" htmlFor="payout-email">
+          Contact email
+        </label>
+        <Input
+          id="payout-email"
+          type="email"
+          value={contactEmail}
+          onChange={(e) => setContactEmail(e.target.value)}
+          placeholder="crew@example.com"
+        />
+      </div>
+      <div className="space-y-1">
+        <label className="text-xs uppercase tracking-[0.14em] text-text-muted" htmlFor="payout-phone">
+          Contact phone
+        </label>
+        <Input
+          id="payout-phone"
+          value={contactPhone}
+          onChange={(e) => setContactPhone(e.target.value)}
+          placeholder="9876543210"
+          inputMode="numeric"
+        />
+      </div>
+      <div className="space-y-1 sm:col-span-2">
+        <label className="text-xs uppercase tracking-[0.14em] text-text-muted" htmlFor="payout-pan">
+          PAN
+        </label>
+        <Input
+          id="payout-pan"
+          value={pan}
+          onChange={(e) => setPan(e.target.value.toUpperCase())}
+          placeholder="ABCPV1234D"
+          maxLength={10}
+          autoComplete="off"
+        />
+        <p className="text-xs text-text-muted">
+          Required for Cashfree KYC. Sandbox test PAN: ABCPV1234D.
         </p>
-      ) : (
-        <div className="grid gap-3 sm:grid-cols-2">
+      </div>
+
+      <div className="space-y-2 sm:col-span-2">
+        <p className="text-xs uppercase tracking-[0.14em] text-text-muted">Pay out to</p>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => setMethod('bank')}
+            className={cn(
+              'flex-1 rounded-sm border px-3 py-2.5 text-sm font-medium transition-colors',
+              method === 'bank'
+                ? 'border-accent bg-accent/10 text-text-primary'
+                : 'border-border bg-elevated text-text-secondary hover:text-text-primary',
+            )}
+          >
+            Bank account
+          </button>
+          <button
+            type="button"
+            onClick={() => setMethod('upi')}
+            className={cn(
+              'flex-1 rounded-sm border px-3 py-2.5 text-sm font-medium transition-colors',
+              method === 'upi'
+                ? 'border-accent bg-accent/10 text-text-primary'
+                : 'border-border bg-elevated text-text-secondary hover:text-text-primary',
+            )}
+          >
+            UPI
+          </button>
+        </div>
+        <p className="text-xs text-text-muted">
+          Cashfree accepts one payout method — bank or UPI, not both.
+        </p>
+      </div>
+
+      {method === 'bank' ? (
+        <>
           <div className="space-y-1 sm:col-span-2">
-            <label className="text-xs uppercase tracking-[0.14em] text-text-muted" htmlFor="payout-name">
-              Display name
+            <label
+              className="text-xs uppercase tracking-[0.14em] text-text-muted"
+              htmlFor="payout-holder"
+            >
+              Account holder
             </label>
             <Input
-              id="payout-name"
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-              placeholder={orgName}
+              id="payout-holder"
+              value={bankAccountHolder}
+              onChange={(e) => setBankAccountHolder(e.target.value)}
+              placeholder={displayName || 'Account holder name'}
             />
           </div>
           <div className="space-y-1">
-            <label className="text-xs uppercase tracking-[0.14em] text-text-muted" htmlFor="payout-email">
-              Contact email
+            <label
+              className="text-xs uppercase tracking-[0.14em] text-text-muted"
+              htmlFor="payout-account"
+            >
+              Account number
             </label>
             <Input
-              id="payout-email"
-              type="email"
-              value={contactEmail}
-              onChange={(e) => setContactEmail(e.target.value)}
-              placeholder="crew@example.com"
-            />
-          </div>
-          <div className="space-y-1">
-            <label className="text-xs uppercase tracking-[0.14em] text-text-muted" htmlFor="payout-phone">
-              Contact phone
-            </label>
-            <Input
-              id="payout-phone"
-              value={contactPhone}
-              onChange={(e) => setContactPhone(e.target.value)}
-              placeholder="9876543210"
+              id="payout-account"
+              value={bankAccountNumber}
+              onChange={(e) => setBankAccountNumber(e.target.value)}
+              placeholder="026291800001191"
               inputMode="numeric"
             />
           </div>
-          <div className="space-y-1 sm:col-span-2">
-            <label className="text-xs uppercase tracking-[0.14em] text-text-muted" htmlFor="payout-pan">
-              PAN
+          <div className="space-y-1">
+            <label
+              className="text-xs uppercase tracking-[0.14em] text-text-muted"
+              htmlFor="payout-ifsc"
+            >
+              IFSC
             </label>
             <Input
-              id="payout-pan"
-              value={pan}
-              onChange={(e) => setPan(e.target.value.toUpperCase())}
-              placeholder="ABCPV1234D"
-              maxLength={10}
+              id="payout-ifsc"
+              value={bankIfsc}
+              onChange={(e) => setBankIfsc(e.target.value.toUpperCase())}
+              placeholder="YESB0000262"
+              maxLength={11}
+            />
+          </div>
+          <p className="text-xs text-text-muted sm:col-span-2">
+            Sandbox: leave blank to use Cashfree test account (026291800001191 / YESB0000262).
+          </p>
+        </>
+      ) : (
+        <>
+          <div className="space-y-1 sm:col-span-2">
+            <label
+              className="text-xs uppercase tracking-[0.14em] text-text-muted"
+              htmlFor="payout-holder"
+            >
+              Account holder
+            </label>
+            <Input
+              id="payout-holder"
+              value={bankAccountHolder}
+              onChange={(e) => setBankAccountHolder(e.target.value)}
+              placeholder={displayName || 'Name on UPI'}
+            />
+          </div>
+          <div className="space-y-1 sm:col-span-2">
+            <label
+              className="text-xs uppercase tracking-[0.14em] text-text-muted"
+              htmlFor="payout-upi"
+            >
+              UPI ID
+            </label>
+            <Input
+              id="payout-upi"
+              value={upiVpa}
+              onChange={(e) => setUpiVpa(e.target.value.toLowerCase())}
+              placeholder="name@oksbi"
               autoComplete="off"
             />
-            <p className="text-xs text-text-muted">
-              Required for Cashfree KYC. Sandbox test PAN: ABCPV1234D.
-            </p>
+            <p className="text-xs text-text-muted">Sandbox test VPA: success@upi</p>
           </div>
-
-          <div className="space-y-2 sm:col-span-2">
-            <p className="text-xs uppercase tracking-[0.14em] text-text-muted">Settle to</p>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setMethod('bank')}
-                className={cn(
-                  'flex-1 rounded-sm border px-3 py-2.5 text-sm font-medium transition-colors',
-                  method === 'bank'
-                    ? 'border-accent bg-accent/10 text-text-primary'
-                    : 'border-border bg-elevated text-text-secondary hover:text-text-primary',
-                )}
-              >
-                Bank account
-              </button>
-              <button
-                type="button"
-                onClick={() => setMethod('upi')}
-                className={cn(
-                  'flex-1 rounded-sm border px-3 py-2.5 text-sm font-medium transition-colors',
-                  method === 'upi'
-                    ? 'border-accent bg-accent/10 text-text-primary'
-                    : 'border-border bg-elevated text-text-secondary hover:text-text-primary',
-                )}
-              >
-                UPI
-              </button>
-            </div>
-            <p className="text-xs text-text-muted">
-              Cashfree accepts one settlement method — bank or UPI, not both.
-            </p>
-          </div>
-
-          {method === 'bank' ? (
-            <>
-              <div className="space-y-1 sm:col-span-2">
-                <label
-                  className="text-xs uppercase tracking-[0.14em] text-text-muted"
-                  htmlFor="payout-holder"
-                >
-                  Account holder
-                </label>
-                <Input
-                  id="payout-holder"
-                  value={bankAccountHolder}
-                  onChange={(e) => setBankAccountHolder(e.target.value)}
-                  placeholder={displayName || 'Account holder name'}
-                />
-              </div>
-              <div className="space-y-1">
-                <label
-                  className="text-xs uppercase tracking-[0.14em] text-text-muted"
-                  htmlFor="payout-account"
-                >
-                  Account number
-                </label>
-                <Input
-                  id="payout-account"
-                  value={bankAccountNumber}
-                  onChange={(e) => setBankAccountNumber(e.target.value)}
-                  placeholder="026291800001191"
-                  inputMode="numeric"
-                />
-              </div>
-              <div className="space-y-1">
-                <label
-                  className="text-xs uppercase tracking-[0.14em] text-text-muted"
-                  htmlFor="payout-ifsc"
-                >
-                  IFSC
-                </label>
-                <Input
-                  id="payout-ifsc"
-                  value={bankIfsc}
-                  onChange={(e) => setBankIfsc(e.target.value.toUpperCase())}
-                  placeholder="YESB0000262"
-                  maxLength={11}
-                />
-              </div>
-              <p className="text-xs text-text-muted sm:col-span-2">
-                Sandbox: leave blank to use Cashfree test account (026291800001191 / YESB0000262).
-              </p>
-            </>
-          ) : (
-            <>
-              <div className="space-y-1 sm:col-span-2">
-                <label
-                  className="text-xs uppercase tracking-[0.14em] text-text-muted"
-                  htmlFor="payout-holder"
-                >
-                  Account holder
-                </label>
-                <Input
-                  id="payout-holder"
-                  value={bankAccountHolder}
-                  onChange={(e) => setBankAccountHolder(e.target.value)}
-                  placeholder={displayName || 'Name on UPI'}
-                />
-              </div>
-              <div className="space-y-1 sm:col-span-2">
-                <label
-                  className="text-xs uppercase tracking-[0.14em] text-text-muted"
-                  htmlFor="payout-upi"
-                >
-                  UPI ID
-                </label>
-                <Input
-                  id="payout-upi"
-                  value={upiVpa}
-                  onChange={(e) => setUpiVpa(e.target.value.toLowerCase())}
-                  placeholder="name@oksbi"
-                  autoComplete="off"
-                />
-                <p className="text-xs text-text-muted">
-                  Sandbox test VPA: success@upi
-                </p>
-              </div>
-            </>
-          )}
-
-          <div className="sm:col-span-2">
-            <Button
-              onClick={() => void setup()}
-              disabled={busy || pan.trim().length !== 10 || (method === 'upi' && !upiVpa.trim())}
-            >
-              {busy
-                ? 'Connecting…'
-                : method === 'bank'
-                  ? 'Connect bank account'
-                  : 'Connect UPI'}
-            </Button>
-          </div>
-        </div>
+        </>
       )}
 
+      <div className="sm:col-span-2">
+        <Button
+          onClick={() => void setup()}
+          disabled={busy || pan.trim().length !== 10 || (method === 'upi' && !upiVpa.trim())}
+        >
+          {busy
+            ? 'Saving…'
+            : account.payoutReady
+              ? method === 'bank'
+                ? 'Update bank account'
+                : 'Update UPI'
+              : method === 'bank'
+                ? 'Connect bank account'
+                : 'Connect UPI'}
+        </Button>
+      </div>
+    </div>
+  );
+
+  const body = (
+    <div className="space-y-4">
+      {account.payoutReady ? (
+        summary
+      ) : (
+        <TabEmptyState
+          icon={Wallet}
+          kicker="Payouts"
+          title="Where should the money land?"
+          body="Free nights don’t need this. Paid tickets do — bank or UPI, your call. Cashfree handles the boring paperwork."
+        >
+          {!editing ? (
+            <Button type="button" size="md" onClick={() => setEditing(true)}>
+              Add bank or UPI
+            </Button>
+          ) : null}
+        </TabEmptyState>
+      )}
+      {editing ? form : null}
       {account.lastError ? <p className="text-sm text-error">{account.lastError}</p> : null}
       {error ? <p className="text-sm text-error">{error}</p> : null}
-    </>
+    </div>
   );
 
   if (embedded) {
     return (
       <div className="space-y-4 rounded-sm border border-border bg-surface/80 p-4">
         <div className="flex flex-wrap items-center gap-2">
-          <p className="text-sm font-medium text-text-primary">Connect settlement account</p>
-          <Badge variant={account.payoutReady ? 'lime' : 'muted'}>
-            {account.payoutReady ? 'Connected' : account.status}
-          </Badge>
+          <p className="text-sm font-medium text-text-primary">Payouts</p>
+          <Badge variant={account.payoutReady ? 'lime' : 'muted'}>{statusLabel}</Badge>
         </div>
-        <p className="text-xs text-text-secondary">
-          Bank or UPI — needed when entry fees are above ₹0 so checkout money settles to you.
-        </p>
-        {form}
+        {body}
       </div>
     );
   }
@@ -319,15 +388,13 @@ export function PayoutSetupPanel({
   return (
     <section className={cn('space-y-4 rounded-md border border-border bg-surface p-4 md:p-5')}>
       <div className="flex flex-wrap items-center gap-2">
-        <h2 className="font-display text-3xl uppercase tracking-[0.04em]">Entry-fee settlement</h2>
-        <Badge variant={account.payoutReady ? 'lime' : 'muted'}>
-          {account.payoutReady ? 'Connected' : account.status}
-        </Badge>
+        <h2 className="font-display text-3xl uppercase tracking-[0.04em]">Get paid</h2>
+        <Badge variant={account.payoutReady ? 'lime' : 'muted'}>{statusLabel}</Badge>
       </div>
       <p className="text-sm text-text-secondary">
-        Connect bank or UPI when categories cost more than ₹0, so dancer payments settle to you.
+        Link bank or UPI when tickets cost more than ₹0, so dancer payments can reach you.
       </p>
-      {form}
+      {body}
     </section>
   );
 }
