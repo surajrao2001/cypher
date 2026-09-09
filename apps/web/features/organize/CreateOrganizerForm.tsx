@@ -1,13 +1,16 @@
 'use client';
 
 import { routes } from '@cypher/contracts';
+import type { OrganizerType } from '@cypher/contracts';
 import { useRouter } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { toastCopy, toastPending, toastReject, toastResolve } from '@/components/ui/toaster';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { OrganizeGate } from '@/features/organize/OrganizeGate';
+import { ORGANIZER_TYPE_OPTIONS } from '@/features/organize/event-taxonomy';
 
 export function CreateOrganizerForm() {
   return (
@@ -21,28 +24,30 @@ function CreateOrganizerFormInner() {
   const auth = useAuth();
   const router = useRouter();
   const [orgName, setOrgName] = useState('');
+  const [type, setType] = useState<OrganizerType>('independent');
   const [city, setCity] = useState('');
   const [slug, setSlug] = useState('');
   const [instagram, setInstagram] = useState('');
   const [bio, setBio] = useState('');
   const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
     setPending(true);
-    setError(null);
+    const tid = toastPending(toastCopy.saving);
     try {
       const org = await auth.api.createOrganizer({
         orgName,
+        type,
         city: city || undefined,
         slug: slug || undefined,
         instagram: instagram || undefined,
         bio: bio || undefined,
       });
-      router.push(`${routes.organize}/${org.slug}`);
+      toastResolve(tid, toastCopy.organizerCreated);
+      router.push(`${routes.organize}/${org.slug}?welcome=1`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not create organizer');
+      toastReject(tid, toastCopy.saveFailed, err instanceof Error ? err.message : undefined);
     } finally {
       setPending(false);
     }
@@ -62,6 +67,29 @@ function CreateOrganizerFormInner() {
           Organizer name
           <Input value={orgName} onChange={(e) => setOrgName(e.target.value)} required minLength={2} />
         </label>
+        <fieldset className="space-y-3">
+          <legend className="text-sm text-text-secondary">Organizer type</legend>
+          <div className="grid gap-2">
+            {ORGANIZER_TYPE_OPTIONS.map((option) => (
+              <label
+                key={option.value}
+                className="flex cursor-pointer items-start gap-3 rounded-md border border-border bg-surface px-3 py-3 has-[:checked]:border-accent/50"
+              >
+                <input
+                  type="radio"
+                  name="org-type"
+                  className="mt-1"
+                  checked={type === option.value}
+                  onChange={() => setType(option.value)}
+                />
+                <span>
+                  <span className="block text-sm font-semibold text-text-primary">{option.label}</span>
+                  <span className="block text-xs text-text-muted">{option.hint}</span>
+                </span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
         <label className="block space-y-2 text-sm text-text-secondary">
           City
           <Input value={city} onChange={(e) => setCity(e.target.value)} placeholder="Mumbai" />
@@ -89,7 +117,6 @@ function CreateOrganizerFormInner() {
             className="flex w-full rounded-md border border-border bg-elevated px-3 py-2 font-body text-sm text-text-primary placeholder:text-text-muted focus-visible:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
           />
         </label>
-        {error ? <p className="text-sm text-error">{error}</p> : null}
         <div className="flex gap-3">
           <Button type="submit" disabled={pending} size="lg">
             {pending ? 'Creating…' : 'Create'}

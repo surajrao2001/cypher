@@ -4,6 +4,7 @@ import {
   IsArray,
   IsBoolean,
   IsInt,
+  IsNumber,
   IsOptional,
   IsString,
   IsUrl,
@@ -109,7 +110,7 @@ export class EventCategoryInputDto {
 
   @IsOptional()
   @IsString()
-  @Matches(/^(solo|team)$/)
+  @Matches(/^(solo|team|viewer)$/)
   entryType?: string;
 
   @IsOptional()
@@ -157,7 +158,7 @@ export class UpdateEventCategoryDto {
 
   @IsOptional()
   @IsString()
-  @Matches(/^(solo|team)$/)
+  @Matches(/^(solo|team|viewer)$/)
   entryType?: string;
 
   @IsOptional()
@@ -173,6 +174,31 @@ export class UpdateEventCategoryDto {
   @Min(1)
   @Max(50)
   maxTeamSize?: number;
+}
+
+export class AudiencePassInputDto {
+  @IsBoolean()
+  enabled!: boolean;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  @Max(10_000_000)
+  priceMinor?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100_000)
+  capacity?: number;
+
+  @IsOptional()
+  @IsString()
+  @MinLength(1)
+  @MaxLength(80)
+  name?: string;
 }
 
 export class CreateOrganizerEventDto {
@@ -210,6 +236,20 @@ export class CreateOrganizerEventDto {
   @MaxLength(160)
   venue?: string;
 
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(-90)
+  @Max(90)
+  venueLatitude?: number | null;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(-180)
+  @Max(180)
+  venueLongitude?: number | null;
+
   @IsString()
   startTime!: string;
 
@@ -240,6 +280,11 @@ export class CreateOrganizerEventDto {
   @Type(() => EventCategoryInputDto)
   @ArrayMaxSize(20)
   categories?: EventCategoryInputDto[];
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => AudiencePassInputDto)
+  audiencePass?: AudiencePassInputDto;
 }
 
 export class UpdateOrganizerEventDto {
@@ -273,6 +318,20 @@ export class UpdateOrganizerEventDto {
   venue?: string | null;
 
   @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(-90)
+  @Max(90)
+  venueLatitude?: number | null;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(-180)
+  @Max(180)
+  venueLongitude?: number | null;
+
+  @IsOptional()
   @IsString()
   startTime?: string;
 
@@ -298,6 +357,11 @@ export class UpdateOrganizerEventDto {
   @IsOptional()
   @IsBoolean()
   featured?: boolean;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => AudiencePassInputDto)
+  audiencePass?: AudiencePassInputDto;
 }
 
 export class CreateEventMediaLinkDto {
@@ -354,4 +418,130 @@ export class UpdateEventMediaLinkDto {
   @Min(0)
   @Max(10_000)
   sortOrder?: number;
+}
+
+export class EventDayInputDto {
+  @IsOptional()
+  @IsString()
+  id?: string;
+
+  @IsString()
+  @MinLength(1)
+  @MaxLength(80)
+  label!: string;
+
+  @IsString()
+  startsAt!: string;
+
+  @IsOptional()
+  @IsString()
+  endsAt?: string | null;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  sortOrder?: number;
+}
+
+export class ReplaceEventDaysDto {
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => EventDayInputDto)
+  days!: EventDayInputDto[];
+}
+
+export class CategoryPriceTierInputDto {
+  @IsString()
+  @MinLength(1)
+  @MaxLength(80)
+  name!: string;
+
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  @Max(10_000_000)
+  priceMinor!: number;
+
+  @IsOptional()
+  @IsString()
+  startsAt?: string | null;
+
+  @IsOptional()
+  @IsString()
+  endsAt?: string | null;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  sortOrder?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  maxQuantity?: number | null;
+}
+
+export class ReplaceCategoryPriceTiersDto {
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CategoryPriceTierInputDto)
+  tiers!: CategoryPriceTierInputDto[];
+}
+
+export class SetCategoryValidDaysDto {
+  @IsArray()
+  @IsString({ each: true })
+  dayIds!: string[];
+}
+
+export class EarlyBirdInputDto {
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  @Max(10_000_000)
+  priceMinorDay!: number;
+
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  @Max(10_000_000)
+  priceMinorFull!: number;
+
+  @IsString()
+  endsAt!: string;
+}
+
+export class GenerateAudienceDayPassesDto {
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  @Max(10_000_000)
+  dayPriceMinor!: number;
+
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  @Max(10_000_000)
+  fullPriceMinor!: number;
+
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100_000)
+  capacityPerDay!: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100_000)
+  fullCapacity?: number;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => EarlyBirdInputDto)
+  earlyBird?: EarlyBirdInputDto;
 }

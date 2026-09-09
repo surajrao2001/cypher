@@ -19,6 +19,9 @@ import type {
   UpdateEventCategoryBody,
   CreateEventMediaLinkBody,
   UpdateEventMediaLinkBody,
+  ReplaceEventDaysBody,
+  ReplaceCategoryPriceTiersBody,
+  GenerateAudienceDayPassesBody,
   OrganizerEventRegistrationsResponse,
   OrganizerPaymentAccountDto,
   PaymentCheckoutSessionDto,
@@ -29,6 +32,8 @@ import type {
 export interface ApiClientOptions {
   baseUrl: string;
   getAccessToken?: () => Promise<string | null> | string | null;
+  /** Called once on HTTP 401 to refresh the bearer token and retry the request. */
+  refreshAccessToken?: () => Promise<string | null>;
 }
 
 export class CypherApiClient {
@@ -229,6 +234,52 @@ export class CypherApiClient {
     );
   }
 
+  async replaceOrganizerEventDays(
+    organizerId: string,
+    eventId: string,
+    body: ReplaceEventDaysBody,
+  ): Promise<OrganizerEventDetailDto> {
+    return this.request<OrganizerEventDetailDto>(
+      `/v1/organizers/${encodeURIComponent(organizerId)}/events/${encodeURIComponent(eventId)}/days`,
+      { method: 'PUT', body: JSON.stringify(body) },
+    );
+  }
+
+  async replaceOrganizerCategoryPriceTiers(
+    organizerId: string,
+    eventId: string,
+    categoryId: string,
+    body: ReplaceCategoryPriceTiersBody,
+  ): Promise<OrganizerEventDetailDto> {
+    return this.request<OrganizerEventDetailDto>(
+      `/v1/organizers/${encodeURIComponent(organizerId)}/events/${encodeURIComponent(eventId)}/categories/${encodeURIComponent(categoryId)}/price-tiers`,
+      { method: 'PUT', body: JSON.stringify(body) },
+    );
+  }
+
+  async setOrganizerCategoryValidDays(
+    organizerId: string,
+    eventId: string,
+    categoryId: string,
+    dayIds: string[],
+  ): Promise<OrganizerEventDetailDto> {
+    return this.request<OrganizerEventDetailDto>(
+      `/v1/organizers/${encodeURIComponent(organizerId)}/events/${encodeURIComponent(eventId)}/categories/${encodeURIComponent(categoryId)}/valid-days`,
+      { method: 'PUT', body: JSON.stringify({ dayIds }) },
+    );
+  }
+
+  async generateAudienceDayPasses(
+    organizerId: string,
+    eventId: string,
+    body: GenerateAudienceDayPassesBody,
+  ): Promise<OrganizerEventDetailDto> {
+    return this.request<OrganizerEventDetailDto>(
+      `/v1/organizers/${encodeURIComponent(organizerId)}/events/${encodeURIComponent(eventId)}/generate-audience-day-passes`,
+      { method: 'POST', body: JSON.stringify(body) },
+    );
+  }
+
   async addOrganizerEventMediaLink(
     organizerId: string,
     eventId: string,
@@ -301,6 +352,21 @@ export class CypherApiClient {
     );
   }
 
+  /** Confirm paid registration after Cashfree success (webhook fallback for local/dev). */
+  async reconcileRegistrationCheckout(id: string): Promise<RegistrationDto> {
+    return this.request<RegistrationDto>(
+      `/v1/registrations/${encodeURIComponent(id)}/checkout/reconcile`,
+      { method: 'POST' },
+    );
+  }
+
+  async reconcileCashfreeOrder(orderId: string): Promise<RegistrationDto> {
+    return this.request<RegistrationDto>('/v1/payments/cashfree/reconcile', {
+      method: 'POST',
+      body: JSON.stringify({ orderId }),
+    });
+  }
+
   async getOrganizerPaymentAccount(organizerId: string): Promise<OrganizerPaymentAccountDto> {
     return this.request<OrganizerPaymentAccountDto>(
       `/v1/organizers/${encodeURIComponent(organizerId)}/payment-account`,
@@ -348,7 +414,7 @@ export class CypherApiClient {
     return (await response.json()) as { url: string; filename: string };
   }
 
-  private async request<T>(path: string, init: RequestInit = {}): Promise<T> {
+  private async request<T>(path: string, init: RequestInit = {}, didRefresh = false): Promise<T> {
     const token = await this.options.getAccessToken?.();
     const headers = new Headers(init.headers);
     headers.set('Accept', 'application/json');
@@ -365,6 +431,13 @@ export class CypherApiClient {
       cache: 'no-store',
       signal: init.signal ?? AbortSignal.timeout(8_000),
     });
+
+    if (response.status === 401 && !didRefresh && this.options.refreshAccessToken) {
+      const refreshed = await this.options.refreshAccessToken();
+      if (refreshed) {
+        return this.request<T>(path, init, true);
+      }
+    }
 
     if (!response.ok) {
       let message = `API ${response.status}`;

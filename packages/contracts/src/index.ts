@@ -2,7 +2,7 @@ export type PlatformRole = 'user' | 'admin';
 export type ProfileStatus = 'active' | 'suspended' | 'deleted';
 export type OrganizerVerificationStatus = 'pending' | 'verified' | 'rejected';
 export type OrganizerMemberRole = 'owner' | 'manager' | 'editor';
-export type CategoryEntryType = 'solo' | 'team';
+export type CategoryEntryType = 'solo' | 'team' | 'viewer';
 export type OrganizerType =
   | 'independent'
   | 'collective'
@@ -124,6 +124,9 @@ export interface EventCardDto {
   kicker: string;
   city: string;
   venue: string | null;
+  /** WGS84 — set when organizer drops a pin */
+  venueLatitude: number | null;
+  venueLongitude: number | null;
   startTime: string;
   posterUrl: string | null;
   status: EventStatus;
@@ -142,7 +145,10 @@ export interface EventCardDto {
 export interface EventCategoryPublicDto {
   id: string;
   name: string;
+  /** Legacy / fallback list price (also used when no active tier). */
   priceMinor: number;
+  /** Resolved sell price right now (tier or fallback). */
+  currentPriceMinor: number;
   capacity: number;
   reservedCount: number;
   confirmedCount: number;
@@ -151,6 +157,40 @@ export interface EventCategoryPublicDto {
   maxTeamSize: number;
   /** @deprecated use maxTeamSize */
   teamSize: number;
+  priceTiers: CategoryPriceTierDto[];
+  validDayIds: string[];
+  activeTierName: string | null;
+  nextTier: CategoryPriceTierDto | null;
+}
+
+export interface CategoryPriceTierDto {
+  id: string;
+  name: string;
+  priceMinor: number;
+  startsAt: string | null;
+  endsAt: string | null;
+  sortOrder: number;
+  maxQuantity: number | null;
+}
+
+export interface EventDayDto {
+  id: string;
+  label: string;
+  startsAt: string;
+  endsAt: string | null;
+  sortOrder: number;
+}
+
+/** Easy audience / door pass summary (first viewer category when multiple exist). */
+export interface EventAudiencePassDto {
+  enabled: boolean;
+  categoryId: string | null;
+  name: string;
+  priceMinor: number;
+  capacity: number;
+  reservedCount: number;
+  confirmedCount: number;
+  spotsLeft: number;
 }
 
 export interface EventDetailDto extends EventCardDto {
@@ -159,6 +199,12 @@ export interface EventDetailDto extends EventCardDto {
   registrationOpensAt: string | null;
   registrationClosesAt: string | null;
   categories: EventCategoryPublicDto[];
+  /** Compete categories only (excludes viewer). */
+  competeCategories: EventCategoryPublicDto[];
+  /** All viewer / audience SKUs (day passes, full weekend, etc.). */
+  viewerCategories: EventCategoryPublicDto[];
+  audience: EventAudiencePassDto;
+  days: EventDayDto[];
   mediaLinks: EventMediaLinkDto[];
 }
 
@@ -238,6 +284,8 @@ export interface CreateOrganizerEventBody {
   eventType?: EventType;
   city: string;
   venue?: string;
+  venueLatitude?: number | null;
+  venueLongitude?: number | null;
   startTime: string;
   endTime?: string;
   posterUrl?: string;
@@ -253,6 +301,13 @@ export interface CreateOrganizerEventBody {
     /** @deprecated prefer min/max */
     teamSize?: number;
   }>;
+  /** Optional viewers / door pass (creates a single viewer category). */
+  audiencePass?: {
+    enabled: boolean;
+    priceMinor?: number;
+    capacity?: number;
+    name?: string;
+  };
 }
 
 export interface UpdateOrganizerEventBody {
@@ -261,12 +316,20 @@ export interface UpdateOrganizerEventBody {
   eventType?: EventType;
   city?: string;
   venue?: string | null;
+  venueLatitude?: number | null;
+  venueLongitude?: number | null;
   startTime?: string;
   endTime?: string | null;
   posterUrl?: string | null;
   tags?: string[];
   styles?: string[];
   featured?: boolean;
+  audiencePass?: {
+    enabled: boolean;
+    priceMinor?: number;
+    capacity?: number;
+    name?: string;
+  };
 }
 
 export interface CreateEventCategoryBody {
@@ -278,6 +341,14 @@ export interface CreateEventCategoryBody {
   maxTeamSize?: number;
   /** @deprecated prefer min/max */
   teamSize?: number;
+  validDayIds?: string[];
+  priceTiers?: Array<{
+    name: string;
+    priceMinor: number;
+    startsAt?: string | null;
+    endsAt?: string | null;
+    sortOrder?: number;
+  }>;
 }
 
 export interface UpdateEventCategoryBody {
@@ -289,6 +360,41 @@ export interface UpdateEventCategoryBody {
   maxTeamSize?: number;
   /** @deprecated prefer min/max */
   teamSize?: number;
+  validDayIds?: string[];
+}
+
+export interface ReplaceCategoryPriceTiersBody {
+  tiers: Array<{
+    name: string;
+    priceMinor: number;
+    startsAt?: string | null;
+    endsAt?: string | null;
+    sortOrder?: number;
+    maxQuantity?: number | null;
+  }>;
+}
+
+export interface ReplaceEventDaysBody {
+  days: Array<{
+    id?: string;
+    label: string;
+    startsAt: string;
+    endsAt?: string | null;
+    sortOrder?: number;
+  }>;
+}
+
+export interface GenerateAudienceDayPassesBody {
+  dayPriceMinor: number;
+  fullPriceMinor: number;
+  capacityPerDay: number;
+  fullCapacity?: number;
+  /** Optional early-bird window applied to generated SKUs. */
+  earlyBird?: {
+    priceMinorDay: number;
+    priceMinorFull: number;
+    endsAt: string;
+  };
 }
 
 export interface RegistrationParticipantDto {
@@ -303,6 +409,7 @@ export interface RegistrationDto {
   id: string;
   eventId: string;
   categoryId: string;
+  priceTierId: string | null;
   entryName: string | null;
   registrationStatus: RegistrationStatus;
   paymentStatus: RegistrationPaymentStatus;
@@ -367,6 +474,12 @@ export interface StartOrganizerPayoutSetupBody {
   displayName: string;
   contactEmail: string;
   contactPhone: string;
+  /** Indian PAN for Cashfree Easy Split vendor KYC. */
+  pan: string;
+  bankAccountNumber?: string;
+  bankAccountHolder?: string;
+  bankIfsc?: string;
+  upiVpa?: string;
 }
 
 export interface PaymentCheckoutSessionDto {
@@ -443,4 +556,5 @@ export const routes = {
   profile: '/profile',
   login: '/login',
   saved: '/saved',
+  checkIn: '/check-in',
 } as const;

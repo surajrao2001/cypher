@@ -5,18 +5,18 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        bg: '#0A0A0A',
+        bg: '#0B0B0B',
         surface: '#121212',
         elevated: '#1A1A1A',
         border: '#2A2A2A',
-        ink: '#F5F5F5',
+        ink: '#F4F2ED',
         secondary: '#A3A3A3',
         muted: '#737373',
         accent: {
-          DEFAULT: '#FF4D00',
-          hover: '#FF6A2B',
+          DEFAULT: '#FF6800',
+          hover: '#FF8124',
         },
-        lime: '#DFFF00',
+        lime: '#C7FF00',
         success: '#22C55E',
         warning: '#F59E0B',
         danger: '#EF4444',
@@ -29,9 +29,9 @@ module.exports = {
         'body-bold': ['Barlow_700Bold'],
       },
       borderRadius: {
-        sm: '6px',
-        md: '10px',
-        lg: '16px',
+        sm: '4px',
+        md: '6px',
+        lg: '12px',
       },
     },
   },

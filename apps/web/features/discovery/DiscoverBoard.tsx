@@ -31,7 +31,7 @@ export function DiscoverBoard({ catalog }: { catalog: EventListResponse }) {
       <div className="flex flex-1 flex-col gap-8 px-4 py-6 md:px-6 md:py-8">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="kicker text-accent">Cypher season ’26 · {cityLabel}</p>
+            <p className="kicker text-accent">Cypher season · {cityLabel}</p>
             <h1 className="display-title mt-2 text-5xl md:text-7xl">Find the cipher.</h1>
             <p className="mt-3 max-w-xl text-sm text-text-secondary md:text-base">
               Battles, jams, and labs from Mumbai City Breakers, Namma Cypher, Old School Delhi, and
@@ -49,7 +49,7 @@ export function DiscoverBoard({ catalog }: { catalog: EventListResponse }) {
             <div className="mb-4 flex items-end justify-between gap-3">
               <div>
                 <p className="kicker">On the floor</p>
-                <h2 className="display-title mt-1 text-3xl">Upcoming battles</h2>
+                <h2 className="display-title mt-1 text-3xl">Upcoming battles & cyphers</h2>
               </div>
               <p className="text-xs uppercase tracking-[0.16em] text-text-muted">
                 {filtered.length} {filtered.length === 1 ? 'event' : 'events'}
@@ -59,7 +59,7 @@ export function DiscoverBoard({ catalog }: { catalog: EventListResponse }) {
               <EmptyState
                 kicker="Filters"
                 title="Floor’s empty"
-                body="No events match that city, tag, or search. Clear filters or pick another crew city."
+                body="No nights match. Clear filters — or wait for the next cypher. Props for hunting."
               >
                 <Button
                   type="button"

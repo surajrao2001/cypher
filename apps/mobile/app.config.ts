@@ -1,7 +1,7 @@
 import type { ExpoConfig } from 'expo/config';
 
 const config: ExpoConfig = {
-  name: 'Cypher',
+  name: 'BYND8',
   slug: 'cypher',
   version: '0.0.0',
   orientation: 'portrait',
@@ -9,8 +9,10 @@ const config: ExpoConfig = {
   userInterfaceStyle: 'dark',
   newArchEnabled: true,
   jsEngine: 'hermes',
+  icon: './assets/brand/bynd8-app-icon.png',
   splash: {
-    backgroundColor: '#0A0A0A',
+    image: './assets/brand/bynd8-mark.png',
+    backgroundColor: '#0B0B0B',
     resizeMode: 'contain',
   },
   ios: {
@@ -23,19 +25,20 @@ const config: ExpoConfig = {
   android: {
     package: 'app.cypher.mobile',
     adaptiveIcon: {
-      backgroundColor: '#0A0A0A',
+      foregroundImage: './assets/brand/bynd8-app-icon.png',
+      backgroundColor: '#0B0B0B',
     },
     edgeToEdgeEnabled: true,
     userInterfaceStyle: 'dark',
   },
   androidStatusBar: {
     barStyle: 'light-content',
-    backgroundColor: '#0A0A0A',
+    backgroundColor: '#0B0B0B',
   },
   web: {
     bundler: 'metro',
     output: 'single',
-    backgroundColor: '#0A0A0A',
+    backgroundColor: '#0B0B0B',
   },
   plugins: ['expo-router', 'expo-font'],
   experiments: {

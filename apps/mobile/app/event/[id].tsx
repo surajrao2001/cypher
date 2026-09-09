@@ -43,7 +43,8 @@ export default function EventDetailScreen() {
         if (row) {
           const detail = toMobileDetail(row);
           setEvent(detail);
-          setCategoryId(detail.categories?.[0]?.id ?? null);
+          const compete = detail.categories?.filter((c) => c.entryType !== 'viewer') ?? [];
+          setCategoryId(compete[0]?.id ?? detail.audience?.categoryId ?? null);
         } else {
           setEvent(null);
         }
@@ -59,16 +60,31 @@ export default function EventDetailScreen() {
     };
   }, [id]);
 
-  const category = useMemo(
-    () => event?.categories?.find((row) => row.id === categoryId) ?? event?.categories?.[0],
-    [categoryId, event?.categories],
+  const competeCategories = useMemo(
+    () => (event?.categories ?? []).filter((row) => row.entryType !== 'viewer'),
+    [event?.categories],
   );
+  const category = useMemo(() => {
+    if (categoryId === event?.audience?.categoryId && event?.audience?.enabled) {
+      return event.categories?.find((row) => row.id === categoryId) ?? null;
+    }
+    return competeCategories.find((row) => row.id === categoryId) ?? competeCategories[0] ?? null;
+  }, [categoryId, competeCategories, event]);
+
+  useEffect(() => {
+    if (!event) return;
+    if (!categoryId) {
+      setCategoryId(competeCategories[0]?.id ?? event.audience?.categoryId ?? null);
+    }
+  }, [categoryId, competeCategories, event]);
 
   const remaining = category
     ? spotsLeft(category.capacity, category.confirmedCount + category.reservedCount)
-    : event
-      ? spotsLeft(event.spotsCapacity, event.spotsConfirmed)
-      : 0;
+    : event?.audience?.enabled
+      ? event.audience.spotsLeft
+      : event
+        ? spotsLeft(event.spotsCapacity, event.spotsConfirmed)
+        : 0;
   const soldOut = remaining === 0;
   const unitPrice = category?.priceMinor ?? event?.priceMinor ?? 0;
 
@@ -105,7 +121,7 @@ export default function EventDetailScreen() {
       } else {
         setPendingPaidRegistrationId(registration.id);
         setNotice(
-          `Held ${registration.category.name} · ${registration.registrationCode}. Enter mobile and pay with Cashfree.`,
+          `Held ${registration.category.entryType === 'viewer' ? 'Audience' : registration.category.name} · ${registration.registrationCode}. Enter mobile and pay with Cashfree.`,
         );
       }
       const refreshed = await mobileApi().getEvent(event.slug);
@@ -207,10 +223,10 @@ export default function EventDetailScreen() {
             {event.description}
           </Text>
 
-          {event.categories && event.categories.length > 0 ? (
+          {competeCategories.length > 0 ? (
             <View className="mt-8 gap-2">
-              <Text variant="caption">Choose category</Text>
-              {event.categories.map((row) => {
+              <Text variant="caption">Compete</Text>
+              {competeCategories.map((row) => {
                 const left = spotsLeft(row.capacity, row.confirmedCount + row.reservedCount);
                 const selected = row.id === (category?.id ?? null);
                 return (
@@ -225,13 +241,37 @@ export default function EventDetailScreen() {
                     <Text variant="subtitle">{row.name}</Text>
                     <Text variant="caption" className="mt-1 text-muted">
                       {row.priceMinor === 0 ? 'Free' : formatMinorUnits(row.priceMinor)} · {left} left
-                      · {row.minTeamSize === row.maxTeamSize
+                      ·{' '}
+                      {row.minTeamSize === row.maxTeamSize
                         ? `${row.minTeamSize}p`
                         : `${row.minTeamSize}-${row.maxTeamSize}p`}
                     </Text>
                   </Pressable>
                 );
               })}
+            </View>
+          ) : null}
+
+          {event.audience?.enabled ? (
+            <View className="mt-6 gap-2">
+              <Text variant="caption">Watch</Text>
+              <Pressable
+                disabled={event.audience.spotsLeft === 0}
+                onPress={() => setCategoryId(event.audience?.categoryId ?? null)}
+                className={`rounded-md border px-3 py-3 ${
+                  categoryId === event.audience.categoryId
+                    ? 'border-lime bg-elevated'
+                    : 'border-border bg-surface'
+                } ${event.audience.spotsLeft === 0 ? 'opacity-40' : ''}`}
+              >
+                <Text variant="subtitle">Audience pass</Text>
+                <Text variant="caption" className="mt-1 text-muted">
+                  {event.audience.priceMinor === 0
+                    ? 'Free'
+                    : formatMinorUnits(event.audience.priceMinor)}{' '}
+                  · {event.audience.spotsLeft} left
+                </Text>
+              </Pressable>
             </View>
           ) : null}
 

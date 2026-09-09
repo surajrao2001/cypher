@@ -54,7 +54,7 @@ export default function DiscoverScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View className="px-4 pt-2">
-          <Text variant="kicker">Night Cypher</Text>
+          <Text variant="kicker">BYND8</Text>
           <Text variant="display" className="mt-1 text-[52px] leading-[52px]">
             Discover
           </Text>

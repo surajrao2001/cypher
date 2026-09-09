@@ -4,21 +4,28 @@ import { Pressable, ScrollView, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { OrganizerDto } from '@cypher/contracts';
 
+import { BrandLogo } from '@/components/BrandLogo';
+import { GoogleGlyph } from '@/components/GoogleGlyph';
 import { Button } from '@/components/ui/Button';
 import { Text } from '@/components/ui/Text';
 import { EmptyState } from '@/components/EmptyState';
 import { useAuth } from '@/lib/auth';
+import type { SocialProvider } from '@/lib/supabase';
 import { colors } from '@/lib/theme';
+import { useCypherFonts } from '@/lib/fonts';
+import { cn } from '@/lib/format';
+
+type Pending = SocialProvider | 'email' | null;
 
 export default function OrganizeTab() {
   const auth = useAuth();
   const router = useRouter();
-  const [phone, setPhone] = useState('+91');
-  const [code, setCode] = useState('');
-  const [otpSent, setOtpSent] = useState(false);
+  const fonts = useCypherFonts();
   const [orgs, setOrgs] = useState<OrganizerDto[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [pending, setPending] = useState(false);
+  const [info, setInfo] = useState<string | null>(null);
+  const [pending, setPending] = useState<Pending>(null);
+  const [email, setEmail] = useState('');
 
   const loadOrgs = useCallback(async () => {
     if (!auth.token) {
@@ -37,31 +44,31 @@ export default function OrganizeTab() {
     void loadOrgs();
   }, [loadOrgs]);
 
-  async function sendOtp() {
-    setPending(true);
+  async function continueWith(provider: SocialProvider) {
+    setPending(provider);
     setError(null);
+    setInfo(null);
     try {
-      await auth.requestOtp(phone.trim());
-      setOtpSent(true);
+      await auth.signInWithProvider(provider);
+      await loadOrgs();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'OTP request failed');
+      setError(err instanceof Error ? err.message : 'Sign-in failed');
     } finally {
-      setPending(false);
+      setPending(null);
     }
   }
 
-  async function verify() {
-    setPending(true);
+  async function continueWithEmail() {
+    setPending('email');
     setError(null);
+    setInfo(null);
     try {
-      await auth.verifyOtp(phone.trim(), code.trim());
-      setOtpSent(false);
-      setCode('');
-      await loadOrgs();
+      await auth.signInWithEmail(email);
+      setInfo(`Check ${email.trim()} for a sign-in link, then return here.`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Verify failed');
+      setError(err instanceof Error ? err.message : 'Could not send email link');
     } finally {
-      setPending(false);
+      setPending(null);
     }
   }
 
@@ -78,47 +85,84 @@ export default function OrganizeTab() {
           </Text>
         </View>
 
-        {!auth.token ? (
-          <View className="mt-8 gap-3">
-            <Text variant="label">Phone</Text>
-            <TextInput
-              value={phone}
-              onChangeText={setPhone}
-              keyboardType="phone-pad"
-              placeholder="+9198…"
-              placeholderTextColor={colors.muted}
-              className="h-12 rounded-md border border-border bg-elevated px-3 text-ink"
-              style={{ color: colors.ink }}
-            />
-            {otpSent ? (
-              <>
-                <Text variant="label">OTP</Text>
-                <TextInput
-                  value={code}
-                  onChangeText={setCode}
-                  keyboardType="number-pad"
-                  placeholder="6-digit code"
-                  placeholderTextColor={colors.muted}
-                  className="h-12 rounded-md border border-border bg-elevated px-3 text-ink"
-                  style={{ color: colors.ink }}
-                />
-                <Button loading={pending} onPress={() => void verify()}>
-                  Verify
-                </Button>
-              </>
-            ) : (
-              <Button loading={pending} onPress={() => void sendOtp()}>
-                Send OTP
+        {!auth.ready ? (
+          <Text variant="caption" className="mt-8">
+            Loading session…
+          </Text>
+        ) : !auth.token ? (
+          <View className="mt-10 gap-5">
+            <BrandLogo variant="lockup" height={40} />
+            <Text variant="title" className="text-[28px]">
+              Sign in to organize
+            </Text>
+            <Text variant="caption">
+              Same account as web — membership comes from the org you create.
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Continue with Google"
+              disabled={pending !== null}
+              onPress={() => void continueWith('google')}
+              className={cn(
+                'h-14 flex-row items-center justify-center gap-3 rounded-sm border border-[#dadce0] bg-white px-4',
+                pending !== null && 'opacity-40',
+              )}
+            >
+              <GoogleGlyph size={22} />
+              <Text
+                className="text-[16px] text-[#1f1f1f]"
+                style={{ fontFamily: fonts.bodyBoldFamily }}
+              >
+                {pending === 'google' ? 'Waiting for Google…' : 'Continue with Google'}
+              </Text>
+            </Pressable>
+
+            <View className="flex-row items-center gap-3">
+              <View className="h-px flex-1 bg-border" />
+              <Text variant="caption" className="uppercase tracking-[1.5px]">
+                or
+              </Text>
+              <View className="h-px flex-1 bg-border" />
+            </View>
+
+            <View className="gap-3">
+              <Text variant="label">Email</Text>
+              <TextInput
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+                placeholder="you@example.com"
+                placeholderTextColor={colors.muted}
+                className="h-12 rounded-sm border border-border bg-elevated px-3 text-ink"
+                style={{ color: colors.ink }}
+              />
+              <Button
+                variant="secondary"
+                loading={pending === 'email'}
+                disabled={pending !== null || !email.trim()}
+                onPress={() => void continueWithEmail()}
+              >
+                Email me a sign-in link
               </Button>
-            )}
+            </View>
+            {info ? <Text variant="caption">{info}</Text> : null}
+            <Text variant="caption" className="uppercase tracking-[1.5px]">
+              The culture is the centre
+            </Text>
           </View>
         ) : (
           <View className="mt-8 gap-4">
             <Text variant="caption">
               Signed in as {auth.me?.profile.dancerName ?? auth.me?.profile.name ?? 'dancer'}
             </Text>
-            <Button onPress={() => router.push('/organize/new')}>New organizer</Button>
-            <Button variant="ghost" onPress={() => auth.signOut()}>
+            {auth.me?.needsOnboarding ? (
+              <Button onPress={() => router.push('/(tabs)/profile')}>Finish dancer card</Button>
+            ) : (
+              <Button onPress={() => router.push('/organize/new')}>New organizer</Button>
+            )}
+            <Button variant="ghost" onPress={() => void auth.signOut()}>
               Sign out
             </Button>
 
@@ -135,17 +179,25 @@ export default function OrganizeTab() {
                 </Button>
               </EmptyState>
             ) : (
-              <View className="gap-2 border-t border-border pt-4">
+              <View className="gap-3 pt-2">
                 {orgs.map((org) => (
                   <Pressable
                     key={org.id}
                     onPress={() => router.push(`/organize/${org.slug}`)}
-                    className="border-b border-border py-4 active:bg-elevated"
+                    className="rounded-sm border border-border bg-surface px-4 py-4 active:bg-elevated"
                   >
-                    <Text variant="subtitle">{org.orgName}</Text>
-                    <Text variant="caption">
-                      @{org.slug} · {org.verificationStatus}
+                    <Text variant="subtitle" className="text-[26px]">
+                      {org.orgName}
                     </Text>
+                    <Text variant="caption" className="mt-1">
+                      @{org.slug}
+                      {org.city ? ` · ${org.city}` : ''} · {org.verificationStatus} · {org.role}
+                    </Text>
+                    {org.bio ? (
+                      <Text variant="caption" className="mt-2" numberOfLines={2}>
+                        {org.bio}
+                      </Text>
+                    ) : null}
                   </Pressable>
                 ))}
               </View>

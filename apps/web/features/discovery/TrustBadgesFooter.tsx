@@ -19,7 +19,7 @@ const badges = [
   {
     icon: Link2,
     title: 'Event media',
-    body: 'Organizers can share YouTube, Instagram, or Drive links — Cypher does not host video.',
+    body: 'Organizers can share YouTube, Instagram, or Drive links — BYND8 does not host video.',
   },
 ] as const;
 
@@ -40,8 +40,8 @@ export function TrustBadgesFooter() {
         ))}
       </div>
       <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border px-5 py-4 text-[11px] uppercase tracking-[0.16em] text-text-muted">
-        <span>Night Cypher · Built for battle weekends, India</span>
-        <span>No light mode. The floor stays dark.</span>
+        <span>BYND8 · Everything beyond the count</span>
+        <span>The culture is the centre</span>
       </div>
     </footer>
   );
