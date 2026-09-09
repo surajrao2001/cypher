@@ -36,7 +36,7 @@ export class StartPayoutSetupDto {
   /** Optional UPI VPA instead of / in addition to bank. */
   @IsOptional()
   @IsString()
-  @Matches(/^[\w.\-]{2,}@[a-zA-Z]{2,}$/, { message: 'upiVpa must look like name@bank' })
+  @Matches(/^[\w.-]{2,}@[a-zA-Z]{2,}$/, { message: 'upiVpa must look like name@bank' })
   upiVpa?: string;
 }
 
