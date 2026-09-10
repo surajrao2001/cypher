@@ -104,7 +104,6 @@ export function PosterField({
             compact ? 'mx-auto h-40 w-[7.5rem]' : 'aspect-[3/4] max-h-56',
           )}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={value.trim()} alt="" className="h-full w-full object-cover" />
         </div>
       ) : null}

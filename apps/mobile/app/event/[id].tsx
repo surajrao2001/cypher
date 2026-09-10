@@ -1,8 +1,9 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Linking, Pressable, ScrollView, TextInput, View } from 'react-native';
+import { Linking, Pressable, ScrollView, TextInput, View } from 'react-native';
 
+import { friendlyError, InlineNotice, PageLoading, SoftError } from '@/components/AsyncState';
 import { EventPoster } from '@/components/EventPoster';
 import { RegisterNowBar } from '@/components/RegisterNowBar';
 import { Badge } from '@/components/ui/Badge';
@@ -22,42 +23,47 @@ export default function EventDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [event, setEvent] = useState<MobileEvent | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<unknown>(null);
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<unknown>(null);
   const [customerPhone, setCustomerPhone] = useState('');
   const [pendingPaidRegistrationId, setPendingPaidRegistrationId] = useState<string | null>(null);
 
-  useEffect(() => {
+  function loadEvent() {
     if (typeof id !== 'string') {
       setEvent(null);
+      setLoadError(null);
       setLoading(false);
       return;
     }
-    let cancelled = false;
     setLoading(true);
     void mobileApi()
       .getEvent(id)
       .then((row) => {
-        if (cancelled) return;
         if (row) {
           const detail = toMobileDetail(row);
           setEvent(detail);
           const compete = detail.categories?.filter((c) => c.entryType !== 'viewer') ?? [];
           setCategoryId(compete[0]?.id ?? detail.audience?.categoryId ?? null);
+          setLoadError(null);
         } else {
           setEvent(null);
+          setLoadError(null);
         }
       })
-      .catch(() => {
-        if (!cancelled) setEvent(null);
+      .catch((err) => {
+        setEvent(null);
+        setLoadError(err);
       })
       .finally(() => {
-        if (!cancelled) setLoading(false);
+        setLoading(false);
       });
-    return () => {
-      cancelled = true;
-    };
+  }
+
+  useEffect(() => {
+    loadEvent();
   }, [id]);
 
   const competeCategories = useMemo(
@@ -102,6 +108,7 @@ export default function EventDetailScreen() {
     }
     setBusy(true);
     setNotice(null);
+    setActionError(null);
     try {
       let registration = await api.createRegistration({
         categoryId: category.id,
@@ -128,8 +135,8 @@ export default function EventDetailScreen() {
       if (refreshed) {
         setEvent(toMobileDetail(refreshed));
       }
-    } catch (error) {
-      setNotice(error instanceof Error ? error.message : 'Could not register');
+    } catch (err) {
+      setActionError(err);
     } finally {
       setBusy(false);
     }
@@ -141,19 +148,20 @@ export default function EventDetailScreen() {
     }
     const phone = customerPhone.replace(/\D/g, '').slice(-10);
     if (!/^[6-9]\d{9}$/.test(phone)) {
-      setNotice('Enter a valid 10-digit Indian mobile for Cashfree.');
+      setActionError('Enter a valid 10-digit Indian mobile for Cashfree.');
       return;
     }
     setBusy(true);
     setNotice(null);
+    setActionError(null);
     try {
       const session = await api.createRegistrationCheckout(pendingPaidRegistrationId, {
         customerPhone: phone,
       });
       await WebBrowser.openBrowserAsync(cashfreePayUrl(session.paymentSessionId));
       setNotice('Finish payment in the browser, then open Tickets.');
-    } catch (error) {
-      setNotice(error instanceof Error ? error.message : 'Could not start payment');
+    } catch (err) {
+      setActionError(err);
     } finally {
       setBusy(false);
     }
@@ -161,8 +169,16 @@ export default function EventDetailScreen() {
 
   if (loading) {
     return (
-      <View className="flex-1 items-center justify-center bg-bg">
-        <ActivityIndicator color={colors.lime} />
+      <View className="flex-1 bg-bg px-4">
+        <PageLoading />
+      </View>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <View className="flex-1 bg-bg px-4">
+        <SoftError title="Couldn’t load event" error={loadError} onRetry={loadEvent} />
       </View>
     );
   }
@@ -297,6 +313,11 @@ export default function EventDetailScreen() {
             <Text variant="caption" className="mt-4 text-lime">
               {notice}
             </Text>
+          ) : null}
+          {actionError ? (
+            <View className="mt-4">
+              <InlineNotice tone="warn">{friendlyError(actionError)}</InlineNotice>
+            </View>
           ) : null}
 
           {pendingPaidRegistrationId ? (

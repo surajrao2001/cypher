@@ -1,7 +1,6 @@
 'use client';
 
-import { Bell } from 'lucide-react';
-
+import { ByndIcon } from '@/components/icons/bynd8';
 import { Button } from '@/components/ui/button';
 import {
   Dropdown,
@@ -16,7 +15,7 @@ export function NotificationBell() {
     <Dropdown>
       <DropdownTrigger asChild>
         <Button variant="outline" size="icon" className="h-11 w-11 bg-surface" aria-label="Notifications">
-          <Bell className="h-4 w-4" />
+          <ByndIcon name="bell" className="size-4" />
         </Button>
       </DropdownTrigger>
       <DropdownContent align="end" className="w-80 p-0">

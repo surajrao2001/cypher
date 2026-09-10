@@ -9,8 +9,8 @@ import { Input } from '@/components/ui/input';
 import { toastCopy, toastPending, toastReject, toastResolve } from '@/components/ui/toaster';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { TabEmptyState } from '@/features/organize/TabEmptyState';
+import { friendlyError, InlineNotice, PageLoading, SoftError } from '@/features/shell/AsyncState';
 import { cn } from '@/lib/utils';
-import { Wallet } from 'lucide-react';
 
 type PayoutMethod = 'bank' | 'upi';
 
@@ -39,10 +39,13 @@ export function PayoutSetupPanel({
   const [bankIfsc, setBankIfsc] = useState('');
   const [upiVpa, setUpiVpa] = useState('');
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<unknown>(null);
+  const [setupError, setSetupError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
+    setLoadError(null);
     void auth.api
       .getOrganizerPaymentAccount(organizerId)
       .then((row) => {
@@ -57,17 +60,17 @@ export function PayoutSetupPanel({
       })
       .catch((err: unknown) => {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : 'Could not load payouts');
+          setLoadError(err);
         }
       });
     return () => {
       cancelled = true;
     };
-  }, [auth.api, onReadyChange, organizerId]);
+  }, [auth.api, onReadyChange, organizerId, reloadKey]);
 
   async function setup() {
     setBusy(true);
-    setError(null);
+    setSetupError(null);
     const tid = toastPending(toastCopy.saving);
     try {
       const holder = bankAccountHolder.trim() || displayName.trim() || undefined;
@@ -94,14 +97,25 @@ export function PayoutSetupPanel({
     } catch (err) {
       const detail = err instanceof Error ? err.message : undefined;
       toastReject(tid, toastCopy.payoutFailed, detail);
-      setError(detail ?? 'Could not start payout setup');
+      setSetupError(friendlyError(err, 'Could not start payout setup'));
     } finally {
       setBusy(false);
     }
   }
 
+  if (loadError && !account) {
+    return (
+      <SoftError
+        title="Couldn’t load payouts"
+        error={loadError}
+        onRetry={() => setReloadKey((n) => n + 1)}
+        compact
+      />
+    );
+  }
+
   if (!account) {
-    return <p className="text-sm text-text-muted">Loading payouts…</p>;
+    return <PageLoading variant="panel" label="Loading payouts" />;
   }
 
   const statusLabel = account.payoutReady
@@ -355,7 +369,7 @@ export function PayoutSetupPanel({
         summary
       ) : (
         <TabEmptyState
-          icon={Wallet}
+          icon="wallet"
           kicker="Payouts"
           title="Where should the money land?"
           body="Free nights don’t need this. Paid tickets do — bank or UPI, your call. Cashfree handles the boring paperwork."
@@ -368,8 +382,10 @@ export function PayoutSetupPanel({
         </TabEmptyState>
       )}
       {editing ? form : null}
-      {account.lastError ? <p className="text-sm text-error">{account.lastError}</p> : null}
-      {error ? <p className="text-sm text-error">{error}</p> : null}
+      {account.lastError ? (
+        <InlineNotice tone="warn">{friendlyError(account.lastError, account.lastError)}</InlineNotice>
+      ) : null}
+      {setupError ? <InlineNotice tone="warn">{setupError}</InlineNotice> : null}
     </div>
   );
 

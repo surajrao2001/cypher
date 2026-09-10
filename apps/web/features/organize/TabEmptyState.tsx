@@ -1,12 +1,12 @@
 'use client';
 
-import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 
+import { ByndIcon, type ByndIconName } from '@/components/icons/bynd8';
 import { cn } from '@/lib/utils';
 
 type TabEmptyStateProps = {
-  icon: LucideIcon;
+  icon: ByndIconName;
   kicker: string;
   title: string;
   body: string;
@@ -16,7 +16,7 @@ type TabEmptyStateProps = {
 
 /** Compact dashed empty state for organize event tabs. */
 export function TabEmptyState({
-  icon: Icon,
+  icon,
   kicker,
   title,
   body,
@@ -31,8 +31,8 @@ export function TabEmptyState({
       )}
     >
       <div className="flex w-full max-w-md flex-col items-start gap-4 text-left">
-        <div className="flex size-12 items-center justify-center rounded-md border border-border bg-elevated text-accent">
-          <Icon className="size-6" strokeWidth={1.75} aria-hidden />
+        <div className="flex size-12 items-center justify-center rounded-sm border border-border bg-elevated text-accent">
+          <ByndIcon name={icon} className="size-6" />
         </div>
         <div className="space-y-1.5">
           <p className="kicker text-accent">{kicker}</p>

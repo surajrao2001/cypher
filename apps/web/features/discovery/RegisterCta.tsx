@@ -26,6 +26,7 @@ import {
 } from '@/components/ui/toaster';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { openCashfreeCheckout } from '@/features/payments/cashfree-checkout';
+import { friendlyError, InlineNotice } from '@/features/shell/AsyncState';
 import { cn } from '@/lib/utils';
 
 interface RegisterCtaProps {
@@ -153,7 +154,7 @@ export function RegisterCta({ event }: RegisterCtaProps) {
     } catch (err) {
       const detail = err instanceof Error ? err.message : undefined;
       toastReject(tid, toastCopy.registerFailed, detail);
-      setError(detail ?? 'Could not register');
+      setError(friendlyError(err, 'Could not register'));
     } finally {
       setBusy(false);
     }
@@ -172,7 +173,7 @@ export function RegisterCta({ event }: RegisterCtaProps) {
     } catch (err) {
       const detail = err instanceof Error ? err.message : undefined;
       toastReject(tid, toastCopy.registerFailed, detail);
-      setError(detail ?? 'Could not confirm');
+      setError(friendlyError(err, 'Could not confirm'));
     } finally {
       setBusy(false);
     }
@@ -193,7 +194,7 @@ export function RegisterCta({ event }: RegisterCtaProps) {
       const checkout = await openCashfreeCheckout(session.paymentSessionId);
       if (checkout.error) {
         toastReject(tid, toastCopy.payCancelled, checkout.error.message);
-        setError(checkout.error.message || toastCopy.payCancelled);
+        setError(friendlyError(checkout.error, toastCopy.payCancelled));
         return;
       }
       for (let attempt = 0; attempt < 12; attempt += 1) {
@@ -222,7 +223,7 @@ export function RegisterCta({ event }: RegisterCtaProps) {
     } catch (err) {
       const detail = err instanceof Error ? err.message : undefined;
       toastReject(tid, toastCopy.payFailed, detail);
-      setError(detail ?? 'Could not start payment');
+      setError(friendlyError(err, 'Could not start payment'));
     } finally {
       setBusy(false);
     }
@@ -349,7 +350,7 @@ export function RegisterCta({ event }: RegisterCtaProps) {
                   inputMode="numeric"
                 />
               </div>
-              {error ? <p className="text-sm text-red-400">{error}</p> : null}
+              {error ? <InlineNotice tone="warn">{error}</InlineNotice> : null}
             </div>
           ) : held && !isConfirmed && held.totalAmountMinor === 0 ? (
             <div className="space-y-4">
@@ -360,7 +361,7 @@ export function RegisterCta({ event }: RegisterCtaProps) {
                 status="Confirm free entry"
                 expiresAt={held.reservationExpiresAt}
               />
-              {error ? <p className="text-sm text-red-400">{error}</p> : null}
+              {error ? <InlineNotice tone="warn">{error}</InlineNotice> : null}
             </div>
           ) : step === 'category' && mode === 'watch' ? (
             <div className="space-y-3">
@@ -506,7 +507,7 @@ export function RegisterCta({ event }: RegisterCtaProps) {
                   </div>
                 </>
               )}
-              {error ? <p className="text-sm text-red-400">{error}</p> : null}
+              {error ? <InlineNotice tone="warn">{error}</InlineNotice> : null}
             </div>
           )}
 

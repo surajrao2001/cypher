@@ -1,9 +1,10 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { OrganizerDto } from '@cypher/contracts';
 
+import { friendlyError, InlineNotice, PageLoading, SoftError } from '@/components/AsyncState';
 import { PosterPicker } from '@/components/PosterPicker';
 import { Button } from '@/components/ui/Button';
 import { Text } from '@/components/ui/Text';
@@ -45,25 +46,36 @@ export default function NewEventScreen() {
   const [audiencePrice, setAudiencePrice] = useState('0');
   const [audienceCapacity, setAudienceCapacity] = useState('100');
   const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [loadingOrg, setLoadingOrg] = useState(true);
+  const [loadError, setLoadError] = useState<unknown>(null);
+  const [actionError, setActionError] = useState<unknown>(null);
+
+  const loadOrg = useCallback(async () => {
+    if (!slug || !auth.token) {
+      setLoadingOrg(false);
+      return;
+    }
+    setLoadingOrg(true);
+    try {
+      const item = await auth.api.getMyOrganizerBySlug(slug);
+      setOrg(item);
+      if (item.city) setCity(item.city);
+      setLoadError(null);
+    } catch (err) {
+      setLoadError(err);
+    } finally {
+      setLoadingOrg(false);
+    }
+  }, [auth.api, auth.token, slug]);
 
   useEffect(() => {
-    if (!slug || !auth.token) return;
-    void auth.api
-      .getMyOrganizerBySlug(slug)
-      .then((item) => {
-        setOrg(item);
-        if (item.city) setCity(item.city);
-      })
-      .catch((err: unknown) => {
-        setError(err instanceof Error ? err.message : 'Organizer not found');
-      });
-  }, [auth.api, auth.token, slug]);
+    void loadOrg();
+  }, [loadOrg]);
 
   async function create() {
     if (!org) return;
     setPending(true);
-    setError(null);
+    setActionError(null);
     try {
       const start = new Date();
       start.setDate(start.getDate() + 14);
@@ -96,18 +108,24 @@ export default function NewEventScreen() {
       });
       router.replace(`/organize/${org.slug}/events/${created.id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Create failed');
+      setActionError(err);
     } finally {
       setPending(false);
     }
   }
 
-  if (!org) {
+  if (loadError) {
     return (
       <SafeAreaView className="flex-1 bg-bg px-4">
-        <Text variant="caption" className="mt-8">
-          {error ?? 'Loading…'}
-        </Text>
+        <SoftError title="Couldn’t load organizer" error={loadError} onRetry={() => void loadOrg()} />
+      </SafeAreaView>
+    );
+  }
+
+  if (loadingOrg || !org) {
+    return (
+      <SafeAreaView className="flex-1 bg-bg px-4">
+        <PageLoading />
       </SafeAreaView>
     );
   }
@@ -247,7 +265,9 @@ export default function NewEventScreen() {
           </View>
         ) : null}
 
-        {error ? <Text variant="caption" className="text-danger">{error}</Text> : null}
+        {actionError ? (
+          <InlineNotice tone="warn">{friendlyError(actionError, 'Create failed')}</InlineNotice>
+        ) : null}
         <Button
           loading={pending}
           disabled={title.trim().length < 2 || city.trim().length < 2}

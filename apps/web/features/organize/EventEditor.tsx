@@ -32,6 +32,7 @@ import { PosterField } from '@/features/organize/PosterField';
 import { StyleChipsField } from '@/features/organize/StyleChipsField';
 import { VenueMapField, type VenueCoords } from '@/features/organize/VenueMapField';
 import { PageBreadcrumb } from '@/features/shell/PageBreadcrumb';
+import { PageLoading, SoftError } from '@/features/shell/AsyncState';
 
 function toIsoFromLocal(value: string): string {
   const date = new Date(value);
@@ -77,7 +78,7 @@ type CategoryEdit = {
 export function EventEditor({ slug, eventId }: { slug: string; eventId?: string }) {
   return (
     <OrganizeGate>
-      <Suspense fallback={<p className="px-6 py-16 text-sm text-text-muted">Loading…</p>}>
+      <Suspense fallback={<PageLoading variant="form" className="px-6 py-16" label="Loading editor" />}>
         <EventEditorInner slug={slug} eventId={eventId} />
       </Suspense>
     </OrganizeGate>
@@ -113,7 +114,8 @@ function EventEditorInner({ slug, eventId }: { slug: string; eventId?: string })
   const [audiencePrice, setAudiencePrice] = useState('0');
   const [audienceCapacity, setAudienceCapacity] = useState('100');
   const [pending, setPending] = useState(false);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<unknown>(null);
+  const [reloadKey, setReloadKey] = useState(0);
   const [step, setStep] = useState<EventEditStepId>('basics');
 
   function goToStep(next: EventEditStepId) {
@@ -187,6 +189,7 @@ function EventEditorInner({ slug, eventId }: { slug: string; eventId?: string })
   useEffect(() => {
     let cancelled = false;
     async function load() {
+      setLoadError(null);
       try {
         const organizer = await auth.api.getMyOrganizerBySlug(slug);
         if (cancelled) return;
@@ -200,7 +203,7 @@ function EventEditorInner({ slug, eventId }: { slug: string; eventId?: string })
         syncFromEvent(detail);
       } catch (err) {
         if (!cancelled) {
-          setLoadError(err instanceof Error ? err.message : 'Could not load event');
+          setLoadError(err);
         }
       }
     }
@@ -208,7 +211,7 @@ function EventEditorInner({ slug, eventId }: { slug: string; eventId?: string })
     return () => {
       cancelled = true;
     };
-  }, [auth.api, eventId, slug]);
+  }, [auth.api, eventId, slug, reloadKey]);
 
   const isMultiDay = useMemo(() => {
     if (!event) return false;
@@ -407,19 +410,35 @@ function EventEditorInner({ slug, eventId }: { slug: string; eventId?: string })
   }
 
   if (loadError && !org) {
-    return <p className="px-6 py-16 text-sm text-error">{loadError}</p>;
+    return (
+      <div className="px-6 py-16">
+        <SoftError
+          title="Couldn’t load organizer"
+          error={loadError}
+          onRetry={() => setReloadKey((n) => n + 1)}
+        />
+      </div>
+    );
   }
 
   if (!org) {
-    return <p className="px-6 py-16 text-sm text-text-muted">Loading…</p>;
+    return <PageLoading variant="form" className="px-6 py-16" label="Loading editor" />;
   }
 
   if (loadError && !isCreate && !event) {
-    return <p className="px-6 py-16 text-sm text-error">{loadError}</p>;
+    return (
+      <div className="px-6 py-16">
+        <SoftError
+          title="Couldn’t load event"
+          error={loadError}
+          onRetry={() => setReloadKey((n) => n + 1)}
+        />
+      </div>
+    );
   }
 
   if (!isCreate && !event) {
-    return <p className="px-6 py-16 text-sm text-text-muted">Loading event…</p>;
+    return <PageLoading variant="form" className="px-6 py-16" label="Loading event" />;
   }
 
   const viewHref = event

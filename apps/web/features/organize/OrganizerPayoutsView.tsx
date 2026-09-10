@@ -3,6 +3,7 @@
 import type { OrganizerDto } from '@cypher/contracts';
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/features/auth/AuthProvider';
+import { PageLoading } from '@/features/shell/AsyncState';
 import { PayoutSetupPanel } from './PayoutSetupPanel';
 
 export function OrganizerPayoutsView({ slug }: { slug: string }) {
@@ -17,7 +18,11 @@ export function OrganizerPayoutsView({ slug }: { slug: string }) {
       <p className="text-sm text-text-secondary">
         Link bank or UPI so paid ticket money can reach this organizer.
       </p>
-      {org ? <PayoutSetupPanel organizerId={org.id} orgName={org.orgName} /> : <p className="text-sm text-text-muted">Loading payouts…</p>}
+      {org ? (
+        <PayoutSetupPanel organizerId={org.id} orgName={org.orgName} />
+      ) : (
+        <PageLoading variant="panel" label="Loading payouts" />
+      )}
     </div>
   );
 }

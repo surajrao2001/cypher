@@ -13,6 +13,7 @@ import { useAuth } from '@/features/auth/AuthProvider';
 import { OrganizeGate } from '@/features/organize/OrganizeGate';
 import { OrganizerNextSteps } from '@/features/organize/OrganizerNextSteps';
 import { PageBreadcrumb } from '@/features/shell/PageBreadcrumb';
+import { PageLoading, SoftError } from '@/features/shell/AsyncState';
 import { cn } from '@/lib/utils';
 
 type EventTab = 'all' | 'draft' | 'published' | 'completed';
@@ -20,7 +21,7 @@ type EventTab = 'all' | 'draft' | 'published' | 'completed';
 export function OrganizerDashboard({ slug }: { slug: string }) {
   return (
     <OrganizeGate>
-      <Suspense fallback={<p className="px-6 py-16 text-sm text-text-muted">Loading organizer…</p>}>
+      <Suspense fallback={<PageLoading variant="page" className="px-6 py-16" label="Loading organizer" />}>
         <OrganizerDashboardInner slug={slug} />
       </Suspense>
     </OrganizeGate>
@@ -35,11 +36,13 @@ function OrganizerDashboardInner({ slug }: { slug: string }) {
   const [payoutReady, setPayoutReady] = useState(false);
   const [showPayout, setShowPayout] = useState(searchParams.get('payout') === '1');
   const [tab, setTab] = useState<EventTab>('all');
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
     async function load() {
+      setError(null);
       try {
         const organizer = await auth.api.getMyOrganizerBySlug(slug);
         if (cancelled) return;
@@ -53,7 +56,7 @@ function OrganizerDashboardInner({ slug }: { slug: string }) {
         setPayoutReady(Boolean(payout?.payoutReady));
       } catch (err) {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : 'Could not load organizer');
+          setError(err);
         }
       }
     }
@@ -61,7 +64,7 @@ function OrganizerDashboardInner({ slug }: { slug: string }) {
     return () => {
       cancelled = true;
     };
-  }, [auth.api, slug]);
+  }, [auth.api, slug, reloadKey]);
 
   const stats = useMemo(() => {
     if (!events) return { total: 0, confirmed: 0, live: 0 };
@@ -105,11 +108,19 @@ function OrganizerDashboardInner({ slug }: { slug: string }) {
   }, [events, tab]);
 
   if (error) {
-    return <p className="px-6 py-16 text-sm text-error">{error}</p>;
+    return (
+      <div className="px-6 py-16">
+        <SoftError
+          title="Couldn’t load organizer"
+          error={error}
+          onRetry={() => setReloadKey((n) => n + 1)}
+        />
+      </div>
+    );
   }
 
   if (!org || events === null) {
-    return <p className="px-6 py-16 text-sm text-text-muted">Loading organizer…</p>;
+    return <PageLoading variant="page" className="px-6 py-16" label="Loading organizer" />;
   }
 
   const initials = org.orgName

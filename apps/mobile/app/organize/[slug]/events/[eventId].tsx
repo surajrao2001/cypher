@@ -8,6 +8,7 @@ import type {
   OrganizerEventRegistrationsResponse,
 } from '@cypher/contracts';
 
+import { friendlyError, InlineNotice, ListLoading, PageLoading, SoftError } from '@/components/AsyncState';
 import { Button } from '@/components/ui/Button';
 import { Text } from '@/components/ui/Text';
 import { useAuth } from '@/lib/auth';
@@ -15,13 +16,12 @@ import { cn } from '@/lib/format';
 import { colors } from '@/lib/theme';
 import { webBaseUrl } from '@/lib/web';
 
-type TabId = 'overview' | 'registrations' | 'updates' | 'lineup' | 'media' | 'payouts';
+type TabId = 'overview' | 'registrations' | 'updates' | 'media' | 'payouts';
 
 const TABS: Array<{ id: TabId; label: string }> = [
   { id: 'overview', label: 'Overview' },
   { id: 'registrations', label: 'Registrations' },
   { id: 'updates', label: 'Updates' },
-  { id: 'lineup', label: 'Lineup' },
   { id: 'media', label: 'Media' },
   { id: 'payouts', label: 'Payouts' },
 ];
@@ -42,7 +42,8 @@ export default function EventManageScreen() {
   const [payoutStatus, setPayoutStatus] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<unknown>(null);
+  const [actionError, setActionError] = useState<unknown>(null);
 
   const load = useCallback(async () => {
     if (!slug || !eventId || !auth.token) return;
@@ -58,9 +59,9 @@ export default function EventManageScreen() {
       setRegs(registrations);
       setPayoutReady(Boolean(payout?.payoutReady));
       setPayoutStatus(payout?.status ?? null);
-      setError(null);
+      setLoadError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Load failed');
+      setLoadError(err);
     }
   }, [auth.api, auth.token, eventId, slug]);
 
@@ -81,7 +82,7 @@ export default function EventManageScreen() {
     if (!org || !event) return;
     setPending(true);
     setMessage(null);
-    setError(null);
+    setActionError(null);
     try {
       const updated =
         event.status === 'published'
@@ -90,18 +91,16 @@ export default function EventManageScreen() {
       setEvent(updated);
       setMessage(updated.status === 'published' ? 'Published to Discover.' : 'Unpublished.');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Publish failed');
+      setActionError(err);
     } finally {
       setPending(false);
     }
   }
 
-  if (error && !event) {
+  if (loadError && !event) {
     return (
       <SafeAreaView className="flex-1 bg-bg px-4">
-        <Text variant="caption" className="mt-8 text-danger">
-          {error}
-        </Text>
+        <SoftError title="Couldn’t load event" error={loadError} onRetry={() => void load()} />
       </SafeAreaView>
     );
   }
@@ -109,9 +108,7 @@ export default function EventManageScreen() {
   if (!event || !org) {
     return (
       <SafeAreaView className="flex-1 bg-bg px-4">
-        <Text variant="caption" className="mt-8">
-          Loading…
-        </Text>
+        <PageLoading />
       </SafeAreaView>
     );
   }
@@ -144,10 +141,8 @@ export default function EventManageScreen() {
         </View>
 
         {message ? <Text variant="caption">{message}</Text> : null}
-        {error ? (
-          <Text variant="caption" className="text-danger">
-            {error}
-          </Text>
+        {actionError ? (
+          <InlineNotice tone="warn">{friendlyError(actionError, 'Publish failed')}</InlineNotice>
         ) : null}
 
         <View className="mt-2 flex-row flex-wrap gap-2 border-b border-border pb-2">
@@ -267,17 +262,13 @@ export default function EventManageScreen() {
                 )}
               </>
             ) : (
-              <Text variant="caption">Loading registrations…</Text>
+              <ListLoading rows={3} />
             )}
           </View>
         ) : null}
 
         {tab === 'updates' ? (
           <MobileUpdatesTab organizerId={org.id} eventId={event.id} />
-        ) : null}
-
-        {tab === 'lineup' ? (
-          <MobileLineupTab organizerId={org.id} eventId={event.id} slug={org.slug} />
         ) : null}
 
         {tab === 'media' ? (
@@ -333,15 +324,27 @@ export default function EventManageScreen() {
 
 function MobileUpdatesTab({ organizerId, eventId }: { organizerId: string; eventId: string }) {
   const auth = useAuth();
-  const [items, setItems] = useState<Array<{ id: string; kind: string; title: string | null; body: string; publishedAt: string }>>([]);
+  const [items, setItems] = useState<
+    Array<{ id: string; title: string | null; body: string; publishedAt: string }>
+  >([]);
   const [body, setBody] = useState('');
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<unknown>(null);
 
   useEffect(() => {
     void auth.api
       .listEventUpdates(organizerId, eventId)
-      .then((res) => setItems(res.items))
+      .then((res) =>
+        setItems(
+          res.items.map((item) => ({
+            id: item.id,
+            title: item.title,
+            body: item.body,
+            publishedAt: item.publishedAt,
+          })),
+        ),
+      )
       .catch(() => setItems([]));
   }, [auth.api, eventId, organizerId]);
 
@@ -349,14 +352,22 @@ function MobileUpdatesTab({ organizerId, eventId }: { organizerId: string; event
     if (!body.trim()) return;
     setBusy(true);
     setMsg(null);
+    setActionError(null);
     try {
-      await auth.api.createEventUpdate(organizerId, eventId, { body: body.trim(), kind: 'GENERAL' });
+      await auth.api.createEventUpdate(organizerId, eventId, { body: body.trim() });
       setBody('');
       const res = await auth.api.listEventUpdates(organizerId, eventId);
-      setItems(res.items);
+      setItems(
+        res.items.map((item) => ({
+          id: item.id,
+          title: item.title,
+          body: item.body,
+          publishedAt: item.publishedAt,
+        })),
+      );
       setMsg('Posted.');
     } catch (err) {
-      setMsg(err instanceof Error ? err.message : 'Failed');
+      setActionError(err);
     } finally {
       setBusy(false);
     }
@@ -376,76 +387,17 @@ function MobileUpdatesTab({ organizerId, eventId }: { organizerId: string; event
         Post update
       </Button>
       {msg ? <Text variant="caption">{msg}</Text> : null}
+      {actionError ? (
+        <InlineNotice tone="warn">{friendlyError(actionError, 'Could not post update')}</InlineNotice>
+      ) : null}
       {items.map((item) => (
         <View key={item.id} className="gap-1 border border-border px-3 py-2">
-          <Text variant="caption">{item.kind}</Text>
           {item.title ? <Text variant="body" className="font-semibold">{item.title}</Text> : null}
           <Text variant="caption">{item.body}</Text>
+          <Text variant="caption">{new Date(item.publishedAt).toLocaleString()}</Text>
         </View>
       ))}
     </View>
   );
 }
 
-function MobileLineupTab({
-  organizerId,
-  eventId,
-  slug,
-}: {
-  organizerId: string;
-  eventId: string;
-  slug: string;
-}) {
-  const auth = useAuth();
-  const [drops, setDrops] = useState<
-    Array<{ id: string; title: string | null; publishedAt: string }>
-  >([]);
-
-  useEffect(() => {
-    void auth.api
-      .listEventUpdates(organizerId, eventId)
-      .then((res) =>
-        setDrops(
-          res.items
-            .filter((item) => item.kind === 'LINEUP')
-            .map((item) => ({
-              id: item.id,
-              title: item.title,
-              publishedAt: item.publishedAt,
-            })),
-        ),
-      )
-      .catch(() => setDrops([]));
-  }, [auth.api, eventId, organizerId]);
-
-  return (
-    <View className="gap-3">
-      <Text variant="body" className="text-ink-secondary">
-        Lineup is poster-first. Drop the graphic on the browser — one flyer can carry the whole
-        cast.
-      </Text>
-      <Button
-        variant="secondary"
-        onPress={() =>
-          void Linking.openURL(
-            `${webBaseUrl().replace(/\/$/, '')}/organize/${slug}/events/${eventId}`,
-          )
-        }
-      >
-        Drop poster on browser
-      </Button>
-      {drops.length === 0 ? (
-        <Text variant="caption">No lineup posters yet.</Text>
-      ) : (
-        drops.map((drop) => (
-          <View key={drop.id} className="gap-1 border border-border px-3 py-2">
-            <Text variant="body" className="font-semibold">
-              {drop.title || 'Lineup drop'}
-            </Text>
-            <Text variant="caption">{new Date(drop.publishedAt).toLocaleString()}</Text>
-          </View>
-        ))
-      )}
-    </View>
-  );
-}

@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { FormField } from '@/features/organize/FormField';
+import { friendlyError, InlineNotice } from '@/features/shell/AsyncState';
 import { DEFAULT_CENTER, getGoogleMapsApiKey, loadGoogleMaps } from '@/lib/google-maps';
 
 export type VenueCoords = { lat: number; lng: number };
@@ -223,8 +224,12 @@ export function VenueMapField({
               {searching ? 'Searching…' : 'Find'}
             </Button>
           </div>
-          {searchError ? <p className="text-xs text-error">{searchError}</p> : null}
-          {mapError ? <p className="text-xs text-error">{mapError}</p> : null}
+          {searchError ? (
+            <InlineNotice className="text-xs">{friendlyError(searchError, searchError)}</InlineNotice>
+          ) : null}
+          {mapError ? (
+            <InlineNotice className="text-xs">{friendlyError(mapError, mapError)}</InlineNotice>
+          ) : null}
           <div
             ref={mapRef}
             className="h-56 w-full overflow-hidden rounded-md border border-border bg-elevated"

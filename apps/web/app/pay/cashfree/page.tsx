@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 
 import { openCashfreeCheckout } from '@/features/payments/cashfree-checkout';
+import { friendlyError, InlineNotice, PageLoading } from '@/features/shell/AsyncState';
 
 function CashfreePayInner() {
   const params = useSearchParams();
@@ -24,11 +25,13 @@ function CashfreePayInner() {
     <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-4 px-6 py-16">
       <p className="kicker text-accent">Cashfree</p>
       <h1 className="display-title text-4xl">Opening checkout…</h1>
-      <p className="text-sm text-text-secondary">
-        {error
-          ? error
-          : 'If nothing opens, allow pop-ups or return to the event and tap Pay again.'}
-      </p>
+      {error ? (
+        <InlineNotice tone="warn">{friendlyError(error, error)}</InlineNotice>
+      ) : (
+        <p className="text-sm text-text-secondary">
+          If nothing opens, allow pop-ups or return to the event and tap Pay again.
+        </p>
+      )}
     </main>
   );
 }
@@ -38,7 +41,7 @@ export default function CashfreePayPage() {
     <Suspense
       fallback={
         <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center px-6">
-          <p className="text-sm text-text-muted">Loading checkout…</p>
+          <PageLoading variant="form" label="Loading checkout" />
         </main>
       }
     >

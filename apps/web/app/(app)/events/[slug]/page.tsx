@@ -49,66 +49,17 @@ function categoryPriceLabel(category: {
   return price;
 }
 
-function isLineupPosterDrop(update: { kind: string; posterUrl: string | null }) {
-  return update.kind === 'LINEUP' && Boolean(update.posterUrl);
-}
-
-function EventLineupSection({
-  updates,
-}: {
-  updates: Array<{
-    id: string;
-    kind: string;
-    title: string | null;
-    body: string;
-    posterUrl: string | null;
-  }>;
-}) {
-  const lineupDrops = updates.filter(isLineupPosterDrop);
-  if (lineupDrops.length === 0) return null;
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Lineup</CardTitle>
-        <CardDescription>Official drops from the organizer.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <ul className="space-y-6">
-          {lineupDrops.map((drop) => (
-            <li key={drop.id} className="space-y-2">
-              {drop.title ? <p className="font-semibold text-text-primary">{drop.title}</p> : null}
-              <div className="overflow-hidden rounded-md border border-border bg-elevated">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={drop.posterUrl!}
-                  alt={drop.title ?? 'Lineup poster'}
-                  className="max-h-[32rem] w-full object-contain"
-                />
-              </div>
-              {drop.body && !drop.body.startsWith('Lineup drop —') ? (
-                <p className="whitespace-pre-wrap text-sm text-text-secondary">{drop.body}</p>
-              ) : null}
-            </li>
-          ))}
-        </ul>
-      </CardContent>
-    </Card>
-  );
-}
-
 function EventUpdatesFeed({
   updates,
 }: {
   updates: Array<{
     id: string;
-    kind: string;
     title: string | null;
     body: string;
     posterUrl: string | null;
   }>;
 }) {
-  const feed = updates.filter((update) => !isLineupPosterDrop(update));
-  if (feed.length === 0) return null;
+  if (updates.length === 0) return null;
   return (
     <Card>
       <CardHeader>
@@ -117,13 +68,11 @@ function EventUpdatesFeed({
       </CardHeader>
       <CardContent>
         <ul className="space-y-4">
-          {feed.map((update) => (
+          {updates.map((update) => (
             <li key={update.id} className="border-b border-border pb-4 last:border-0">
-              <p className="text-xs uppercase tracking-[0.12em] text-accent">{update.kind}</p>
               {update.title ? <p className="font-semibold text-text-primary">{update.title}</p> : null}
               {update.posterUrl ? (
                 <div className="mt-2 overflow-hidden rounded-md border border-border bg-elevated">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={update.posterUrl} alt="" className="max-h-96 w-full object-cover" />
                 </div>
               ) : null}
@@ -288,7 +237,6 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
 
         <EventMediaSection links={event.mediaLinks ?? []} />
 
-        <EventLineupSection updates={event.updates ?? []} />
         <EventUpdatesFeed updates={event.updates ?? []} />
       </div>
 

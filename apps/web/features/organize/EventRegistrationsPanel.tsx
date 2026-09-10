@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { TabEmptyState } from '@/features/organize/TabEmptyState';
-import { Filter, Layers, Ticket } from 'lucide-react';
+import { PageLoading, SoftError } from '@/features/shell/AsyncState';
 
 type StatusFilter = 'all' | 'confirmed' | 'pending' | 'other';
 
@@ -33,8 +33,9 @@ export function EventRegistrationsPanel({
 }) {
   const { api } = useAuth();
   const [data, setData] = useState<OrganizerEventRegistrationsResponse | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>(null);
   const [loading, setLoading] = useState(true);
+  const [reloadKey, setReloadKey] = useState(0);
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [status, setStatus] = useState<StatusFilter>('confirmed');
   const [query, setQuery] = useState('');
@@ -55,7 +56,7 @@ export function EventRegistrationsPanel({
       })
       .catch((err: unknown) => {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : 'Could not load registrations');
+          setError(err);
         }
       })
       .finally(() => {
@@ -64,7 +65,7 @@ export function EventRegistrationsPanel({
     return () => {
       cancelled = true;
     };
-  }, [api, eventId, organizerId]);
+  }, [api, eventId, organizerId, reloadKey]);
 
   const activeCategory = useMemo(
     () => data?.categories.find((cat) => cat.id === categoryId) ?? null,
@@ -90,10 +91,17 @@ export function EventRegistrationsPanel({
   }, [categoryId, data, query, status]);
 
   if (loading) {
-    return <p className="text-sm text-text-secondary">Loading registrations…</p>;
+    return <PageLoading variant="list" label="Loading registrations" />;
   }
   if (error) {
-    return <p className="text-sm text-error">{error}</p>;
+    return (
+      <SoftError
+        title="Couldn’t load registrations"
+        error={error}
+        onRetry={() => setReloadKey((n) => n + 1)}
+        compact
+      />
+    );
   }
   if (!data) {
     return null;
@@ -102,7 +110,7 @@ export function EventRegistrationsPanel({
   if (data.categories.length === 0) {
     return (
       <TabEmptyState
-        icon={Layers}
+        icon="layers"
         kicker="Categories first"
         title="Can’t register into thin air"
         body="Add a compete category in Edit, then this list will fill like a cypher circle."
@@ -179,14 +187,14 @@ export function EventRegistrationsPanel({
 
       {data.items.length === 0 ? (
         <TabEmptyState
-          icon={Ticket}
+          icon="tickets"
           kicker="Empty floor"
           title="Nobody’s locked a spot"
           body="Share the public event link. Waiting for telepathy is not a growth strategy."
         />
       ) : filtered.length === 0 ? (
         <TabEmptyState
-          icon={Filter}
+          icon="filter"
           kicker="Filters"
           title="Nobody matches that combo"
           body="Try another category or status — or clear search and stop gaslighting yourself."

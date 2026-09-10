@@ -1,6 +1,6 @@
 'use client';
 
-import type { EventUpdateDto, EventUpdateKind, OrganizerDto } from '@cypher/contracts';
+import type { EventUpdateDto, OrganizerDto } from '@cypher/contracts';
 import { useCallback, useEffect, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -17,9 +17,7 @@ import { toastCopy, toastPending, toastReject, toastResolve } from '@/components
 import { useAuth } from '@/features/auth/AuthProvider';
 import { PosterField } from '@/features/organize/PosterField';
 import { TabEmptyState } from '@/features/organize/TabEmptyState';
-import { Megaphone } from 'lucide-react';
-
-const KINDS: EventUpdateKind[] = ['GENERAL', 'LINEUP', 'MEDIA', 'SCHEDULE', 'RULES', 'OTHER'];
+import { PageLoading } from '@/features/shell/AsyncState';
 
 /** Past updates only — compose lives in PostUpdateDialog. */
 export function EventUpdatesPanel({
@@ -38,8 +36,7 @@ export function EventUpdatesPanel({
 
   const load = useCallback(async () => {
     const res = await api.listEventUpdates(organizerId, eventId);
-    // Lineup posters live under the Lineup tab.
-    setItems(res.items.filter((item) => !(item.kind === 'LINEUP' && item.posterUrl)));
+    setItems(res.items);
   }, [api, eventId, organizerId]);
 
   useEffect(() => {
@@ -67,7 +64,7 @@ export function EventUpdatesPanel({
 
       {items.length === 0 ? (
         <TabEmptyState
-          icon={Megaphone}
+          icon="megaphone"
           kicker="Radio silence"
           title="No drops yet"
           body="Hit Post update when you’ve got news, rules, or wholesome chaos to share."
@@ -77,7 +74,11 @@ export function EventUpdatesPanel({
           {items.map((item) => (
             <li key={item.id} className="space-y-2 py-4">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <p className="text-xs font-semibold uppercase tracking-wide text-accent">{item.kind}</p>
+                {item.title ? (
+                  <p className="font-semibold text-text-primary">{item.title}</p>
+                ) : (
+                  <p className="text-xs text-text-muted">Update</p>
+                )}
                 <button
                   type="button"
                   className="text-xs text-text-muted hover:text-error"
@@ -87,10 +88,8 @@ export function EventUpdatesPanel({
                   Delete
                 </button>
               </div>
-              {item.title ? <p className="font-semibold text-text-primary">{item.title}</p> : null}
               {item.posterUrl ? (
                 <div className="overflow-hidden rounded-md border border-border bg-elevated">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={item.posterUrl} alt="" className="max-h-80 w-full object-cover" />
                 </div>
               ) : null}
@@ -120,14 +119,12 @@ export function PostUpdateDialog({
   onPosted?: () => void;
 }) {
   const { api } = useAuth();
-  const [kind, setKind] = useState<EventUpdateKind>('GENERAL');
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [posterUrl, setPosterUrl] = useState('');
   const [pending, setPending] = useState(false);
 
   function reset() {
-    setKind('GENERAL');
     setTitle('');
     setBody('');
     setPosterUrl('');
@@ -139,7 +136,6 @@ export function PostUpdateDialog({
     try {
       if (!body.trim()) throw new Error('Write something for the feed');
       await api.createEventUpdate(organizerId, eventId, {
-        kind,
         title: title.trim() || null,
         body: body.trim(),
         posterUrl: posterUrl.trim() || null,
@@ -172,31 +168,14 @@ export function PostUpdateDialog({
         </DialogHeader>
 
         <div className="flex min-h-0 flex-col gap-3">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="space-y-2 text-sm text-text-secondary">
-              <span className="font-semibold text-text-primary">Kind</span>
-              <select
-                value={kind}
-                onChange={(e) => setKind(e.target.value as EventUpdateKind)}
-                className="flex h-10 w-full rounded-md border border-border bg-elevated px-3 text-sm"
-                disabled={pending}
-              >
-                {KINDS.map((k) => (
-                  <option key={k} value={k}>
-                    {k}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-2 text-sm text-text-secondary">
-              <span className="font-semibold text-text-primary">Title (optional)</span>
-              <Input
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Lineup locked"
-                disabled={pending}
-              />
-            </div>
+          <div className="space-y-2 text-sm text-text-secondary">
+            <span className="font-semibold text-text-primary">Title (optional)</span>
+            <Input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="e.g. Full lineup locked"
+              disabled={pending}
+            />
           </div>
           <div className="space-y-2 text-sm text-text-secondary">
             <span className="font-semibold text-text-primary">Body</span>
@@ -245,6 +224,6 @@ export function EventUpdatesPanelBySlug({
   useEffect(() => {
     void auth.api.getMyOrganizerBySlug(slug).then(setOrg);
   }, [auth.api, slug]);
-  if (!org) return <p className="text-sm text-text-muted">Loading updates…</p>;
+  if (!org) return <PageLoading variant="panel" label="Loading updates" />;
   return <EventUpdatesPanel organizerId={org.id} eventId={eventId} />;
 }

@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toastCopy, toastPending, toastReject, toastResolve } from '@/components/ui/toaster';
 import { useAuth } from '@/features/auth/AuthProvider';
+import { PageLoading, SoftError } from '@/features/shell/AsyncState';
 import { safeNextPath } from '@/lib/auth-routes';
 import { createBrowserSupabase } from '@/lib/supabase/browser';
 
@@ -68,16 +69,21 @@ export function ProfilePanel() {
     };
   }, [auth.api, auth.me, auth.status]);
 
-  if (auth.status === 'loading') {
-    return <div className="min-h-[40vh] bg-bg" aria-busy="true" aria-label="Loading" />;
-  }
-
-  if (auth.status === 'unauthenticated') {
-    return <div className="min-h-[40vh] bg-bg" aria-busy="true" aria-label="Redirecting" />;
+  if (auth.status === 'loading' || auth.status === 'unauthenticated') {
+    return <PageLoading variant="profile" label="Loading profile" />;
   }
 
   if (!auth.me) {
-    return <p className="px-6 py-16 text-sm text-text-muted">Loading your account…</p>;
+    if (auth.error) {
+      return (
+        <SoftError
+          title="Couldn’t load your account"
+          error={auth.error}
+          onRetry={() => void auth.refresh()}
+        />
+      );
+    }
+    return <PageLoading variant="profile" label="Loading your account" />;
   }
 
   async function saveOnboarding() {

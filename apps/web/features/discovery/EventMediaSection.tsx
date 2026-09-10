@@ -1,5 +1,6 @@
 import type { EventMediaLinkDto } from '@cypher/contracts';
-import { ExternalLink } from 'lucide-react';
+
+import { ByndIcon } from '@/components/icons/bynd8';
 
 export function EventMediaSection({ links }: { links: EventMediaLinkDto[] }) {
   if (links.length === 0) {
@@ -23,7 +24,7 @@ export function EventMediaSection({ links }: { links: EventMediaLinkDto[] }) {
                 <p className="font-semibold text-text-primary">{link.title}</p>
                 <p className="text-xs uppercase tracking-[0.12em] text-text-muted">{link.kind}</p>
               </div>
-              <ExternalLink className="h-4 w-4 shrink-0 text-accent" aria-hidden />
+              <ByndIcon name="external" className="size-4 shrink-0 text-accent" aria-hidden />
             </a>
           </li>
         ))}

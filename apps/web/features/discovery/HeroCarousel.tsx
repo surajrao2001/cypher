@@ -3,10 +3,10 @@
 import type { EventCardDto } from '@cypher/contracts';
 import { formatEventDate } from '@cypher/utils';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { ChevronLeft, ChevronRight, MapPin } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
+import { ByndIcon } from '@/components/icons/bynd8';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { EventPoster } from '@/features/discovery/EventPoster';
@@ -79,7 +79,7 @@ export function HeroCarousel({ events }: HeroCarouselProps) {
               <p className="kicker text-accent">{current.kicker}</p>
               <h2 className="display-title max-w-3xl text-5xl md:text-7xl">{current.title}</h2>
               <p className="flex max-w-xl items-center gap-2 font-body text-sm text-text-secondary md:text-base">
-                <MapPin className="h-4 w-4 text-accent" />
+                <ByndIcon name="pin" className="size-4 text-accent" />
                 {current.venue} · {formatEventDate(current.startTime)}
               </p>
               <div className="flex flex-wrap items-center gap-3">
@@ -103,7 +103,7 @@ export function HeroCarousel({ events }: HeroCarouselProps) {
           onClick={() => go(-1)}
           aria-label="Previous featured event"
         >
-          <ChevronLeft className="h-4 w-4" />
+          <ByndIcon name="chevronLeft" className="size-4" />
         </Button>
         <Button
           variant="secondary"
@@ -112,7 +112,7 @@ export function HeroCarousel({ events }: HeroCarouselProps) {
           onClick={() => go(1)}
           aria-label="Next featured event"
         >
-          <ChevronRight className="h-4 w-4" />
+          <ByndIcon name="chevronRight" className="size-4" />
         </Button>
       </div>
 

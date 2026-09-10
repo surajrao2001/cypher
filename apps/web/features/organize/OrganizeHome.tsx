@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/features/shell/EmptyState';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { OrganizeGate } from '@/features/organize/OrganizeGate';
+import { PageLoading, SoftError } from '@/features/shell/AsyncState';
 
 type OrgStats = {
   events: number;
@@ -28,11 +29,13 @@ function OrganizeHomeInner() {
   const auth = useAuth();
   const [orgs, setOrgs] = useState<OrganizerDto[] | null>(null);
   const [statsById, setStatsById] = useState<Record<string, OrgStats>>({});
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
     void (async () => {
+      setError(null);
       try {
         const items = await auth.api.listMyOrganizers();
         if (cancelled) return;
@@ -52,14 +55,14 @@ function OrganizeHomeInner() {
         }
       } catch (err: unknown) {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : 'Could not load organizers');
+          setError(err);
         }
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [auth.api]);
+  }, [auth.api, reloadKey]);
 
   return (
     <div className="mx-auto max-w-6xl space-y-8 px-4 py-8 md:px-8">
@@ -75,10 +78,14 @@ function OrganizeHomeInner() {
         </Button>
       </div>
 
-      {error ? <p className="text-sm text-error">{error}</p> : null}
-
-      {orgs === null ? (
-        <p className="text-sm text-text-muted">Loading your crews…</p>
+      {error && orgs === null ? (
+        <SoftError
+          title="Couldn’t load organizers"
+          error={error}
+          onRetry={() => setReloadKey((n) => n + 1)}
+        />
+      ) : orgs === null ? (
+        <PageLoading variant="cards" label="Loading your crews" />
       ) : orgs.length === 0 ? (
         <EmptyState
           kicker="No crews yet"

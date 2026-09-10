@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { AuthChipLoading, friendlyError, InlineNotice } from '@/components/AsyncState';
 import { BrandLogo } from '@/components/BrandLogo';
 import { GoogleGlyph } from '@/components/GoogleGlyph';
 import { Button } from '@/components/ui/Button';
@@ -37,7 +38,7 @@ export default function ProfileScreen() {
   const [pending, setPending] = useState(false);
   const [authPending, setAuthPending] = useState<Pending>(null);
   const [email, setEmail] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>(null);
   const [info, setInfo] = useState<string | null>(null);
 
   const canContinue = name.trim().length > 1 && city.trim().length > 1;
@@ -65,7 +66,7 @@ export default function ProfileScreen() {
     try {
       await auth.signInWithProvider(provider);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Sign-in failed');
+      setError(err);
     } finally {
       setAuthPending(null);
     }
@@ -79,7 +80,7 @@ export default function ProfileScreen() {
       await auth.signInWithEmail(email);
       setInfo(`Check ${email.trim()} for a sign-in link.`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not send email link');
+      setError(err);
     } finally {
       setAuthPending(null);
     }
@@ -97,7 +98,7 @@ export default function ProfileScreen() {
       });
       router.replace('/(tabs)/discover');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not save profile');
+      setError(err);
     } finally {
       setPending(false);
     }
@@ -105,8 +106,8 @@ export default function ProfileScreen() {
 
   if (!auth.ready) {
     return (
-      <SafeAreaView className="flex-1 bg-bg items-center justify-center" edges={['top']}>
-        <Text variant="caption">Loading session…</Text>
+      <SafeAreaView className="flex-1 bg-bg px-4" edges={['top']}>
+        <AuthChipLoading />
       </SafeAreaView>
     );
   }
@@ -174,7 +175,9 @@ export default function ProfileScreen() {
               </Button>
             </View>
             {info ? <Text variant="caption">{info}</Text> : null}
-            {error ? <Text variant="caption" className="text-danger">{error}</Text> : null}
+            {error ? (
+              <InlineNotice tone="warn">{friendlyError(error, 'Sign-in failed')}</InlineNotice>
+            ) : null}
           </View>
         </ScrollView>
       </SafeAreaView>
@@ -253,7 +256,7 @@ export default function ProfileScreen() {
                   });
                   await auth.refresh();
                 } catch (err) {
-                  setError(err instanceof Error ? err.message : 'Could not update');
+                  setError(err);
                 } finally {
                   setPending(false);
                 }
@@ -263,9 +266,9 @@ export default function ProfileScreen() {
             Save profile
           </Button>
           {error ? (
-            <Text variant="caption" className="mt-3 text-danger">
-              {error}
-            </Text>
+            <View className="mt-3">
+              <InlineNotice tone="warn">{friendlyError(error, 'Could not update')}</InlineNotice>
+            </View>
           ) : null}
           <Button className="mt-8" variant="ghost" onPress={() => void auth.signOut()}>
             Sign out
@@ -354,9 +357,9 @@ export default function ProfileScreen() {
           </View>
 
           {error ? (
-            <Text variant="caption" className="mt-6 text-danger">
-              {error}
-            </Text>
+            <View className="mt-6">
+              <InlineNotice tone="warn">{friendlyError(error, 'Could not save profile')}</InlineNotice>
+            </View>
           ) : null}
 
           <Button className="mt-8" size="lg" loading={pending} disabled={!canContinue} onPress={() => void onSave()}>

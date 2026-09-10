@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 import { getGoogleMapsApiKey, loadGoogleMaps } from '@/lib/google-maps';
+import { InlineNotice } from '@/features/shell/AsyncState';
 import { cn } from '@/lib/utils';
 
 type Props = {
@@ -70,7 +71,7 @@ export function VenueMapView({ lat, lng, venueLabel, className, mapClassName }: 
         aria-label="Venue map"
       />
       {error ? (
-        <p className="mt-2 px-4 text-xs text-error">{error}</p>
+        <InlineNotice className="mx-4 mt-2 text-xs">{error}</InlineNotice>
       ) : (
         <div className="mt-2 flex flex-wrap gap-3 px-4 pb-3 text-xs">
           <a

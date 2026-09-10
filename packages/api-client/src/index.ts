@@ -32,8 +32,6 @@ import type {
   CreateCheckInBody,
   CreateEventUpdateBody,
   EventUpdateDto,
-  EventLineupPersonDto,
-  ReplaceEventLineupBody,
   UpdateEventUpdateBody,
   UpdateProfileBody,
 } from '@cypher/contracts';
@@ -380,26 +378,6 @@ export class CypherApiClient {
     return this.request<{ ok: true }>(
       `/v1/organizers/${encodeURIComponent(organizerId)}/events/${encodeURIComponent(eventId)}/updates/${encodeURIComponent(updateId)}`,
       { method: 'DELETE' },
-    );
-  }
-
-  async listEventLineup(
-    organizerId: string,
-    eventId: string,
-  ): Promise<{ items: EventLineupPersonDto[] }> {
-    return this.request<{ items: EventLineupPersonDto[] }>(
-      `/v1/organizers/${encodeURIComponent(organizerId)}/events/${encodeURIComponent(eventId)}/lineup`,
-    );
-  }
-
-  async replaceEventLineup(
-    organizerId: string,
-    eventId: string,
-    body: ReplaceEventLineupBody,
-  ): Promise<{ items: EventLineupPersonDto[] }> {
-    return this.request<{ items: EventLineupPersonDto[] }>(
-      `/v1/organizers/${encodeURIComponent(organizerId)}/events/${encodeURIComponent(eventId)}/lineup`,
-      { method: 'PUT', body: JSON.stringify(body) },
     );
   }
 

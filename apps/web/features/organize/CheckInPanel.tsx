@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/features/auth/AuthProvider';
+import { friendlyError, InlineNotice, PageLoading, SoftError } from '@/features/shell/AsyncState';
 
 type BarcodeDetectorLike = {
   detect: (source: ImageBitmapSource) => Promise<Array<{ rawValue?: string }>>;
@@ -32,17 +33,25 @@ export function CheckInPanel({ slug, eventId }: { slug: string; eventId: string 
   const [cameraOn, setCameraOn] = useState(false);
   const [cameraHint, setCameraHint] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<unknown>(null);
 
   const load = useCallback(async () => {
-    const organizer = await auth.api.getMyOrganizerBySlug(slug);
-    setOrg(organizer);
-    setData(await auth.api.listCheckIns(organizer.id, eventId));
+    setLoadError(null);
+    setLoading(true);
+    try {
+      const organizer = await auth.api.getMyOrganizerBySlug(slug);
+      setOrg(organizer);
+      setData(await auth.api.listCheckIns(organizer.id, eventId));
+    } catch (error: unknown) {
+      setLoadError(error);
+    } finally {
+      setLoading(false);
+    }
   }, [auth.api, eventId, slug]);
 
   useEffect(() => {
-    void load().catch((error: unknown) =>
-      setMessage(error instanceof Error ? error.message : 'Could not load check-ins'),
-    );
+    void load();
   }, [load]);
 
   useEffect(() => {
@@ -72,7 +81,7 @@ export function CheckInPanel({ slug, eventId }: { slug: string; eventId: string 
         setMessage('Checked in.');
         await load();
       } catch (error) {
-        setMessage(error instanceof Error ? error.message : 'Check-in failed');
+        setMessage(friendlyError(error, 'Check-in failed'));
       } finally {
         busyRef.current = false;
         setBusy(false);
@@ -157,6 +166,26 @@ export function CheckInPanel({ slug, eventId }: { slug: string; eventId: string 
     }
   }
 
+  if (loading && !org) {
+    return (
+      <div className="mx-auto max-w-3xl px-4 py-8 md:px-8">
+        <PageLoading variant="panel" label="Loading check-in" />
+      </div>
+    );
+  }
+
+  if (loadError && !org) {
+    return (
+      <div className="mx-auto max-w-3xl px-4 py-8 md:px-8">
+        <SoftError
+          title="Couldn’t load check-in"
+          error={loadError}
+          onRetry={() => void load()}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto max-w-3xl space-y-6 px-4 py-8 md:px-8">
       <div>
@@ -211,7 +240,13 @@ export function CheckInPanel({ slug, eventId }: { slug: string; eventId: string 
           {busy ? 'Checking…' : 'Check in'}
         </Button>
       </form>
-      {message ? <p className="text-sm text-text-secondary">{message}</p> : null}
+      {message ? (
+        message === 'Checked in.' ? (
+          <p className="text-sm text-text-secondary">{message}</p>
+        ) : (
+          <InlineNotice tone="warn">{message}</InlineNotice>
+        )
+      ) : null}
       <div className="grid grid-cols-2 gap-3">
         <Stat label="Checked in" value={data?.totals.checkedIn ?? 0} />
         <Stat label="Confirmed" value={data?.totals.confirmed ?? 0} />
