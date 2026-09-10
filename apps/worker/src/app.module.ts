@@ -5,7 +5,6 @@ import { BullModule } from '@nestjs/bullmq';
 import { defaultJobOptions } from './config/bullmq';
 import { validateEnv, type WorkerEnv } from './config/env';
 import { StructuredLogger } from './config/logger';
-import { parseRedisUrl } from './config/redis';
 import { ExportsConsumer } from './consumers/exports.consumer';
 import { MediaConsumer } from './consumers/media.consumer';
 import { NotificationConsumer } from './consumers/notification.consumer';
@@ -26,9 +25,14 @@ import { ReservationExpiryService } from './reservation-expiry.service';
     }),
     BullModule.forRootAsync({
       inject: [ConfigService],
+      // Match API: pass URL through to ioredis (Railway Redis URLs parse more reliably this way).
       useFactory: (config: ConfigService<WorkerEnv, true>) => ({
         prefix: 'cypher',
-        connection: parseRedisUrl(config.get('REDIS_URL', { infer: true })),
+        connection: {
+          url: config.get('REDIS_URL', { infer: true }),
+          maxRetriesPerRequest: null,
+          enableReadyCheck: false,
+        },
         defaultJobOptions,
       }),
     }),

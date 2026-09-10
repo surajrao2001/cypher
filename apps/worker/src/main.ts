@@ -19,11 +19,18 @@ async function bootstrap(): Promise<void> {
 }
 
 bootstrap().catch((error: unknown) => {
+  const message = error instanceof Error ? error.message : String(error);
+  const stack = error instanceof Error ? error.stack : undefined;
+  // Always write plain text so Railway deploy logs show the failure even if JSON logs are truncated.
+  console.error(`Worker failed to start: ${message}`);
+  if (stack) {
+    console.error(stack);
+  }
   const logger = new StructuredLogger();
   logger.error({
     message: 'Worker failed to start',
-    error: error instanceof Error ? error.message : String(error),
-    stack: error instanceof Error ? error.stack : undefined,
+    error: message,
+    stack,
   });
   process.exit(1);
 });
