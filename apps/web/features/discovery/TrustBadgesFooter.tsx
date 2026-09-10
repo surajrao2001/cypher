@@ -1,27 +1,27 @@
-import { ShieldCheck, Ticket, BellRing, Link2 } from 'lucide-react';
+import { ByndIcon, type ByndIconName } from '@/components/icons/bynd8';
 
-const badges = [
+const badges: Array<{ icon: ByndIconName; title: string; body: string }> = [
   {
-    icon: Ticket,
+    icon: 'tickets',
     title: 'Hold a spot',
     body: 'Reserve a category entry, confirm free events, and get a registration code.',
   },
   {
-    icon: ShieldCheck,
+    icon: 'shield',
     title: 'Digital tickets',
     body: 'Confirmed entries show a QR on My Tickets — bring it to the door.',
   },
   {
-    icon: BellRing,
+    icon: 'bell',
     title: 'Event updates',
     body: 'Registration windows, capacity, and organizer notices stay on the event page.',
   },
   {
-    icon: Link2,
+    icon: 'link',
     title: 'Event media',
-    body: 'Organizers can share YouTube, Instagram, or Drive links — Cypher does not host video.',
+    body: 'Organizers can share YouTube, Instagram, or Drive links — BYND8 does not host video.',
   },
-] as const;
+];
 
 export function TrustBadgesFooter() {
   return (
@@ -29,7 +29,7 @@ export function TrustBadgesFooter() {
       <div className="grid gap-px bg-border sm:grid-cols-2 xl:grid-cols-4">
         {badges.map((badge) => (
           <div key={badge.title} className="flex gap-3 bg-surface px-5 py-6">
-            <badge.icon className="mt-0.5 h-5 w-5 shrink-0 text-accent" />
+            <ByndIcon name={badge.icon} className="mt-0.5 size-5 shrink-0 text-accent" />
             <div>
               <p className="font-body text-xs font-semibold uppercase tracking-[0.16em] text-text-primary">
                 {badge.title}
@@ -40,8 +40,8 @@ export function TrustBadgesFooter() {
         ))}
       </div>
       <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border px-5 py-4 text-[11px] uppercase tracking-[0.16em] text-text-muted">
-        <span>Night Cypher · Built for battle weekends, India</span>
-        <span>No light mode. The floor stays dark.</span>
+        <span>BYND8 · Everything beyond the count</span>
+        <span>The culture is the centre</span>
       </div>
     </footer>
   );

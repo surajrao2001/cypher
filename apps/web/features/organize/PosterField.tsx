@@ -4,60 +4,74 @@ import { useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { toastCopy, toastPending, toastReject, toastResolve } from '@/components/ui/toaster';
 import { useAuth } from '@/features/auth/AuthProvider';
+import { cn } from '@/lib/utils';
 
 type PosterFieldProps = {
   value: string;
   onChange: (url: string) => void;
   disabled?: boolean;
+  label?: string;
+  hint?: string;
+  /** Smaller preview + quieter chrome for dialogs. */
+  compact?: boolean;
 };
 
-export function PosterField({ value, onChange, disabled }: PosterFieldProps) {
+export function PosterField({
+  value,
+  onChange,
+  disabled,
+  label = 'Flyer / poster',
+  hint = 'Optional — JPEG, PNG, WebP, GIF, max 5MB. Hits Discover cards and the event cover.',
+  compact = false,
+}: PosterFieldProps) {
   const auth = useAuth();
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [showUrl, setShowUrl] = useState(Boolean(value) && !value.includes('/media/posters/'));
 
   async function onFile(file: File | undefined) {
     if (!file) return;
     setUploading(true);
-    setError(null);
+    const tid = toastPending(toastCopy.uploading);
     try {
       const uploaded = await auth.api.uploadPoster(file, file.name);
       onChange(uploaded.url);
       setShowUrl(false);
+      toastResolve(tid, toastCopy.posterUploaded);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Upload failed');
+      toastReject(tid, toastCopy.uploadFailed, err instanceof Error ? err.message : undefined);
     } finally {
       setUploading(false);
     }
   }
 
   return (
-    <div className="space-y-3">
-      <p className="text-sm text-text-secondary">Event poster</p>
-      <p className="text-xs text-text-muted">
-        Upload an image (JPEG, PNG, WebP, GIF — max 5MB). Used on Discover cards and the event cover.
-      </p>
+    <div className={cn(compact ? 'space-y-2' : 'space-y-3')}>
+      <p className="text-sm font-semibold text-text-primary">{label}</p>
+      {hint ? <p className="text-xs text-text-muted">{hint}</p> : null}
       <div className="flex flex-wrap gap-2">
         <Button
           type="button"
           variant="outline"
+          size={compact ? 'sm' : 'md'}
           disabled={disabled || uploading}
           onClick={() => inputRef.current?.click()}
         >
-          {uploading ? 'Uploading…' : 'Upload image'}
+          {uploading ? 'Uploading…' : value.trim() ? 'Replace image' : 'Upload image'}
         </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          disabled={disabled}
-          onClick={() => setShowUrl((open) => !open)}
-        >
-          {showUrl ? 'Hide URL' : 'Use image URL instead'}
-        </Button>
+        {!compact ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            disabled={disabled}
+            onClick={() => setShowUrl((open) => !open)}
+          >
+            {showUrl ? 'Hide URL' : 'Use image URL instead'}
+          </Button>
+        ) : null}
         {value ? (
           <Button type="button" variant="ghost" size="sm" disabled={disabled} onClick={() => onChange('')}>
             Clear
@@ -71,7 +85,7 @@ export function PosterField({ value, onChange, disabled }: PosterFieldProps) {
         className="hidden"
         onChange={(event) => void onFile(event.target.files?.[0])}
       />
-      {showUrl ? (
+      {showUrl && !compact ? (
         <label className="block space-y-2 text-sm text-text-secondary">
           Poster image URL
           <Input
@@ -84,11 +98,15 @@ export function PosterField({ value, onChange, disabled }: PosterFieldProps) {
         </label>
       ) : null}
       {value.trim() ? (
-        <div className="relative aspect-[3/4] max-h-56 overflow-hidden rounded-md border border-border bg-elevated">
+        <div
+          className={cn(
+            'relative overflow-hidden rounded-md border border-border bg-elevated',
+            compact ? 'mx-auto h-40 w-[7.5rem]' : 'aspect-[3/4] max-h-56',
+          )}
+        >
           <img src={value.trim()} alt="" className="h-full w-full object-cover" />
         </div>
       ) : null}
-      {error ? <p className="text-sm text-error">{error}</p> : null}
     </div>
   );
 }

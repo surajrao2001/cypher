@@ -1,41 +1,36 @@
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, View } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ListLoading, SoftError } from '@/components/AsyncState';
 import { EventCard } from '@/components/EventCard';
 import { EmptyState } from '@/components/EmptyState';
 import { Text } from '@/components/ui/Text';
 import { mobileApi, toMobileEvent } from '@/lib/api';
 import { upcomingEvents, type MobileEvent } from '@/lib/events';
-import { colors } from '@/lib/theme';
 
 export default function EventsScreen() {
   const [events, setEvents] = useState<MobileEvent[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<unknown>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const result = await mobileApi().listEvents({ pageSize: 50 });
+      setEvents(upcomingEvents(result.items.map((item) => toMobileEvent(item))));
+      setLoadError(null);
+    } catch (err) {
+      setEvents([]);
+      setLoadError(err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    void mobileApi()
-      .listEvents({ pageSize: 50 })
-      .then((result) => {
-        if (cancelled) return;
-        setEvents(upcomingEvents(result.items.map((item) => toMobileEvent(item))));
-        setError(null);
-      })
-      .catch((err: unknown) => {
-        if (cancelled) return;
-        setEvents([]);
-        setError(err instanceof Error ? err.message : 'Could not load events');
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    void load();
+  }, [load]);
 
   return (
     <SafeAreaView className="flex-1 bg-bg" edges={['top']}>
@@ -51,15 +46,15 @@ export default function EventsScreen() {
           </Text>
           <Text variant="caption" className="mt-2">
             {loading
-              ? 'Loading upcoming nights…'
+              ? 'Upcoming nights on the board.'
               : `${events.length} upcoming nights. Tap through for tickets, capacity, and register.`}
           </Text>
         </View>
         <View className="mt-6 gap-3">
           {loading ? (
-            <ActivityIndicator className="mt-8" color={colors.lime} />
-          ) : error ? (
-            <EmptyState kicker="Offline" title="Could not load" body={error} />
+            <ListLoading />
+          ) : loadError ? (
+            <SoftError title="Couldn’t load events" error={loadError} onRetry={() => void load()} />
           ) : events.length === 0 ? (
             <EmptyState
               kicker="Empty calendar"

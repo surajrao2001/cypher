@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Req } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Req } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { FastifyRequest } from 'fastify';
 import type { AuthPrincipal } from '../../common/auth/auth.types';
@@ -8,6 +8,10 @@ import {
   CreateOrganizerEventDto,
   CreateEventMediaLinkDto,
   EventCategoryInputDto,
+  GenerateAudienceDayPassesDto,
+  ReplaceCategoryPriceTiersDto,
+  ReplaceEventDaysDto,
+  SetCategoryValidDaysDto,
   UpdateEventCategoryDto,
   UpdateEventMediaLinkDto,
   UpdateOrganizerDto,
@@ -156,6 +160,74 @@ export class OrganizersController {
       organizerId,
       eventId,
       categoryId,
+    );
+  }
+
+  @Put(':organizerId/events/:eventId/days')
+  @ApiOperation({ summary: 'Replace event days for multi-day events' })
+  replaceEventDays(
+    @Req() request: FastifyRequest & { auth?: AuthPrincipal },
+    @Param('organizerId') organizerId: string,
+    @Param('eventId') eventId: string,
+    @Body() body: ReplaceEventDaysDto,
+  ) {
+    return this.organizers.replaceEventDays(
+      getAuthUserId(request),
+      organizerId,
+      eventId,
+      body.days,
+    );
+  }
+
+  @Put(':organizerId/events/:eventId/categories/:categoryId/price-tiers')
+  @ApiOperation({ summary: 'Replace date-based price tiers for a category' })
+  replaceCategoryPriceTiers(
+    @Req() request: FastifyRequest & { auth?: AuthPrincipal },
+    @Param('organizerId') organizerId: string,
+    @Param('eventId') eventId: string,
+    @Param('categoryId') categoryId: string,
+    @Body() body: ReplaceCategoryPriceTiersDto,
+  ) {
+    return this.organizers.replaceCategoryPriceTiers(
+      getAuthUserId(request),
+      organizerId,
+      eventId,
+      categoryId,
+      body.tiers,
+    );
+  }
+
+  @Put(':organizerId/events/:eventId/categories/:categoryId/valid-days')
+  @ApiOperation({ summary: 'Set which event days a category is valid for' })
+  setCategoryValidDays(
+    @Req() request: FastifyRequest & { auth?: AuthPrincipal },
+    @Param('organizerId') organizerId: string,
+    @Param('eventId') eventId: string,
+    @Param('categoryId') categoryId: string,
+    @Body() body: SetCategoryValidDaysDto,
+  ) {
+    return this.organizers.setCategoryValidDays(
+      getAuthUserId(request),
+      organizerId,
+      eventId,
+      categoryId,
+      body.dayIds,
+    );
+  }
+
+  @Post(':organizerId/events/:eventId/generate-audience-day-passes')
+  @ApiOperation({ summary: 'Generate day + full audience SKUs from event days' })
+  generateAudienceDayPasses(
+    @Req() request: FastifyRequest & { auth?: AuthPrincipal },
+    @Param('organizerId') organizerId: string,
+    @Param('eventId') eventId: string,
+    @Body() body: GenerateAudienceDayPassesDto,
+  ) {
+    return this.organizers.generateAudienceDayPasses(
+      getAuthUserId(request),
+      organizerId,
+      eventId,
+      body,
     );
   }
 

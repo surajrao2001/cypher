@@ -1,7 +1,9 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Linking, Pressable, ScrollView, View } from 'react-native';
+import { Linking, Pressable, ScrollView, TextInput, View } from 'react-native';
 
+import { friendlyError, InlineNotice, PageLoading, SoftError } from '@/components/AsyncState';
 import { EventPoster } from '@/components/EventPoster';
 import { RegisterNowBar } from '@/components/RegisterNowBar';
 import { Badge } from '@/components/ui/Badge';
@@ -13,6 +15,7 @@ import { toMobileDetail, mobileApi } from '@/lib/api';
 import type { MobileEvent } from '@/lib/events';
 import { formatEventDate, formatMinorUnits, spotsLeft } from '@/lib/format';
 import { colors } from '@/lib/theme';
+import { cashfreePayUrl } from '@/lib/web';
 
 export default function EventDetailScreen() {
   const router = useRouter();
@@ -20,51 +23,74 @@ export default function EventDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [event, setEvent] = useState<MobileEvent | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<unknown>(null);
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<unknown>(null);
+  const [customerPhone, setCustomerPhone] = useState('');
+  const [pendingPaidRegistrationId, setPendingPaidRegistrationId] = useState<string | null>(null);
 
-  useEffect(() => {
+  function loadEvent() {
     if (typeof id !== 'string') {
       setEvent(null);
+      setLoadError(null);
       setLoading(false);
       return;
     }
-    let cancelled = false;
     setLoading(true);
     void mobileApi()
       .getEvent(id)
       .then((row) => {
-        if (cancelled) return;
         if (row) {
           const detail = toMobileDetail(row);
           setEvent(detail);
-          setCategoryId(detail.categories?.[0]?.id ?? null);
+          const compete = detail.categories?.filter((c) => c.entryType !== 'viewer') ?? [];
+          setCategoryId(compete[0]?.id ?? detail.audience?.categoryId ?? null);
+          setLoadError(null);
         } else {
           setEvent(null);
+          setLoadError(null);
         }
       })
-      .catch(() => {
-        if (!cancelled) setEvent(null);
+      .catch((err) => {
+        setEvent(null);
+        setLoadError(err);
       })
       .finally(() => {
-        if (!cancelled) setLoading(false);
+        setLoading(false);
       });
-    return () => {
-      cancelled = true;
-    };
+  }
+
+  useEffect(() => {
+    loadEvent();
   }, [id]);
 
-  const category = useMemo(
-    () => event?.categories?.find((row) => row.id === categoryId) ?? event?.categories?.[0],
-    [categoryId, event?.categories],
+  const competeCategories = useMemo(
+    () => (event?.categories ?? []).filter((row) => row.entryType !== 'viewer'),
+    [event?.categories],
   );
+  const category = useMemo(() => {
+    if (categoryId === event?.audience?.categoryId && event?.audience?.enabled) {
+      return event.categories?.find((row) => row.id === categoryId) ?? null;
+    }
+    return competeCategories.find((row) => row.id === categoryId) ?? competeCategories[0] ?? null;
+  }, [categoryId, competeCategories, event]);
+
+  useEffect(() => {
+    if (!event) return;
+    if (!categoryId) {
+      setCategoryId(competeCategories[0]?.id ?? event.audience?.categoryId ?? null);
+    }
+  }, [categoryId, competeCategories, event]);
 
   const remaining = category
     ? spotsLeft(category.capacity, category.confirmedCount + category.reservedCount)
-    : event
-      ? spotsLeft(event.spotsCapacity, event.spotsConfirmed)
-      : 0;
+    : event?.audience?.enabled
+      ? event.audience.spotsLeft
+      : event
+        ? spotsLeft(event.spotsCapacity, event.spotsConfirmed)
+        : 0;
   const soldOut = remaining === 0;
   const unitPrice = category?.priceMinor ?? event?.priceMinor ?? 0;
 
@@ -82,6 +108,7 @@ export default function EventDetailScreen() {
     }
     setBusy(true);
     setNotice(null);
+    setActionError(null);
     try {
       let registration = await api.createRegistration({
         categoryId: category.id,
@@ -96,18 +123,45 @@ export default function EventDetailScreen() {
       });
       if (registration.totalAmountMinor === 0) {
         registration = await api.confirmFreeRegistration(registration.id);
+        setPendingPaidRegistrationId(null);
+        setNotice(`Confirmed ${registration.category.name} · ${registration.registrationCode}`);
+      } else {
+        setPendingPaidRegistrationId(registration.id);
+        setNotice(
+          `Held ${registration.category.entryType === 'viewer' ? 'Audience' : registration.category.name} · ${registration.registrationCode}. Enter mobile and pay with Cashfree.`,
+        );
       }
-      setNotice(
-        registration.registrationStatus === 'confirmed'
-          ? `Confirmed ${registration.category.name} · ${registration.registrationCode}`
-          : `Held ${registration.category.name} · ${registration.registrationCode}`,
-      );
       const refreshed = await mobileApi().getEvent(event.slug);
       if (refreshed) {
         setEvent(toMobileDetail(refreshed));
       }
-    } catch (error) {
-      setNotice(error instanceof Error ? error.message : 'Could not register');
+    } catch (err) {
+      setActionError(err);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function payHeld() {
+    if (!pendingPaidRegistrationId) {
+      return;
+    }
+    const phone = customerPhone.replace(/\D/g, '').slice(-10);
+    if (!/^[6-9]\d{9}$/.test(phone)) {
+      setActionError('Enter a valid 10-digit Indian mobile for Cashfree.');
+      return;
+    }
+    setBusy(true);
+    setNotice(null);
+    setActionError(null);
+    try {
+      const session = await api.createRegistrationCheckout(pendingPaidRegistrationId, {
+        customerPhone: phone,
+      });
+      await WebBrowser.openBrowserAsync(cashfreePayUrl(session.paymentSessionId));
+      setNotice('Finish payment in the browser, then open Tickets.');
+    } catch (err) {
+      setActionError(err);
     } finally {
       setBusy(false);
     }
@@ -115,8 +169,16 @@ export default function EventDetailScreen() {
 
   if (loading) {
     return (
-      <View className="flex-1 items-center justify-center bg-bg">
-        <ActivityIndicator color={colors.lime} />
+      <View className="flex-1 bg-bg px-4">
+        <PageLoading />
+      </View>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <View className="flex-1 bg-bg px-4">
+        <SoftError title="Couldn’t load event" error={loadError} onRetry={loadEvent} />
       </View>
     );
   }
@@ -177,10 +239,10 @@ export default function EventDetailScreen() {
             {event.description}
           </Text>
 
-          {event.categories && event.categories.length > 0 ? (
+          {competeCategories.length > 0 ? (
             <View className="mt-8 gap-2">
-              <Text variant="caption">Choose category</Text>
-              {event.categories.map((row) => {
+              <Text variant="caption">Compete</Text>
+              {competeCategories.map((row) => {
                 const left = spotsLeft(row.capacity, row.confirmedCount + row.reservedCount);
                 const selected = row.id === (category?.id ?? null);
                 return (
@@ -195,13 +257,37 @@ export default function EventDetailScreen() {
                     <Text variant="subtitle">{row.name}</Text>
                     <Text variant="caption" className="mt-1 text-muted">
                       {row.priceMinor === 0 ? 'Free' : formatMinorUnits(row.priceMinor)} · {left} left
-                      · {row.minTeamSize === row.maxTeamSize
+                      ·{' '}
+                      {row.minTeamSize === row.maxTeamSize
                         ? `${row.minTeamSize}p`
                         : `${row.minTeamSize}-${row.maxTeamSize}p`}
                     </Text>
                   </Pressable>
                 );
               })}
+            </View>
+          ) : null}
+
+          {event.audience?.enabled ? (
+            <View className="mt-6 gap-2">
+              <Text variant="caption">Watch</Text>
+              <Pressable
+                disabled={event.audience.spotsLeft === 0}
+                onPress={() => setCategoryId(event.audience?.categoryId ?? null)}
+                className={`rounded-md border px-3 py-3 ${
+                  categoryId === event.audience.categoryId
+                    ? 'border-lime bg-elevated'
+                    : 'border-border bg-surface'
+                } ${event.audience.spotsLeft === 0 ? 'opacity-40' : ''}`}
+              >
+                <Text variant="subtitle">Audience pass</Text>
+                <Text variant="caption" className="mt-1 text-muted">
+                  {event.audience.priceMinor === 0
+                    ? 'Free'
+                    : formatMinorUnits(event.audience.priceMinor)}{' '}
+                  · {event.audience.spotsLeft} left
+                </Text>
+              </Pressable>
             </View>
           ) : null}
 
@@ -227,6 +313,28 @@ export default function EventDetailScreen() {
             <Text variant="caption" className="mt-4 text-lime">
               {notice}
             </Text>
+          ) : null}
+          {actionError ? (
+            <View className="mt-4">
+              <InlineNotice tone="warn">{friendlyError(actionError)}</InlineNotice>
+            </View>
+          ) : null}
+
+          {pendingPaidRegistrationId ? (
+            <View className="mt-4 gap-3">
+              <Text variant="caption">Mobile for Cashfree</Text>
+              <TextInput
+                value={customerPhone}
+                onChangeText={setCustomerPhone}
+                keyboardType="phone-pad"
+                placeholder="9876543210"
+                placeholderTextColor={colors.muted}
+                className="rounded-md border border-border bg-surface px-3 py-3 font-body text-base text-primary"
+              />
+              <Button disabled={busy} onPress={() => void payHeld()}>
+                {busy ? 'Opening…' : 'Pay with Cashfree'}
+              </Button>
+            </View>
           ) : null}
         </View>
       </ScrollView>

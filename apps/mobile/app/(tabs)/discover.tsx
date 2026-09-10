@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, ScrollView, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ListLoading, SoftError } from '@/components/AsyncState';
 import { EventCard } from '@/components/EventCard';
 import { EmptyState } from '@/components/EmptyState';
 import { FeaturedEventHero } from '@/components/FeaturedEventHero';
@@ -9,36 +10,30 @@ import { Chip } from '@/components/ui/Chip';
 import { Text } from '@/components/ui/Text';
 import { mobileApi, toMobileEvent } from '@/lib/api';
 import { DANCE_STYLES, filterEvents, type MobileEvent, type StyleFilter } from '@/lib/events';
-import { colors } from '@/lib/theme';
 
 export default function DiscoverScreen() {
   const [style, setStyle] = useState<StyleFilter>('All');
   const [catalog, setCatalog] = useState<MobileEvent[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<unknown>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const result = await mobileApi().listEvents({ pageSize: 50 });
+      setCatalog(result.items.map((item) => toMobileEvent(item)));
+      setLoadError(null);
+    } catch (err) {
+      setCatalog([]);
+      setLoadError(err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    void mobileApi()
-      .listEvents({ pageSize: 50 })
-      .then((result) => {
-        if (cancelled) return;
-        setCatalog(result.items.map((item) => toMobileEvent(item)));
-        setError(null);
-      })
-      .catch((err: unknown) => {
-        if (cancelled) return;
-        setCatalog([]);
-        setError(err instanceof Error ? err.message : 'Could not load events');
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    void load();
+  }, [load]);
 
   const featured = catalog.find((event) => event.featured) ?? catalog[0];
   const events = useMemo(() => {
@@ -54,7 +49,7 @@ export default function DiscoverScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View className="px-4 pt-2">
-          <Text variant="kicker">Night Cypher</Text>
+          <Text variant="kicker">BYND8</Text>
           <Text variant="display" className="mt-1 text-[52px] leading-[52px]">
             Discover
           </Text>
@@ -64,10 +59,12 @@ export default function DiscoverScreen() {
         </View>
 
         {loading ? (
-          <ActivityIndicator className="mt-12" color={colors.lime} />
-        ) : error ? (
           <View className="px-4">
-            <EmptyState kicker="Offline" title="Could not load" body={error} />
+            <ListLoading />
+          </View>
+        ) : loadError ? (
+          <View className="px-4">
+            <SoftError title="Couldn’t load events" error={loadError} onRetry={() => void load()} />
           </View>
         ) : (
           <>

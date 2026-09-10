@@ -1,3 +1,21 @@
+export type CategoryPriceTierDto = {
+  id: string;
+  name: string;
+  priceMinor: number;
+  startsAt: string | null;
+  endsAt: string | null;
+  sortOrder: number;
+  maxQuantity: number | null;
+};
+
+export type EventDayDto = {
+  id: string;
+  label: string;
+  startsAt: string;
+  endsAt: string | null;
+  sortOrder: number;
+};
+
 export type EventCardDto = {
   id: string;
   slug: string;
@@ -5,7 +23,10 @@ export type EventCardDto = {
   kicker: string;
   city: string;
   venue: string | null;
+  venueLatitude: number | null;
+  venueLongitude: number | null;
   startTime: string;
+  createdAt: string;
   posterUrl: string | null;
   status: string;
   eventType: string;
@@ -24,6 +45,7 @@ export type EventCategoryPublicDto = {
   id: string;
   name: string;
   priceMinor: number;
+  currentPriceMinor: number;
   capacity: number;
   reservedCount: number;
   confirmedCount: number;
@@ -31,6 +53,10 @@ export type EventCategoryPublicDto = {
   minTeamSize: number;
   maxTeamSize: number;
   teamSize: number;
+  priceTiers: CategoryPriceTierDto[];
+  validDayIds: string[];
+  activeTierName: string | null;
+  nextTier: CategoryPriceTierDto | null;
 };
 
 export type EventMediaLinkDto = {
@@ -45,13 +71,55 @@ export type EventMediaLinkDto = {
   createdAt: string;
 };
 
+export type EventUpdateDto = {
+  id: string;
+  eventId: string;
+  authorUserId: string;
+  kind: string;
+  title: string | null;
+  body: string;
+  posterUrl: string | null;
+  publishedAt: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type EventLineupPersonDto = {
+  id: string;
+  eventId: string;
+  name: string;
+  role: string;
+  categoryId: string | null;
+  instagram: string | null;
+  photoUrl: string | null;
+  blurb: string | null;
+  sortOrder: number;
+};
+
 export type EventDetailDto = EventCardDto & {
   description: string | null;
   endTime: string | null;
   registrationOpensAt: string | null;
   registrationClosesAt: string | null;
   categories: EventCategoryPublicDto[];
+  competeCategories: EventCategoryPublicDto[];
+  viewerCategories: EventCategoryPublicDto[];
+  audience: EventAudiencePassDto;
+  days: EventDayDto[];
   mediaLinks: EventMediaLinkDto[];
+  updates: EventUpdateDto[];
+  lineup: EventLineupPersonDto[];
+};
+
+export type EventAudiencePassDto = {
+  enabled: boolean;
+  categoryId: string | null;
+  name: string;
+  priceMinor: number;
+  capacity: number;
+  reservedCount: number;
+  confirmedCount: number;
+  spotsLeft: number;
 };
 
 export type EventListResponse = {

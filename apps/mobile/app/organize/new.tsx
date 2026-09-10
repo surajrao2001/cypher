@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { ScrollView, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { friendlyError, InlineNotice } from '@/components/AsyncState';
 import { Button } from '@/components/ui/Button';
 import { Text } from '@/components/ui/Text';
 import { useAuth } from '@/lib/auth';
@@ -14,11 +15,11 @@ export default function NewOrganizerScreen() {
   const [orgName, setOrgName] = useState('');
   const [city, setCity] = useState('');
   const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<unknown>(null);
 
   async function create() {
     setPending(true);
-    setError(null);
+    setActionError(null);
     try {
       const org = await auth.api.createOrganizer({
         orgName: orgName.trim(),
@@ -26,7 +27,7 @@ export default function NewOrganizerScreen() {
       });
       router.replace(`/organize/${org.slug}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Create failed');
+      setActionError(err);
     } finally {
       setPending(false);
     }
@@ -59,7 +60,9 @@ export default function NewOrganizerScreen() {
           className="h-12 rounded-md border border-border bg-elevated px-3"
           style={{ color: colors.ink }}
         />
-        {error ? <Text variant="caption" className="text-danger">{error}</Text> : null}
+        {actionError ? (
+          <InlineNotice tone="warn">{friendlyError(actionError, 'Create failed')}</InlineNotice>
+        ) : null}
         <Button
           loading={pending}
           disabled={orgName.trim().length < 2}

@@ -22,6 +22,8 @@ function eventRow(
     eventType: overrides?.eventType ?? 'battle',
     city: overrides?.city ?? 'Mumbai',
     venue: 'The Hive',
+    venueLatitude: null,
+    venueLongitude: null,
     startTime: new Date('2026-09-12T13:00:00.000Z'),
     endTime: null,
     registrationOpensAt: null,
@@ -30,6 +32,7 @@ function eventRow(
     tags: overrides?.tags ?? ['Breaking', '1v1'],
     featured: overrides?.featured ?? true,
     status: EventStatus.published,
+    createdAt: new Date('2026-08-01T12:00:00.000Z'),
     organizer: { orgName: 'Mumbai City Breakers', slug: 'mumbai-city-breakers' },
     danceStyles: styles.map((name, index) => ({
       style: { id: `style-${String(index)}`, slug: name.toLowerCase(), name },
@@ -49,6 +52,9 @@ function eventRow(
       },
     ],
     mediaLinks: [],
+    days: [],
+    updates: [],
+    lineup: [],
   };
 }
 

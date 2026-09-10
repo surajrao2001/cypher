@@ -1,23 +1,28 @@
 export const nightCypherColors = {
-  bg: '#0A0A0A',
+  bg: '#0B0B0B',
   surface: '#121212',
   elevated: '#1A1A1A',
   border: '#2A2A2A',
-  textPrimary: '#F5F5F5',
+  textPrimary: '#F4F2ED',
   textSecondary: '#A3A3A3',
   textMuted: '#737373',
-  accentPrimary: '#FF4D00',
-  accentPrimaryHover: '#FF6A2B',
-  accentSecondary: '#DFFF00',
+  accentPrimary: '#FF6800',
+  accentPrimaryHover: '#FF8124',
+  accentSecondary: '#C7FF00',
   success: '#22C55E',
   warning: '#F59E0B',
   error: '#EF4444',
 } as const;
 
+/** Alias — product brand is BYND8; package name remains nightCypher for now. */
+export const bynd8Colors = nightCypherColors;
+
 export const nightCypherFonts = {
   display: 'Bebas Neue',
   body: 'Barlow',
 } as const;
+
+export const bynd8Fonts = nightCypherFonts;
 
 export const nightCypherSpacing = {
   1: 4,

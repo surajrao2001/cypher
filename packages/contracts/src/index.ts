@@ -2,7 +2,7 @@ export type PlatformRole = 'user' | 'admin';
 export type ProfileStatus = 'active' | 'suspended' | 'deleted';
 export type OrganizerVerificationStatus = 'pending' | 'verified' | 'rejected';
 export type OrganizerMemberRole = 'owner' | 'manager' | 'editor';
-export type CategoryEntryType = 'solo' | 'team';
+export type CategoryEntryType = 'solo' | 'team' | 'viewer';
 export type OrganizerType =
   | 'independent'
   | 'collective'
@@ -43,7 +43,14 @@ export type RegistrationStatus =
   | 'expired'
   | 'cancelled'
   | 'refunded';
-export type PaymentProvider = 'razorpay';
+export type PaymentProvider = 'razorpay' | 'cashfree';
+export type OrganizerPayoutAccountStatus =
+  | 'not_started'
+  | 'pending'
+  | 'action_required'
+  | 'active'
+  | 'suspended'
+  | 'rejected';
 export type PaymentOrderStatus =
   | 'created'
   | 'attempted'
@@ -86,6 +93,7 @@ export interface CurrentUserDto {
     styles: string[];
     instagram: string | null;
     avatarUrl: string | null;
+    bio: string | null;
     platformRole: PlatformRole;
     status: ProfileStatus;
   };
@@ -117,7 +125,11 @@ export interface EventCardDto {
   kicker: string;
   city: string;
   venue: string | null;
+  /** WGS84 — set when organizer drops a pin */
+  venueLatitude: number | null;
+  venueLongitude: number | null;
   startTime: string;
+  createdAt: string;
   posterUrl: string | null;
   status: EventStatus;
   eventType: EventType;
@@ -135,7 +147,10 @@ export interface EventCardDto {
 export interface EventCategoryPublicDto {
   id: string;
   name: string;
+  /** Legacy / fallback list price (also used when no active tier). */
   priceMinor: number;
+  /** Resolved sell price right now (tier or fallback). */
+  currentPriceMinor: number;
   capacity: number;
   reservedCount: number;
   confirmedCount: number;
@@ -144,6 +159,40 @@ export interface EventCategoryPublicDto {
   maxTeamSize: number;
   /** @deprecated use maxTeamSize */
   teamSize: number;
+  priceTiers: CategoryPriceTierDto[];
+  validDayIds: string[];
+  activeTierName: string | null;
+  nextTier: CategoryPriceTierDto | null;
+}
+
+export interface CategoryPriceTierDto {
+  id: string;
+  name: string;
+  priceMinor: number;
+  startsAt: string | null;
+  endsAt: string | null;
+  sortOrder: number;
+  maxQuantity: number | null;
+}
+
+export interface EventDayDto {
+  id: string;
+  label: string;
+  startsAt: string;
+  endsAt: string | null;
+  sortOrder: number;
+}
+
+/** Easy audience / door pass summary (first viewer category when multiple exist). */
+export interface EventAudiencePassDto {
+  enabled: boolean;
+  categoryId: string | null;
+  name: string;
+  priceMinor: number;
+  capacity: number;
+  reservedCount: number;
+  confirmedCount: number;
+  spotsLeft: number;
 }
 
 export interface EventDetailDto extends EventCardDto {
@@ -152,7 +201,15 @@ export interface EventDetailDto extends EventCardDto {
   registrationOpensAt: string | null;
   registrationClosesAt: string | null;
   categories: EventCategoryPublicDto[];
+  /** Compete categories only (excludes viewer). */
+  competeCategories: EventCategoryPublicDto[];
+  /** All viewer / audience SKUs (day passes, full weekend, etc.). */
+  viewerCategories: EventCategoryPublicDto[];
+  audience: EventAudiencePassDto;
+  days: EventDayDto[];
   mediaLinks: EventMediaLinkDto[];
+  updates: EventUpdateDto[];
+  lineup: EventLineupPersonDto[];
 }
 
 export type MediaLinkKind = 'youtube' | 'instagram' | 'drive' | 'other';
@@ -231,8 +288,12 @@ export interface CreateOrganizerEventBody {
   eventType?: EventType;
   city: string;
   venue?: string;
+  venueLatitude?: number | null;
+  venueLongitude?: number | null;
   startTime: string;
   endTime?: string;
+  registrationOpensAt?: string | null;
+  registrationClosesAt?: string | null;
   posterUrl?: string;
   tags?: string[];
   styles?: string[];
@@ -246,6 +307,13 @@ export interface CreateOrganizerEventBody {
     /** @deprecated prefer min/max */
     teamSize?: number;
   }>;
+  /** Optional viewers / door pass (creates a single viewer category). */
+  audiencePass?: {
+    enabled: boolean;
+    priceMinor?: number;
+    capacity?: number;
+    name?: string;
+  };
 }
 
 export interface UpdateOrganizerEventBody {
@@ -254,12 +322,22 @@ export interface UpdateOrganizerEventBody {
   eventType?: EventType;
   city?: string;
   venue?: string | null;
+  venueLatitude?: number | null;
+  venueLongitude?: number | null;
   startTime?: string;
   endTime?: string | null;
+  registrationOpensAt?: string | null;
+  registrationClosesAt?: string | null;
   posterUrl?: string | null;
   tags?: string[];
   styles?: string[];
   featured?: boolean;
+  audiencePass?: {
+    enabled: boolean;
+    priceMinor?: number;
+    capacity?: number;
+    name?: string;
+  };
 }
 
 export interface CreateEventCategoryBody {
@@ -271,6 +349,14 @@ export interface CreateEventCategoryBody {
   maxTeamSize?: number;
   /** @deprecated prefer min/max */
   teamSize?: number;
+  validDayIds?: string[];
+  priceTiers?: Array<{
+    name: string;
+    priceMinor: number;
+    startsAt?: string | null;
+    endsAt?: string | null;
+    sortOrder?: number;
+  }>;
 }
 
 export interface UpdateEventCategoryBody {
@@ -282,6 +368,41 @@ export interface UpdateEventCategoryBody {
   maxTeamSize?: number;
   /** @deprecated prefer min/max */
   teamSize?: number;
+  validDayIds?: string[];
+}
+
+export interface ReplaceCategoryPriceTiersBody {
+  tiers: Array<{
+    name: string;
+    priceMinor: number;
+    startsAt?: string | null;
+    endsAt?: string | null;
+    sortOrder?: number;
+    maxQuantity?: number | null;
+  }>;
+}
+
+export interface ReplaceEventDaysBody {
+  days: Array<{
+    id?: string;
+    label: string;
+    startsAt: string;
+    endsAt?: string | null;
+    sortOrder?: number;
+  }>;
+}
+
+export interface GenerateAudienceDayPassesBody {
+  dayPriceMinor: number;
+  fullPriceMinor: number;
+  capacityPerDay: number;
+  fullCapacity?: number;
+  /** Optional early-bird window applied to generated SKUs. */
+  earlyBird?: {
+    priceMinorDay: number;
+    priceMinorFull: number;
+    endsAt: string;
+  };
 }
 
 export interface RegistrationParticipantDto {
@@ -296,6 +417,7 @@ export interface RegistrationDto {
   id: string;
   eventId: string;
   categoryId: string;
+  priceTierId: string | null;
   entryName: string | null;
   registrationStatus: RegistrationStatus;
   paymentStatus: RegistrationPaymentStatus;
@@ -342,6 +464,43 @@ export interface CreateRegistrationBody {
 
 export interface RegistrationListResponse {
   items: RegistrationDto[];
+}
+
+export interface OrganizerPaymentAccountDto {
+  organizerId: string;
+  provider: PaymentProvider;
+  status: OrganizerPayoutAccountStatus;
+  payoutReady: boolean;
+  providerVendorId: string | null;
+  displayName: string | null;
+  contactEmail: string | null;
+  contactPhone: string | null;
+  lastError: string | null;
+}
+
+export interface StartOrganizerPayoutSetupBody {
+  displayName: string;
+  contactEmail: string;
+  contactPhone: string;
+  /** Indian PAN for Cashfree Easy Split vendor KYC. */
+  pan: string;
+  bankAccountNumber?: string;
+  bankAccountHolder?: string;
+  bankIfsc?: string;
+  upiVpa?: string;
+}
+
+export interface PaymentCheckoutSessionDto {
+  registrationId: string;
+  provider: 'cashfree';
+  orderId: string;
+  paymentSessionId: string;
+  amountMinor: number;
+  currency: string;
+}
+
+export interface CreatePaymentCheckoutBody {
+  customerPhone: string;
 }
 
 export interface OrganizerEventDetailDto extends EventDetailDto {
@@ -405,4 +564,118 @@ export const routes = {
   profile: '/profile',
   login: '/login',
   saved: '/saved',
+  checkIn: '/check-in',
+  organizePayouts: (slug: string) => `/organize/${slug}/payouts` as const,
+  organizeEventCheckIn: (slug: string, eventId: string) =>
+    `/organize/${slug}/events/${eventId}/check-in` as const,
+  organizeEventUpdates: (slug: string, eventId: string) =>
+    `/organize/${slug}/events/${eventId}/updates` as const,
 } as const;
+
+export type CheckInChannel = 'SCAN' | 'MANUAL' | 'CODE';
+
+export type EventUpdateKind =
+  | 'GENERAL'
+  | 'LINEUP'
+  | 'MEDIA'
+  | 'SCHEDULE'
+  | 'RULES'
+  | 'OTHER';
+
+export type LineupRole =
+  | 'judge'
+  | 'choreographer'
+  | 'instructor'
+  | 'dj'
+  | 'emcee'
+  | 'guest'
+  | 'performer'
+  | 'other';
+
+export interface CheckInDto {
+  id: string;
+  eventId: string;
+  registrationId: string;
+  checkedInAt: string;
+  checkedInByUserId: string;
+  channel: CheckInChannel;
+  registrationCode?: string;
+  entryName?: string | null;
+  dancerName?: string | null;
+}
+
+export interface CheckInListResponse {
+  items: CheckInDto[];
+  totals: { checkedIn: number; confirmed: number };
+}
+
+export interface CreateCheckInBody {
+  qrToken?: string;
+  registrationCode?: string;
+  channel?: CheckInChannel;
+}
+
+export interface EventUpdateDto {
+  id: string;
+  eventId: string;
+  authorUserId: string;
+  kind: EventUpdateKind;
+  title: string | null;
+  body: string;
+  posterUrl: string | null;
+  publishedAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateEventUpdateBody {
+  kind?: EventUpdateKind;
+  title?: string | null;
+  body: string;
+  posterUrl?: string | null;
+}
+
+export interface UpdateEventUpdateBody {
+  kind?: EventUpdateKind;
+  title?: string | null;
+  body?: string;
+  posterUrl?: string | null;
+}
+
+export interface EventLineupPersonDto {
+  id: string;
+  eventId: string;
+  name: string;
+  role: LineupRole;
+  categoryId: string | null;
+  instagram: string | null;
+  photoUrl: string | null;
+  blurb: string | null;
+  sortOrder: number;
+}
+
+export interface UpsertEventLineupPersonBody {
+  name: string;
+  role: LineupRole;
+  categoryId?: string | null;
+  instagram?: string | null;
+  photoUrl?: string | null;
+  blurb?: string | null;
+  sortOrder?: number;
+}
+
+export interface ReplaceEventLineupBody {
+  people: UpsertEventLineupPersonBody[];
+  announce?: boolean;
+}
+
+export interface UpdateProfileBody {
+  dancerName?: string;
+  name?: string;
+  city?: string | null;
+  crew?: string | null;
+  instagram?: string | null;
+  styles?: string[];
+  bio?: string | null;
+  avatarUrl?: string | null;
+}

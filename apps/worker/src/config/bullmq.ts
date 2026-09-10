@@ -13,6 +13,7 @@ export const defaultJobOptions: DefaultJobOptions = {
 
 export const WORKER_CONCURRENCY: Record<(typeof QUEUE_NAMES)[keyof typeof QUEUE_NAMES], number> = {
   [QUEUE_NAMES.RESERVATION_EXPIRY]: 5,
+  [QUEUE_NAMES.PAYMENT_SPLIT]: 3,
   [QUEUE_NAMES.NOTIFICATIONS]: 10,
   [QUEUE_NAMES.MEDIA]: 2,
   [QUEUE_NAMES.EXPORTS]: 1,

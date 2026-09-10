@@ -2,6 +2,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useState } from 'react';
 import { TextInput, View } from 'react-native';
 
+import { friendlyError, InlineNotice } from '@/components/AsyncState';
 import { Button } from '@/components/ui/Button';
 import { Text } from '@/components/ui/Text';
 import { useAuth } from '@/lib/auth';
@@ -16,14 +17,14 @@ type Props = {
 export function PosterPicker({ value, onChange, disabled }: Props) {
   const auth = useAuth();
   const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<unknown>(null);
   const [showUrl, setShowUrl] = useState(false);
 
   async function pickAndUpload() {
-    setError(null);
+    setActionError(null);
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      setError('Photo library permission is required to upload a poster.');
+      setActionError('Photo library permission is required to upload a poster.');
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -43,7 +44,7 @@ export function PosterPicker({ value, onChange, disabled }: Props) {
       onChange(uploaded.url);
       setShowUrl(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Upload failed');
+      setActionError(err);
     } finally {
       setUploading(false);
     }
@@ -81,10 +82,8 @@ export function PosterPicker({ value, onChange, disabled }: Props) {
           Poster set
         </Text>
       ) : null}
-      {error ? (
-        <Text variant="caption" className="text-danger">
-          {error}
-        </Text>
+      {actionError ? (
+        <InlineNotice tone="warn">{friendlyError(actionError, 'Upload failed')}</InlineNotice>
       ) : null}
     </View>
   );

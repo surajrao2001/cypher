@@ -3,9 +3,9 @@
 import type { EventCardDto } from '@cypher/contracts';
 import { formatEventDate } from '@cypher/utils';
 import { motion, useReducedMotion } from 'framer-motion';
-import { Calendar, MapPin } from 'lucide-react';
 import Link from 'next/link';
 
+import { ByndIcon } from '@/components/icons/bynd8';
 import { Badge } from '@/components/ui/badge';
 import { EventPoster } from '@/features/discovery/EventPoster';
 import { spotsTone } from '@/features/discovery/catalog';
@@ -53,14 +53,14 @@ export function EventCard({ event }: EventCardProps) {
         </div>
         <div className="flex flex-1 flex-col gap-2 p-3">
           <p className="flex items-start gap-1.5 font-body text-sm text-text-secondary">
-            <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-text-muted" />
+            <ByndIcon name="pin" className="mt-0.5 size-3.5 shrink-0 text-text-muted" />
             <span>
               {event.venue ?? event.city}
               <span className="text-text-muted"> · {event.city}</span>
             </span>
           </p>
           <p className="flex items-center gap-1.5 text-xs text-text-muted">
-            <Calendar className="h-3.5 w-3.5" />
+            <ByndIcon name="events" className="size-3.5" />
             {formatEventDate(event.startTime)}
           </p>
           <div className="mt-auto flex items-center justify-between pt-1">

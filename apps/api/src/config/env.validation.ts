@@ -21,6 +21,14 @@ export const envSchema = z
     SUPABASE_ANON_KEY: z.preprocess(emptyToUndefined, z.string().min(20).optional()),
     SUPABASE_JWT_SECRET: z.preprocess(emptyToUndefined, z.string().min(16).optional()),
     PUBLIC_API_URL: z.preprocess(emptyToUndefined, z.string().url().optional()),
+    CASHFREE_ENV: z.preprocess(
+      emptyToUndefined,
+      z.enum(['sandbox', 'production']).optional(),
+    ),
+    CASHFREE_APP_ID: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
+    CASHFREE_SECRET_KEY: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
+    CASHFREE_WEBHOOK_SECRET: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
+    CASHFREE_API_VERSION: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
     RATE_LIMIT_ENABLED: z.preprocess((value) => {
       if (value === 'false' || value === false) return false;
       if (value === 'true' || value === true) return true;
@@ -31,6 +39,8 @@ export const envSchema = z
     ...data,
     RATE_LIMIT_ENABLED: data.RATE_LIMIT_ENABLED ?? data.NODE_ENV !== 'test',
     PUBLIC_API_URL: data.PUBLIC_API_URL ?? `http://127.0.0.1:${String(data.API_PORT)}`,
+    CASHFREE_ENV: data.CASHFREE_ENV ?? 'sandbox',
+    CASHFREE_API_VERSION: data.CASHFREE_API_VERSION ?? '2025-01-01',
   }))
   .superRefine((data, ctx) => {
     if (data.NODE_ENV !== 'production') {

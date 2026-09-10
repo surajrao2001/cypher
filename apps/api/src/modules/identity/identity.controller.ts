@@ -3,7 +3,7 @@ import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swa
 import type { FastifyRequest } from 'fastify';
 import type { AuthPrincipal } from '../../common/auth/auth.types';
 import { getAuthUserId } from '../../common/guards/supabase-jwt.guard';
-import { CompleteOnboardingDto } from './identity.dto';
+import { UpdateProfileDto } from './identity.dto';
 import { IdentityService } from './identity.service';
 
 @ApiTags('identity')
@@ -21,12 +21,12 @@ export class IdentityController {
   }
 
   @Patch()
-  @ApiOperation({ summary: 'Complete dancer onboarding' })
+  @ApiOperation({ summary: 'Create or update the current profile' })
   complete(
     @Req() request: FastifyRequest & { auth?: AuthPrincipal },
-    @Body() body: CompleteOnboardingDto,
+    @Body() body: UpdateProfileDto,
   ) {
     const userId = getAuthUserId(request);
-    return this.identity.completeOnboarding(userId, body, request.auth?.jwtRole ?? 'authenticated');
+    return this.identity.updateProfile(userId, body, request.auth?.jwtRole ?? 'authenticated');
   }
 }

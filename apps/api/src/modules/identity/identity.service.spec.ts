@@ -93,6 +93,7 @@ describe('IdentityService', () => {
       crew: null,
       instagram: null,
       avatarUrl: null,
+      bio: null,
       platformRole: 'user',
       status: 'active',
       onboardedAt: null,

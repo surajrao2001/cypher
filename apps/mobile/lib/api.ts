@@ -39,7 +39,9 @@ export function toMobileDetail(event: EventDetailDto): MobileEvent {
       confirmedCount: category.confirmedCount,
       minTeamSize: category.minTeamSize,
       maxTeamSize: category.maxTeamSize,
+      entryType: category.entryType,
     })),
+    audience: event.audience,
     mediaLinks: (event.mediaLinks ?? []).map((link) => ({
       id: link.id,
       title: link.title,

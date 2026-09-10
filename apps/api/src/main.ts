@@ -11,11 +11,28 @@ import { AppLogger, writeLog } from './common/logger';
 import type { Env } from './config/env.validation';
 
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create<NestFastifyApplication>(
-    AppModule,
-    new FastifyAdapter({ logger: false }),
-    { bufferLogs: true },
-  );
+  const adapter = new FastifyAdapter({ logger: false });
+
+  // Register before Nest init so Cashfree dashboard Test (empty JSON body) is accepted.
+  // Also keeps req.rawBody for webhook HMAC later.
+  adapter.useBodyParser('application/json', true, undefined, (_req, body, done) => {
+    const buffer = Buffer.isBuffer(body) ? body : Buffer.from(String(body ?? ''), 'utf8');
+    const text = buffer.toString('utf8').trim();
+    if (!text) {
+      done(null, {});
+      return;
+    }
+    try {
+      done(null, JSON.parse(text) as unknown);
+    } catch {
+      done(null, { raw: text });
+    }
+  });
+
+  const app = await NestFactory.create<NestFastifyApplication>(AppModule, adapter, {
+    bufferLogs: true,
+    rawBody: true,
+  });
 
   const logger = new AppLogger();
   app.useLogger(logger);
@@ -38,7 +55,14 @@ async function bootstrap(): Promise<void> {
     origin: [webOrigin, mobileOrigin ?? 'http://localhost:8081'],
     credentials: true,
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'Accept',
+      'x-webhook-signature',
+      'x-webhook-timestamp',
+      'x-webhook-version',
+    ],
   });
 
   app.useGlobalPipes(

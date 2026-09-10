@@ -1,3 +1,9 @@
+export type PaymentSplitJobPayload = {
+  orderId: string;
+  vendorId: string;
+  amountMajor: number;
+};
+
 export type ReservationExpiryJobPayload =
   | { mode?: 'expire'; registrationId: string }
   | { mode: 'sweep'; registrationId?: never };
