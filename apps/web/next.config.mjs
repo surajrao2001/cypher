@@ -1,9 +1,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { loadEnvConfig } from '@next/env';
-import type { NextConfig } from 'next';
 
-function loadMonorepoEnv(): void {
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+function loadMonorepoEnv() {
   const candidates = [
     path.join(__dirname, '../..'),
     path.join(process.cwd(), '../..'),
@@ -19,7 +22,8 @@ function loadMonorepoEnv(): void {
 
 loadMonorepoEnv();
 
-const nextConfig: NextConfig = {
+/** @type {import('next').NextConfig} */
+const nextConfig = {
   reactStrictMode: true,
   outputFileTracingRoot: path.join(__dirname, '../..'),
   // Force-inline public env from root `.env` into the client bundle.
@@ -31,7 +35,13 @@ const nextConfig: NextConfig = {
       process.env.NEXT_PUBLIC_API_URL || process.env.PUBLIC_API_URL || 'http://127.0.0.1:3001',
     NEXT_PUBLIC_CASHFREE_MODE: process.env.NEXT_PUBLIC_CASHFREE_MODE || '',
   },
-  transpilePackages: ['@cypher/tokens', '@cypher/utils', '@cypher/contracts', '@cypher/api-client', '@cypher/validation'],
+  transpilePackages: [
+    '@cypher/tokens',
+    '@cypher/utils',
+    '@cypher/contracts',
+    '@cypher/api-client',
+    '@cypher/validation',
+  ],
   async redirects() {
     return [
       { source: '/', destination: '/discover', permanent: false },
