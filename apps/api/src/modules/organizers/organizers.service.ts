@@ -15,6 +15,14 @@ import {
   OrganizerVerificationStatus,
   type Prisma,
 } from '@prisma/client';
+import {
+  assertCategoryPriceTiers,
+  assertEndAfterStart,
+  assertEventDaysInSpan,
+  assertPublishCategories,
+  assertRegistrationWindow,
+  assertTeamSizes,
+} from '@cypher/validation';
 import { replaceEventDanceStyles } from '../../common/dance-styles';
 import { PrismaService } from '../../common/prisma.service';
 import { slugify, uniqueSlugCandidate } from '../../common/slug';
@@ -23,6 +31,13 @@ import { PaymentsService } from '../payments/payments.service';
 import { eventInclude, toOrganizerEventDetail } from '../events/events.mapper';
 import type { OrganizerEventDetailDto } from '../events/events.types';
 
+function runGate(fn: () => void): void {
+  try {
+    fn();
+  } catch (err) {
+    throw new BadRequestException(err instanceof Error ? err.message : 'Invalid input');
+  }
+}
 export type CreateOrganizerInput = {
   orgName: string;
   slug?: string;
@@ -71,6 +86,8 @@ export type CreateEventInput = {
   venueLongitude?: number | null;
   startTime: string;
   endTime?: string;
+  registrationOpensAt?: string | null;
+  registrationClosesAt?: string | null;
   posterUrl?: string;
   tags?: string[];
   styles?: string[];
@@ -93,6 +110,8 @@ export type UpdateEventInput = {
   venueLongitude?: number | null;
   startTime?: string;
   endTime?: string | null;
+  registrationOpensAt?: string | null;
+  registrationClosesAt?: string | null;
   posterUrl?: string | null;
   tags?: string[];
   styles?: string[];
@@ -296,11 +315,23 @@ export class OrganizersService {
     if (endTime && Number.isNaN(endTime.getTime())) {
       throw new BadRequestException('Invalid endTime');
     }
+    runGate(() => {
+      assertEndAfterStart(startTime, endTime);
+      assertRegistrationWindow({
+        opensAt: input.registrationOpensAt,
+        closesAt: input.registrationClosesAt,
+        startTime,
+      });
+    });
 
     const slug = await this.allocateEventSlug(input.slug?.trim() || slugify(input.title));
     const categories = (input.categories ?? []).filter((c) => c.entryType !== 'viewer');
     if (input.categories?.some((c) => c.entryType === 'viewer')) {
       throw new BadRequestException('Use audiencePass for viewer tickets, not categories[]');
+    }
+    for (const category of categories) {
+      const sizes = resolveCategorySizes(category);
+      runGate(() => assertTeamSizes(sizes.minTeamSize, sizes.maxTeamSize, sizes.entryType));
     }
     const paidPrices = [
       ...categories.map((c) => c.priceMinor ?? 0),
@@ -336,6 +367,9 @@ export class OrganizersService {
         : []),
     ];
 
+    const opensAt = parseOptionalDate(input.registrationOpensAt, 'registrationOpensAt');
+    const closesAt = parseOptionalDate(input.registrationClosesAt, 'registrationClosesAt');
+
     const event = await this.prisma.event.create({
       data: {
         organizerId,
@@ -349,6 +383,8 @@ export class OrganizersService {
         venueLongitude: coords.lng,
         startTime,
         endTime,
+        registrationOpensAt: opensAt,
+        registrationClosesAt: closesAt,
         posterUrl: input.posterUrl?.trim(),
         tags: input.tags ?? [],
         status: EventStatus.draft,
@@ -425,6 +461,48 @@ export class OrganizersService {
         data.endTime = endTime;
       }
     }
+    if (input.registrationOpensAt !== undefined) {
+      data.registrationOpensAt =
+        input.registrationOpensAt === null
+          ? null
+          : parseOptionalDate(input.registrationOpensAt, 'registrationOpensAt');
+    }
+    if (input.registrationClosesAt !== undefined) {
+      data.registrationClosesAt =
+        input.registrationClosesAt === null
+          ? null
+          : parseOptionalDate(input.registrationClosesAt, 'registrationClosesAt');
+    }
+
+    const nextStart =
+      input.startTime !== undefined ? new Date(input.startTime) : existing.startTime;
+    const nextEnd =
+      input.endTime === undefined
+        ? existing.endTime
+        : input.endTime === null
+          ? null
+          : new Date(input.endTime);
+    const nextOpens =
+      input.registrationOpensAt === undefined
+        ? existing.registrationOpensAt
+        : input.registrationOpensAt === null
+          ? null
+          : parseOptionalDate(input.registrationOpensAt, 'registrationOpensAt');
+    const nextCloses =
+      input.registrationClosesAt === undefined
+        ? existing.registrationClosesAt
+        : input.registrationClosesAt === null
+          ? null
+          : parseOptionalDate(input.registrationClosesAt, 'registrationClosesAt');
+
+    runGate(() => {
+      assertEndAfterStart(nextStart, nextEnd);
+      assertRegistrationWindow({
+        opensAt: nextOpens,
+        closesAt: nextCloses,
+        startTime: nextStart,
+      });
+    });
 
     const event = await this.prisma.event.update({
       where: { id: eventId },
@@ -466,13 +544,29 @@ export class OrganizersService {
 
     const existing = await this.prisma.event.findFirst({
       where: { id: eventId, organizerId },
-      include: { categories: true },
+      include: { categories: true, days: true },
     });
     if (!existing) {
       throw new NotFoundException('Event not found');
     }
-    if (existing.categories.length === 0) {
-      throw new BadRequestException('Add at least one category before publishing');
+    runGate(() => {
+      assertEndAfterStart(existing.startTime, existing.endTime);
+      assertRegistrationWindow({
+        opensAt: existing.registrationOpensAt,
+        closesAt: existing.registrationClosesAt,
+        startTime: existing.startTime,
+      });
+      assertPublishCategories(existing.categories);
+      if ((existing.days ?? []).length > 0) {
+        assertEventDaysInSpan(existing.days, existing.startTime, existing.endTime);
+      }
+    });
+    const paid = existing.categories.some((c) => c.priceMinor > 0);
+    if (paid) {
+      await this.assertPaidCategoriesAllowed(
+        organizerId,
+        existing.categories.map((c) => c.priceMinor),
+      );
     }
     if (existing.status === EventStatus.cancelled) {
       throw new BadRequestException('Cancelled events cannot be published');
@@ -653,6 +747,7 @@ export class OrganizersService {
         sortOrder: day.sortOrder ?? index,
       };
     });
+    runGate(() => assertEventDaysInSpan(normalized, event.startTime, event.endTime));
 
     await this.prisma.$transaction(async (tx) => {
       const existing = await tx.eventDay.findMany({ where: { eventId } });
@@ -710,6 +805,10 @@ export class OrganizersService {
       OrganizerMemberRole.editor,
     ]);
     await this.assertCategoryOwned(organizerId, eventId, categoryId);
+    const event = await this.prisma.event.findFirst({ where: { id: eventId, organizerId } });
+    if (!event) {
+      throw new NotFoundException('Event not found');
+    }
     await this.assertPaidCategoriesAllowed(
       organizerId,
       tiers.map((t) => t.priceMinor),
@@ -733,6 +832,12 @@ export class OrganizersService {
         maxQuantity: tier.maxQuantity ?? null,
       };
     });
+    runGate(() =>
+      assertCategoryPriceTiers(normalized, {
+        startTime: event.startTime,
+        createdAt: event.createdAt,
+      }),
+    );
 
     await this.prisma.$transaction(async (tx) => {
       await tx.categoryPriceTier.deleteMany({ where: { categoryId } });
@@ -1171,6 +1276,15 @@ export class OrganizersService {
   }
 }
 
+function parseOptionalDate(value: string | null | undefined, label: string): Date | null {
+  if (value == null || value === '') return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    throw new BadRequestException(`Invalid ${label}`);
+  }
+  return date;
+}
+
 function resolveEventType(value?: string): EventType {
   if (!value) {
     return EventType.battle;
@@ -1210,6 +1324,9 @@ function resolveCategorySizes(input: {
   }
   if (entryType === CategoryEntryType.solo && (minTeamSize !== 1 || maxTeamSize !== 1)) {
     return { entryType: CategoryEntryType.solo, minTeamSize: 1, maxTeamSize: 1 };
+  }
+  if (input.minTeamSize != null && input.maxTeamSize != null && input.minTeamSize > input.maxTeamSize) {
+    throw new BadRequestException('Min team size cannot exceed max');
   }
   return { entryType, minTeamSize, maxTeamSize };
 }

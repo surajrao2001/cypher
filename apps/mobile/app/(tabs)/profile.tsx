@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { AuthChipLoading, friendlyError, InlineNotice } from '@/components/AsyncState';
 import { BrandLogo } from '@/components/BrandLogo';
 import { GoogleGlyph } from '@/components/GoogleGlyph';
 import { Button } from '@/components/ui/Button';
@@ -37,7 +38,7 @@ export default function ProfileScreen() {
   const [pending, setPending] = useState(false);
   const [authPending, setAuthPending] = useState<Pending>(null);
   const [email, setEmail] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>(null);
   const [info, setInfo] = useState<string | null>(null);
 
   const canContinue = name.trim().length > 1 && city.trim().length > 1;
@@ -65,7 +66,7 @@ export default function ProfileScreen() {
     try {
       await auth.signInWithProvider(provider);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Sign-in failed');
+      setError(err);
     } finally {
       setAuthPending(null);
     }
@@ -79,7 +80,7 @@ export default function ProfileScreen() {
       await auth.signInWithEmail(email);
       setInfo(`Check ${email.trim()} for a sign-in link.`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not send email link');
+      setError(err);
     } finally {
       setAuthPending(null);
     }
@@ -97,7 +98,7 @@ export default function ProfileScreen() {
       });
       router.replace('/(tabs)/discover');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not save profile');
+      setError(err);
     } finally {
       setPending(false);
     }
@@ -105,8 +106,8 @@ export default function ProfileScreen() {
 
   if (!auth.ready) {
     return (
-      <SafeAreaView className="flex-1 bg-bg items-center justify-center" edges={['top']}>
-        <Text variant="caption">Loading session…</Text>
+      <SafeAreaView className="flex-1 bg-bg px-4" edges={['top']}>
+        <AuthChipLoading />
       </SafeAreaView>
     );
   }
@@ -174,7 +175,9 @@ export default function ProfileScreen() {
               </Button>
             </View>
             {info ? <Text variant="caption">{info}</Text> : null}
-            {error ? <Text variant="caption" className="text-danger">{error}</Text> : null}
+            {error ? (
+              <InlineNotice tone="warn">{friendlyError(error, 'Sign-in failed')}</InlineNotice>
+            ) : null}
           </View>
         </ScrollView>
       </SafeAreaView>
@@ -193,13 +196,80 @@ export default function ProfileScreen() {
               {profile?.dancerName ?? profile?.name ?? 'Dancer'}
             </Text>
             <Text variant="caption">{profile?.city ?? 'City not set'}</Text>
+            {profile?.bio ? <Text variant="caption">{profile.bio}</Text> : null}
           </View>
           <View className="mt-8 gap-3 rounded-sm border border-border bg-surface px-4 py-5">
             <Text variant="caption">Crew · {profile?.crew ?? '—'}</Text>
             <Text variant="caption">
               Styles · {profile?.styles?.length ? profile.styles.join(', ') : '—'}
             </Text>
+            <Text variant="caption">
+              Instagram · {profile?.instagram ? `@${profile.instagram}` : '—'}
+            </Text>
+            <Text variant="caption">
+              Orgs you run · {auth.me?.organizerMemberships.length ?? 0}
+            </Text>
           </View>
+          <Field label="Update dancer name">
+            <TextInput
+              value={name || profile?.dancerName || ''}
+              onChangeText={setName}
+              placeholder="Name on the floor"
+              placeholderTextColor={colors.muted}
+              className={inputClass}
+              style={{ fontFamily: fonts.bodyFamily, color: colors.ink }}
+            />
+          </Field>
+          <Field label="City">
+            <TextInput
+              value={city || profile?.city || ''}
+              onChangeText={setCity}
+              placeholder="City"
+              placeholderTextColor={colors.muted}
+              className={inputClass}
+              style={{ fontFamily: fonts.bodyFamily, color: colors.ink }}
+            />
+          </Field>
+          <Field label="Crew">
+            <TextInput
+              value={crew || profile?.crew || ''}
+              onChangeText={setCrew}
+              placeholder="Crew"
+              placeholderTextColor={colors.muted}
+              className={inputClass}
+              style={{ fontFamily: fonts.bodyFamily, color: colors.ink }}
+            />
+          </Field>
+          <Button
+            className="mt-6"
+            loading={pending}
+            onPress={() =>
+              void (async () => {
+                setPending(true);
+                setError(null);
+                try {
+                  await auth.api.updateProfile({
+                    dancerName: (name || profile?.dancerName || '').trim() || undefined,
+                    city: (city || profile?.city || '').trim() || null,
+                    crew: (crew || profile?.crew || '').trim() || null,
+                    styles: styles.length ? styles : profile?.styles,
+                  });
+                  await auth.refresh();
+                } catch (err) {
+                  setError(err);
+                } finally {
+                  setPending(false);
+                }
+              })()
+            }
+          >
+            Save profile
+          </Button>
+          {error ? (
+            <View className="mt-3">
+              <InlineNotice tone="warn">{friendlyError(error, 'Could not update')}</InlineNotice>
+            </View>
+          ) : null}
           <Button className="mt-8" variant="ghost" onPress={() => void auth.signOut()}>
             Sign out
           </Button>
@@ -287,9 +357,9 @@ export default function ProfileScreen() {
           </View>
 
           {error ? (
-            <Text variant="caption" className="mt-6 text-danger">
-              {error}
-            </Text>
+            <View className="mt-6">
+              <InlineNotice tone="warn">{friendlyError(error, 'Could not save profile')}</InlineNotice>
+            </View>
           ) : null}
 
           <Button className="mt-8" size="lg" loading={pending} disabled={!canContinue} onPress={() => void onSave()}>

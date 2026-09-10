@@ -1,4 +1,4 @@
-import { ChevronLeft } from 'lucide-react';
+import { ByndIcon } from '@/components/icons/bynd8';
 import Link from 'next/link';
 
 export type BreadcrumbItem = {
@@ -21,7 +21,7 @@ export function PageBreadcrumb({ items }: { items: BreadcrumbItem[] }) {
           href={parent.href}
           className="inline-flex items-center gap-1 text-sm text-text-muted transition-colors hover:text-accent md:hidden"
         >
-          <ChevronLeft className="h-4 w-4" aria-hidden />
+          <ByndIcon name="chevronLeft" className="size-4" />
           {parent.label}
         </Link>
       ) : null}

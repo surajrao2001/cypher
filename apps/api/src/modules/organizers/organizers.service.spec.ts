@@ -94,7 +94,13 @@ describe('OrganizersService', () => {
       id: 'evt-1',
       organizerId: 'org-1',
       status: EventStatus.draft,
-      categories: [{ id: 'cat-1' }],
+      startTime: new Date('2026-10-01T12:00:00.000Z'),
+      endTime: null,
+      registrationOpensAt: null,
+      registrationClosesAt: null,
+      createdAt: new Date('2026-09-01T12:00:00.000Z'),
+      days: [],
+      categories: [{ id: 'cat-1', entryType: 'solo', priceMinor: 0 }],
     });
     prisma.event.update.mockResolvedValue({
       id: 'evt-1',
@@ -105,6 +111,8 @@ describe('OrganizersService', () => {
       eventType: 'battle',
       city: 'Mumbai',
       venue: null,
+      venueLatitude: null,
+      venueLongitude: null,
       startTime: new Date('2026-10-01T12:00:00.000Z'),
       endTime: null,
       registrationOpensAt: null,
@@ -113,9 +121,13 @@ describe('OrganizersService', () => {
       tags: [],
       featured: false,
       status: EventStatus.published,
+      createdAt: new Date('2026-09-01T12:00:00.000Z'),
       organizer: { orgName: 'MCB', slug: 'mcb' },
       danceStyles: [{ style: { id: 'style-1', slug: 'breaking', name: 'Breaking' } }],
       mediaLinks: [],
+      days: [],
+      updates: [],
+      lineup: [],
       categories: [
         {
           id: 'cat-1',
@@ -128,6 +140,8 @@ describe('OrganizersService', () => {
           entryType: 'solo',
           minTeamSize: 1,
           maxTeamSize: 1,
+          priceTiers: [],
+          validDays: [],
         },
       ],
     });
@@ -182,6 +196,8 @@ describe('OrganizersService', () => {
         eventType: 'battle',
         city: 'Mumbai',
         venue: null,
+        venueLatitude: null,
+        venueLongitude: null,
         startTime: new Date('2026-10-01T12:00:00.000Z'),
         endTime: null,
         registrationOpensAt: null,
@@ -190,9 +206,13 @@ describe('OrganizersService', () => {
         tags: [],
         featured: false,
         status: EventStatus.draft,
+        createdAt: new Date('2026-09-01T12:00:00.000Z'),
         organizer: { orgName: 'MCB', slug: 'mcb' },
         danceStyles: [{ style: { id: 'style-1', slug: 'breaking', name: 'Breaking' } }],
         mediaLinks: [],
+        days: [],
+        updates: [],
+        lineup: [],
         categories: [
           {
             id: 'cat-2',
@@ -205,6 +225,8 @@ describe('OrganizersService', () => {
             entryType: 'team',
             minTeamSize: 2,
             maxTeamSize: 2,
+            priceTiers: [],
+            validDays: [],
           },
         ],
       });
@@ -311,6 +333,8 @@ describe('OrganizersService', () => {
         eventType: 'battle',
         city: 'Mumbai',
         venue: null,
+        venueLatitude: null,
+        venueLongitude: null,
         startTime: new Date('2026-10-01T12:00:00.000Z'),
         endTime: null,
         registrationOpensAt: null,
@@ -319,6 +343,7 @@ describe('OrganizersService', () => {
         tags: [],
         featured: false,
         status: EventStatus.draft,
+        createdAt: new Date('2026-09-01T12:00:00.000Z'),
         organizer: { orgName: 'MCB', slug: 'mcb' },
         danceStyles: [],
         mediaLinks: [
@@ -334,6 +359,9 @@ describe('OrganizersService', () => {
             createdAt: new Date('2026-09-05T12:00:00.000Z'),
           },
         ],
+        days: [],
+        updates: [],
+        lineup: [],
         categories: [
           {
             id: 'cat-1',
@@ -346,6 +374,8 @@ describe('OrganizersService', () => {
             entryType: 'solo',
             minTeamSize: 1,
             maxTeamSize: 1,
+            priceTiers: [],
+            validDays: [],
           },
         ],
       });

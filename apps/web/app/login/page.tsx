@@ -4,6 +4,7 @@ import { Suspense } from 'react';
 import { LoginForm } from '@/features/auth/LoginForm';
 import { LoginStoryCarousel } from '@/features/auth/LoginStoryCarousel';
 import { RequireGuest } from '@/features/auth/AuthGates';
+import { PageLoading } from '@/features/shell/AsyncState';
 
 export const metadata: Metadata = { title: 'Sign in' };
 
@@ -18,7 +19,7 @@ export default function LoginPage() {
           className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,104,0,0.1),transparent_50%),radial-gradient(ellipse_at_bottom_left,rgba(199,255,0,0.05),transparent_45%)] lg:bg-[radial-gradient(ellipse_at_top,rgba(255,104,0,0.08),transparent_55%)]"
         />
         <div className="relative z-10 w-full">
-          <Suspense fallback={<p className="text-sm text-text-muted">Loading…</p>}>
+          <Suspense fallback={<PageLoading variant="form" label="Loading sign-in" />}>
             <RequireGuest>
               <LoginForm />
             </RequireGuest>

@@ -258,6 +258,14 @@ export class CreateOrganizerEventDto {
   endTime?: string;
 
   @IsOptional()
+  @IsString()
+  registrationOpensAt?: string | null;
+
+  @IsOptional()
+  @IsString()
+  registrationClosesAt?: string | null;
+
+  @IsOptional()
   @IsUrl({ require_protocol: true, protocols: ['http', 'https'] })
   @MaxLength(500)
   posterUrl?: string;
@@ -338,6 +346,14 @@ export class UpdateOrganizerEventDto {
   @IsOptional()
   @IsString()
   endTime?: string | null;
+
+  @IsOptional()
+  @IsString()
+  registrationOpensAt?: string | null;
+
+  @IsOptional()
+  @IsString()
+  registrationClosesAt?: string | null;
 
   @IsOptional()
   @IsUrl({ require_protocol: true, protocols: ['http', 'https'] })

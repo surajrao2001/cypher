@@ -1,6 +1,6 @@
 import { type Href, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Linking, Pressable, ScrollView, View } from 'react-native';
+import { Linking, Pressable, ScrollView, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type {
   OrganizerDto,
@@ -8,17 +8,20 @@ import type {
   OrganizerEventRegistrationsResponse,
 } from '@cypher/contracts';
 
+import { friendlyError, InlineNotice, ListLoading, PageLoading, SoftError } from '@/components/AsyncState';
 import { Button } from '@/components/ui/Button';
 import { Text } from '@/components/ui/Text';
 import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/format';
+import { colors } from '@/lib/theme';
 import { webBaseUrl } from '@/lib/web';
 
-type TabId = 'overview' | 'registrations' | 'media' | 'payouts';
+type TabId = 'overview' | 'registrations' | 'updates' | 'media' | 'payouts';
 
 const TABS: Array<{ id: TabId; label: string }> = [
   { id: 'overview', label: 'Overview' },
   { id: 'registrations', label: 'Registrations' },
+  { id: 'updates', label: 'Updates' },
   { id: 'media', label: 'Media' },
   { id: 'payouts', label: 'Payouts' },
 ];
@@ -39,7 +42,8 @@ export default function EventManageScreen() {
   const [payoutStatus, setPayoutStatus] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<unknown>(null);
+  const [actionError, setActionError] = useState<unknown>(null);
 
   const load = useCallback(async () => {
     if (!slug || !eventId || !auth.token) return;
@@ -55,9 +59,9 @@ export default function EventManageScreen() {
       setRegs(registrations);
       setPayoutReady(Boolean(payout?.payoutReady));
       setPayoutStatus(payout?.status ?? null);
-      setError(null);
+      setLoadError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Load failed');
+      setLoadError(err);
     }
   }, [auth.api, auth.token, eventId, slug]);
 
@@ -78,7 +82,7 @@ export default function EventManageScreen() {
     if (!org || !event) return;
     setPending(true);
     setMessage(null);
-    setError(null);
+    setActionError(null);
     try {
       const updated =
         event.status === 'published'
@@ -87,18 +91,16 @@ export default function EventManageScreen() {
       setEvent(updated);
       setMessage(updated.status === 'published' ? 'Published to Discover.' : 'Unpublished.');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Publish failed');
+      setActionError(err);
     } finally {
       setPending(false);
     }
   }
 
-  if (error && !event) {
+  if (loadError && !event) {
     return (
       <SafeAreaView className="flex-1 bg-bg px-4">
-        <Text variant="caption" className="mt-8 text-danger">
-          {error}
-        </Text>
+        <SoftError title="Couldn’t load event" error={loadError} onRetry={() => void load()} />
       </SafeAreaView>
     );
   }
@@ -106,14 +108,13 @@ export default function EventManageScreen() {
   if (!event || !org) {
     return (
       <SafeAreaView className="flex-1 bg-bg px-4">
-        <Text variant="caption" className="mt-8">
-          Loading…
-        </Text>
+        <PageLoading />
       </SafeAreaView>
     );
   }
 
   const editHref = `/organize/${String(slug)}/events/${String(eventId)}/edit` as Href;
+  const checkInHref = `/organize/${String(slug)}/events/${String(eventId)}/check-in` as Href;
 
   return (
     <SafeAreaView className="flex-1 bg-bg" edges={['bottom']}>
@@ -134,13 +135,14 @@ export default function EventManageScreen() {
           <Button loading={pending} variant="lime" onPress={() => void togglePublish()}>
             {event.status === 'published' ? 'Unpublish' : 'Publish'}
           </Button>
+          <Button variant="secondary" onPress={() => router.push(checkInHref)}>
+            Check-in
+          </Button>
         </View>
 
         {message ? <Text variant="caption">{message}</Text> : null}
-        {error ? (
-          <Text variant="caption" className="text-danger">
-            {error}
-          </Text>
+        {actionError ? (
+          <InlineNotice tone="warn">{friendlyError(actionError, 'Publish failed')}</InlineNotice>
         ) : null}
 
         <View className="mt-2 flex-row flex-wrap gap-2 border-b border-border pb-2">
@@ -260,9 +262,13 @@ export default function EventManageScreen() {
                 )}
               </>
             ) : (
-              <Text variant="caption">Loading registrations…</Text>
+              <ListLoading rows={3} />
             )}
           </View>
+        ) : null}
+
+        {tab === 'updates' ? (
+          <MobileUpdatesTab organizerId={org.id} eventId={event.id} />
         ) : null}
 
         {tab === 'media' ? (
@@ -303,11 +309,11 @@ export default function EventManageScreen() {
               variant="secondary"
               onPress={() =>
                 void Linking.openURL(
-                  `${webBaseUrl().replace(/\/$/, '')}/organize/${org.slug}?payout=1`,
+                  `${webBaseUrl().replace(/\/$/, '')}/organize/${org.slug}/payouts`,
                 )
               }
             >
-              Open settlement on web
+              Continue on browser
             </Button>
           </View>
         ) : null}
@@ -315,3 +321,83 @@ export default function EventManageScreen() {
     </SafeAreaView>
   );
 }
+
+function MobileUpdatesTab({ organizerId, eventId }: { organizerId: string; eventId: string }) {
+  const auth = useAuth();
+  const [items, setItems] = useState<
+    Array<{ id: string; title: string | null; body: string; publishedAt: string }>
+  >([]);
+  const [body, setBody] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<unknown>(null);
+
+  useEffect(() => {
+    void auth.api
+      .listEventUpdates(organizerId, eventId)
+      .then((res) =>
+        setItems(
+          res.items.map((item) => ({
+            id: item.id,
+            title: item.title,
+            body: item.body,
+            publishedAt: item.publishedAt,
+          })),
+        ),
+      )
+      .catch(() => setItems([]));
+  }, [auth.api, eventId, organizerId]);
+
+  async function post() {
+    if (!body.trim()) return;
+    setBusy(true);
+    setMsg(null);
+    setActionError(null);
+    try {
+      await auth.api.createEventUpdate(organizerId, eventId, { body: body.trim() });
+      setBody('');
+      const res = await auth.api.listEventUpdates(organizerId, eventId);
+      setItems(
+        res.items.map((item) => ({
+          id: item.id,
+          title: item.title,
+          body: item.body,
+          publishedAt: item.publishedAt,
+        })),
+      );
+      setMsg('Posted.');
+    } catch (err) {
+      setActionError(err);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <View className="gap-3">
+      <TextInput
+        value={body}
+        onChangeText={setBody}
+        placeholder="Post an update for dancers"
+        placeholderTextColor={colors.muted}
+        multiline
+        className="min-h-[88px] border border-border bg-elevated px-3 py-2 text-ink"
+      />
+      <Button loading={busy} onPress={() => void post()} disabled={!body.trim()}>
+        Post update
+      </Button>
+      {msg ? <Text variant="caption">{msg}</Text> : null}
+      {actionError ? (
+        <InlineNotice tone="warn">{friendlyError(actionError, 'Could not post update')}</InlineNotice>
+      ) : null}
+      {items.map((item) => (
+        <View key={item.id} className="gap-1 border border-border px-3 py-2">
+          {item.title ? <Text variant="body" className="font-semibold">{item.title}</Text> : null}
+          <Text variant="caption">{item.body}</Text>
+          <Text variant="caption">{new Date(item.publishedAt).toLocaleString()}</Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+

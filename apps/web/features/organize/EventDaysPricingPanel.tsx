@@ -2,6 +2,7 @@
 
 import type { OrganizerEventDetailDto } from '@cypher/contracts';
 import { formatMinorUnits } from '@cypher/utils';
+import { assertEventDaysInSpan } from '@cypher/validation';
 import { useEffect, useMemo, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -111,14 +112,16 @@ export function EventDaysPricingPanel({ organizerId, eventId, event, onUpdated }
       if (days.length < 2) {
         throw new Error('Multi-day needs at least two days');
       }
+      const payload = days.map((day, index) => ({
+        id: day.id,
+        label: day.label.trim() || `Day ${String(index + 1)}`,
+        startsAt: toIsoFromLocal(day.startsAt),
+        endsAt: day.endsAt ? toIsoFromLocal(day.endsAt) : null,
+        sortOrder: index,
+      }));
+      assertEventDaysInSpan(payload, event.startTime, event.endTime);
       const updated = await api.replaceOrganizerEventDays(organizerId, eventId, {
-        days: days.map((day, index) => ({
-          id: day.id,
-          label: day.label.trim() || `Day ${String(index + 1)}`,
-          startsAt: toIsoFromLocal(day.startsAt),
-          endsAt: day.endsAt ? toIsoFromLocal(day.endsAt) : null,
-          sortOrder: index,
-        })),
+        days: payload,
       });
       onUpdated(updated);
       toastResolve(tid, toastCopy.daysSaved);

@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
 
 import { BrandLogo } from '@/components/brand/BrandLogo';
+import { Skeleton } from '@/components/ui/skeleton';
 import { writeAccessToken } from '@/lib/auth-token';
 import { safeNextPath } from '@/lib/auth-routes';
 import { postOAuthPopupResult } from '@/lib/oauth-popup';
@@ -17,7 +18,10 @@ function AuthCallbackShell({ children }: { children: React.ReactNode }) {
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(255,104,0,0.12),transparent_55%)]"
       />
       <BrandLogo variant="mark" size="lg" href={null} priority />
-      <p className="relative z-10 text-sm text-text-muted">{children}</p>
+      <div className="relative z-10 flex w-full max-w-xs flex-col items-center gap-3">
+        <Skeleton className="h-1.5 w-28 rounded-full" />
+        <p className="text-sm text-text-muted">{children}</p>
+      </div>
     </div>
   );
 }

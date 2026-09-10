@@ -1,8 +1,8 @@
 import type { EventDetailDto } from '@cypher/contracts';
 import { formatEventDateRange, formatMinorUnits, spotsLeft } from '@cypher/utils';
-import { Calendar, MapPin, Ticket, Users } from 'lucide-react';
 import type { ReactNode } from 'react';
 
+import { ByndIcon } from '@/components/icons/bynd8';
 import { VenueMapView } from '@/features/discovery/VenueMapView';
 import { spotsTone } from '@/features/discovery/catalog';
 
@@ -77,7 +77,7 @@ export function EventDetailMeta({ event }: Props) {
   return (
     <div className="space-y-4">
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <InsightCell icon={<Calendar className="h-3.5 w-3.5 text-accent" />} label="When">
+        <InsightCell icon={<ByndIcon name="events" className="size-3.5 text-accent" />} label="When">
           <p className="font-medium leading-snug">
             {formatEventDateRange(event.startTime, event.endTime)}
           </p>
@@ -88,12 +88,12 @@ export function EventDetailMeta({ event }: Props) {
           ) : null}
         </InsightCell>
 
-        <InsightCell icon={<MapPin className="h-3.5 w-3.5 text-accent" />} label="Where">
+        <InsightCell icon={<ByndIcon name="pin" className="size-3.5 text-accent" />} label="Where">
           <p className="font-medium leading-snug">{event.venue ?? event.city}</p>
           <p className="mt-1 text-xs text-text-secondary">{event.city}</p>
         </InsightCell>
 
-        <InsightCell icon={<Users className="h-3.5 w-3.5 text-accent" />} label="Floor">
+        <InsightCell icon={<ByndIcon name="crew" className="size-3.5 text-accent" />} label="Floor">
           <p className={`font-medium ${tone.className}`}>{tone.label}</p>
           <p className="mt-1 text-xs text-text-secondary">
             {event.spotsConfirmed} confirmed
@@ -102,7 +102,7 @@ export function EventDetailMeta({ event }: Props) {
           </p>
         </InsightCell>
 
-        <InsightCell icon={<Ticket className="h-3.5 w-3.5 text-accent" />} label="Tickets">
+        <InsightCell icon={<ByndIcon name="tickets" className="size-3.5 text-accent" />} label="Tickets">
           <p className="font-medium leading-snug">{ticketLine}</p>
           <p className="mt-1 text-xs text-text-secondary">Hosted by {event.organizerName}</p>
         </InsightCell>

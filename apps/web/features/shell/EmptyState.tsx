@@ -1,6 +1,6 @@
-import { Compass } from 'lucide-react';
 import type { ReactNode } from 'react';
 
+import { ByndIcon } from '@/components/icons/bynd8';
 import { cn } from '@/lib/utils';
 
 interface EmptyStateProps {
@@ -30,7 +30,7 @@ export function EmptyState({ kicker, title, body, className, children }: EmptySt
 export function FloorHint() {
   return (
     <p className="flex items-center gap-2 text-xs uppercase tracking-[0.16em] text-text-muted">
-      <Compass className="h-4 w-4 text-accent" />
+      <ByndIcon name="discover" className="size-4 text-accent" />
       Live in Discover while this floor gets wired.
     </p>
   );

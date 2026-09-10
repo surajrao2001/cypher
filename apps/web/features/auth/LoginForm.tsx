@@ -4,10 +4,12 @@ import { useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 
 import { BrandLogo } from '@/components/brand/BrandLogo';
+import { ByndIcon } from '@/components/icons/bynd8';
 import { GoogleGlyph } from '@/components/brand/GoogleGlyph';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/features/auth/AuthProvider';
+import { friendlyError, InlineNotice } from '@/features/shell/AsyncState';
 import type { SocialProvider } from '@/lib/supabase/browser';
 import { cn } from '@/lib/utils';
 
@@ -38,7 +40,7 @@ export function LoginForm() {
       rememberNext();
       await auth.signInWithProvider(provider);
     } catch (error) {
-      const text = error instanceof Error ? error.message : 'Could not start sign-in.';
+      const text = friendlyError(error, 'Could not start sign-in.');
       if (text !== 'Sign-in was cancelled') {
         setMessage(text);
       }
@@ -55,7 +57,7 @@ export function LoginForm() {
       await auth.signInWithEmail(email);
       setInfo(`Check ${email.trim()} for a sign-in link. You can close this tab after you open it.`);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Could not send email link.');
+      setMessage(friendlyError(error, 'Could not send email link.'));
     } finally {
       setPending(null);
     }
@@ -127,14 +129,23 @@ export function LoginForm() {
             className="h-12 w-full rounded-sm normal-case tracking-normal"
             disabled={pending !== null || !email.trim()}
           >
+            <ByndIcon name="signIn" />
             {pending === 'email' ? 'Sending link…' : 'Email me a sign-in link'}
           </Button>
         </form>
       </div>
 
-      {info ? <p className="mt-4 text-sm text-text-secondary">{info}</p> : null}
-      {message ? <p className="mt-4 text-sm text-error">{message}</p> : null}
-      {auth.error && !message ? <p className="mt-4 text-sm text-error">{auth.error}</p> : null}
+      {info ? <InlineNotice className="mt-4">{info}</InlineNotice> : null}
+      {message ? (
+        <InlineNotice tone="warn" className="mt-4">
+          {message}
+        </InlineNotice>
+      ) : null}
+      {auth.error && !message ? (
+        <InlineNotice tone="warn" className="mt-4">
+          {friendlyError(auth.error)}
+        </InlineNotice>
+      ) : null}
 
       <p className="mt-10 text-[11px] uppercase tracking-[0.18em] text-text-muted">
         The culture is the centre. BYND8 builds around it.

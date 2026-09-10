@@ -3,6 +3,7 @@ import { AuthProvider, type Profile } from '@prisma/client';
 import { replaceProfileDanceStyles } from '../../common/dance-styles';
 import { PrismaService } from '../../common/prisma.service';
 import type { CompleteOnboardingDto } from './identity.dto';
+import type { UpdateProfileDto } from './identity.dto';
 
 export type ResolvedUser = {
   userId: string;
@@ -121,6 +122,7 @@ export class IdentityService {
         styles: profile.danceStyles.map((row) => row.style.name),
         instagram: profile.instagram,
         avatarUrl: profile.avatarUrl,
+        bio: profile.bio,
         platformRole: profile.platformRole,
         status: profile.status,
       },
@@ -148,6 +150,34 @@ export class IdentityService {
       },
     });
     await replaceProfileDanceStyles(this.prisma, userId, input.styles ?? []);
+    return this.getMe(userId, jwtRole);
+  }
+
+  async updateProfile(userId: string, input: UpdateProfileDto, jwtRole: string) {
+    const profile = await this.ensureProfile(userId);
+    const completing = profile.onboardedAt === null;
+    if (completing && (!input.dancerName?.trim() || !input.city?.trim())) {
+      throw new ForbiddenException('Dancer name and city are required to complete onboarding');
+    }
+    await this.prisma.profile.update({
+      where: { userId },
+      data: {
+        name: input.name === undefined ? undefined : input.name.trim(),
+        dancerName: input.dancerName === undefined ? undefined : input.dancerName.trim(),
+        city: input.city === undefined ? undefined : input.city?.trim() || null,
+        crew: input.crew === undefined ? undefined : input.crew?.trim() || null,
+        instagram:
+          input.instagram === undefined
+            ? undefined
+            : input.instagram?.replace(/^@/, '').trim() || null,
+        bio: input.bio === undefined ? undefined : input.bio?.trim() || null,
+        avatarUrl: input.avatarUrl === undefined ? undefined : input.avatarUrl?.trim() || null,
+        onboardedAt: completing ? new Date() : undefined,
+      },
+    });
+    if (input.styles !== undefined) {
+      await replaceProfileDanceStyles(this.prisma, userId, input.styles);
+    }
     return this.getMe(userId, jwtRole);
   }
 

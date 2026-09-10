@@ -4,15 +4,12 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, type ReactNode } from 'react';
 
 import { useAuth } from '@/features/auth/AuthProvider';
+import { PageLoading, SoftError } from '@/features/shell/AsyncState';
 import { loginUrl, requiresOnboardingComplete, safeNextPath } from '@/lib/auth-routes';
-
-function GateMessage({ children }: { children: ReactNode }) {
-  return <p className="px-6 py-16 text-sm text-text-muted">{children}</p>;
-}
 
 /** Soft placeholder — avoid full-screen takeover copy during redirects / sign-out. */
 function GateQuiet() {
-  return <div className="min-h-[40vh] bg-bg" aria-busy="true" aria-label="Loading" />;
+  return <PageLoading variant="page" className="min-h-[40vh]" label="Loading" />;
 }
 
 /** Blocks children until session is known; redirects anonymous users to login. */
@@ -52,11 +49,18 @@ export function RequireAuth({
     return <GateQuiet />;
   }
   if (!auth.me) {
-    return (
-      <GateMessage>
-        {auth.error ? `Signed in, but profile failed to load: ${auth.error}` : 'Loading your account…'}
-      </GateMessage>
-    );
+    if (auth.error) {
+      return (
+        <div className="px-4 py-8 md:px-8">
+          <SoftError
+            title="Couldn’t load your account"
+            error={auth.error}
+            onRetry={() => void auth.refresh()}
+          />
+        </div>
+      );
+    }
+    return <PageLoading variant="profile" label="Loading your account" />;
   }
   const mustOnboard = requireOnboarded || requiresOnboardingComplete(pathname);
   if (mustOnboard && auth.me.needsOnboarding) {

@@ -49,6 +49,42 @@ function categoryPriceLabel(category: {
   return price;
 }
 
+function EventUpdatesFeed({
+  updates,
+}: {
+  updates: Array<{
+    id: string;
+    title: string | null;
+    body: string;
+    posterUrl: string | null;
+  }>;
+}) {
+  if (updates.length === 0) return null;
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Updates</CardTitle>
+        <CardDescription>Latest from the organizer.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <ul className="space-y-4">
+          {updates.map((update) => (
+            <li key={update.id} className="border-b border-border pb-4 last:border-0">
+              {update.title ? <p className="font-semibold text-text-primary">{update.title}</p> : null}
+              {update.posterUrl ? (
+                <div className="mt-2 overflow-hidden rounded-md border border-border bg-elevated">
+                  <img src={update.posterUrl} alt="" className="max-h-96 w-full object-cover" />
+                </div>
+              ) : null}
+              <p className="mt-1 whitespace-pre-wrap text-sm text-text-secondary">{update.body}</p>
+            </li>
+          ))}
+        </ul>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default async function EventDetailPage({ params }: EventDetailPageProps) {
   const { slug } = await params;
   const event = await getServerApi().getEvent(slug).catch(() => null);
@@ -200,6 +236,8 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
         ) : null}
 
         <EventMediaSection links={event.mediaLinks ?? []} />
+
+        <EventUpdatesFeed updates={event.updates ?? []} />
       </div>
 
       <StickyRegisterBar event={event} spotsLeft={left} />

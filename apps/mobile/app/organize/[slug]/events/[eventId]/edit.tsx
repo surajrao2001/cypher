@@ -4,6 +4,7 @@ import { Alert, ScrollView, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { OrganizerDto, OrganizerEventDetailDto } from '@cypher/contracts';
 
+import { friendlyError, InlineNotice, PageLoading, SoftError } from '@/components/AsyncState';
 import { PosterPicker } from '@/components/PosterPicker';
 import { Button } from '@/components/ui/Button';
 import { Text } from '@/components/ui/Text';
@@ -37,7 +38,8 @@ export default function EventEditScreen() {
   const [newCatTeam, setNewCatTeam] = useState('1');
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<unknown>(null);
+  const [actionError, setActionError] = useState<unknown>(null);
   const [mediaTitle, setMediaTitle] = useState('');
   const [mediaUrl, setMediaUrl] = useState('');
   const [audienceEnabled, setAudienceEnabled] = useState(false);
@@ -71,9 +73,9 @@ export default function EventEditScreen() {
       const detail = await auth.api.getOrganizerEvent(organizer.id, eventId);
       setOrg(organizer);
       sync(detail);
-      setError(null);
+      setLoadError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Load failed');
+      setLoadError(err);
     }
   }, [auth.api, auth.token, eventId, slug]);
 
@@ -85,7 +87,7 @@ export default function EventEditScreen() {
     if (!org || !event) return;
     setPending(true);
     setMessage(null);
-    setError(null);
+    setActionError(null);
     try {
       const updated = await auth.api.updateOrganizerEvent(org.id, event.id, {
         posterUrl: posterUrl.trim() || null,
@@ -99,7 +101,7 @@ export default function EventEditScreen() {
       sync(updated);
       setMessage('Event saved.');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Save failed');
+      setActionError(err);
     } finally {
       setPending(false);
     }
@@ -109,7 +111,7 @@ export default function EventEditScreen() {
     if (!org || !event) return;
     setPending(true);
     setMessage(null);
-    setError(null);
+    setActionError(null);
     try {
       const updated = await auth.api.updateOrganizerEventCategory(org.id, event.id, row.id, {
         name: row.name.trim(),
@@ -120,7 +122,7 @@ export default function EventEditScreen() {
       sync(updated);
       setMessage(`Updated ${row.name.trim()}.`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not update category');
+      setActionError(err);
     } finally {
       setPending(false);
     }
@@ -141,13 +143,13 @@ export default function EventEditScreen() {
     if (!org || !event) return;
     setPending(true);
     setMessage(null);
-    setError(null);
+    setActionError(null);
     try {
       const updated = await auth.api.deleteOrganizerEventCategory(org.id, event.id, row.id);
       sync(updated);
       setMessage(`Deleted ${row.name}.`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not delete category');
+      setActionError(err);
     } finally {
       setPending(false);
     }
@@ -157,12 +159,12 @@ export default function EventEditScreen() {
     if (!org || !event) return;
     const name = newCatName.trim();
     if (!name) {
-      setError('Category name required');
+      setActionError('Category name required');
       return;
     }
     setPending(true);
     setMessage(null);
-    setError(null);
+    setActionError(null);
     try {
       const updated = await auth.api.addOrganizerEventCategory(org.id, event.id, {
         name,
@@ -174,7 +176,7 @@ export default function EventEditScreen() {
       setNewCatName('');
       setMessage('Category added.');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not add category');
+      setActionError(err);
     } finally {
       setPending(false);
     }
@@ -183,12 +185,12 @@ export default function EventEditScreen() {
   async function addMediaLink() {
     if (!org || !event) return;
     if (!mediaTitle.trim() || !mediaUrl.trim()) {
-      setError('Media title and URL required');
+      setActionError('Media title and URL required');
       return;
     }
     setPending(true);
     setMessage(null);
-    setError(null);
+    setActionError(null);
     try {
       const updated = await auth.api.addOrganizerEventMediaLink(org.id, event.id, {
         title: mediaTitle.trim(),
@@ -199,7 +201,7 @@ export default function EventEditScreen() {
       setMediaUrl('');
       setMessage('Media link added.');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not add media link');
+      setActionError(err);
     } finally {
       setPending(false);
     }
@@ -209,24 +211,22 @@ export default function EventEditScreen() {
     if (!org || !event) return;
     setPending(true);
     setMessage(null);
-    setError(null);
+    setActionError(null);
     try {
       const updated = await auth.api.deleteOrganizerEventMediaLink(org.id, event.id, mediaLinkId);
       sync(updated);
       setMessage('Media link removed.');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not remove media link');
+      setActionError(err);
     } finally {
       setPending(false);
     }
   }
 
-  if (error && !event) {
+  if (loadError && !event) {
     return (
       <SafeAreaView className="flex-1 bg-bg px-4">
-        <Text variant="caption" className="mt-8 text-danger">
-          {error}
-        </Text>
+        <SoftError title="Couldn’t load event" error={loadError} onRetry={() => void load()} />
       </SafeAreaView>
     );
   }
@@ -234,9 +234,7 @@ export default function EventEditScreen() {
   if (!event) {
     return (
       <SafeAreaView className="flex-1 bg-bg px-4">
-        <Text variant="caption" className="mt-8">
-          Loading…
-        </Text>
+        <PageLoading />
       </SafeAreaView>
     );
   }
@@ -445,10 +443,8 @@ export default function EventEditScreen() {
         </Button>
 
         {message ? <Text variant="caption">{message}</Text> : null}
-        {error ? (
-          <Text variant="caption" className="text-danger">
-            {error}
-          </Text>
+        {actionError ? (
+          <InlineNotice tone="warn">{friendlyError(actionError)}</InlineNotice>
         ) : null}
 
         <Button

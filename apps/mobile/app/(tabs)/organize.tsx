@@ -4,6 +4,13 @@ import { Pressable, ScrollView, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { OrganizerDto } from '@cypher/contracts';
 
+import {
+  AuthChipLoading,
+  friendlyError,
+  InlineNotice,
+  ListLoading,
+  SoftError,
+} from '@/components/AsyncState';
 import { BrandLogo } from '@/components/BrandLogo';
 import { GoogleGlyph } from '@/components/GoogleGlyph';
 import { Button } from '@/components/ui/Button';
@@ -22,7 +29,8 @@ export default function OrganizeTab() {
   const router = useRouter();
   const fonts = useCypherFonts();
   const [orgs, setOrgs] = useState<OrganizerDto[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<unknown>(null);
+  const [actionError, setActionError] = useState<unknown>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [pending, setPending] = useState<Pending>(null);
   const [email, setEmail] = useState('');
@@ -34,9 +42,9 @@ export default function OrganizeTab() {
     }
     try {
       setOrgs(await auth.api.listMyOrganizers());
-      setError(null);
+      setLoadError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load organizers');
+      setLoadError(err);
     }
   }, [auth.api, auth.token]);
 
@@ -46,13 +54,13 @@ export default function OrganizeTab() {
 
   async function continueWith(provider: SocialProvider) {
     setPending(provider);
-    setError(null);
+    setActionError(null);
     setInfo(null);
     try {
       await auth.signInWithProvider(provider);
       await loadOrgs();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Sign-in failed');
+      setActionError(err);
     } finally {
       setPending(null);
     }
@@ -60,13 +68,13 @@ export default function OrganizeTab() {
 
   async function continueWithEmail() {
     setPending('email');
-    setError(null);
+    setActionError(null);
     setInfo(null);
     try {
       await auth.signInWithEmail(email);
       setInfo(`Check ${email.trim()} for a sign-in link, then return here.`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not send email link');
+      setActionError(err);
     } finally {
       setPending(null);
     }
@@ -86,9 +94,9 @@ export default function OrganizeTab() {
         </View>
 
         {!auth.ready ? (
-          <Text variant="caption" className="mt-8">
-            Loading session…
-          </Text>
+          <View className="mt-8">
+            <AuthChipLoading />
+          </View>
         ) : !auth.token ? (
           <View className="mt-10 gap-5">
             <BrandLogo variant="lockup" height={40} />
@@ -166,8 +174,14 @@ export default function OrganizeTab() {
               Sign out
             </Button>
 
-            {orgs === null ? (
-              <Text variant="caption">Loading crews…</Text>
+            {orgs === null && loadError ? (
+              <SoftError
+                title="Couldn’t load crews"
+                error={loadError}
+                onRetry={() => void loadOrgs()}
+              />
+            ) : orgs === null ? (
+              <ListLoading />
             ) : orgs.length === 0 ? (
               <EmptyState
                 kicker="No crews"
@@ -205,10 +219,10 @@ export default function OrganizeTab() {
           </View>
         )}
 
-        {error ? (
-          <Text variant="caption" className="mt-4 text-danger">
-            {error}
-          </Text>
+        {actionError ? (
+          <View className="mt-4">
+            <InlineNotice tone="warn">{friendlyError(actionError, 'Something went wrong')}</InlineNotice>
+          </View>
         ) : null}
       </ScrollView>
     </SafeAreaView>

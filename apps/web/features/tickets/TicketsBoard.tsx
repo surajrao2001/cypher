@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { EmptyState } from '@/features/shell/EmptyState';
+import { friendlyError, InlineNotice, PageLoading, SoftError } from '@/features/shell/AsyncState';
 import { cn } from '@/lib/utils';
 
 type WalletTab = 'needs' | 'upcoming' | 'past';
@@ -20,7 +21,7 @@ export function TicketsBoard() {
   const { token, api, ready, status, refresh } = useAuth();
   const searchParams = useSearchParams();
   const [items, setItems] = useState<RegistrationDto[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>(null);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<WalletTab>('upcoming');
   const reconciledOrderRef = useRef<string | null>(null);
@@ -38,7 +39,7 @@ export function TicketsBoard() {
       setItems(res.items);
       setError(null);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Could not load tickets');
+      setError(err);
     } finally {
       setLoading(false);
     }
@@ -92,7 +93,7 @@ export function TicketsBoard() {
   }, [loading, partitioned.needsAction.length, partitioned.upcoming.length, partitioned.past.length]);
 
   if (!ready || status === 'loading' || loading) {
-    return <p className="mt-10 text-sm text-text-secondary">Loading tickets…</p>;
+    return <PageLoading variant="list" className="mt-10" label="Loading tickets" />;
   }
 
   if (status !== 'authenticated' || !token) {
@@ -112,17 +113,14 @@ export function TicketsBoard() {
 
   if (error) {
     return (
-      <div className="mt-10 space-y-3">
-        <p className="text-sm text-error">{error}</p>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => {
+      <div className="mt-10">
+        <SoftError
+          title="Couldn’t load tickets"
+          error={error}
+          onRetry={() => {
             void refresh().then(() => load());
           }}
-        >
-          Retry
-        </Button>
+        />
       </div>
     );
   }
@@ -286,7 +284,11 @@ function TicketCard({
             {ticket.totalAmountMinor === 0 ? 'Free' : formatMinorUnits(ticket.totalAmountMinor)}
             {variant === 'hold' ? ' · hold' : ' · confirmed'}
           </p>
-          {localError ? <p className="mt-2 text-sm text-error">{localError}</p> : null}
+          {localError ? (
+            <InlineNotice tone="warn" className="mt-2">
+              {localError}
+            </InlineNotice>
+          ) : null}
           <div className="mt-4 flex flex-wrap gap-2">
             <Button asChild variant="outline" size="sm">
               <Link href={`/events/${ticket.event.slug}`}>Open event</Link>
@@ -301,7 +303,7 @@ function TicketCard({
                   setLocalError(null);
                   void onConfirmFree()
                     .catch((err: unknown) => {
-                      setLocalError(err instanceof Error ? err.message : 'Could not confirm');
+                      setLocalError(friendlyError(err, 'Could not confirm'));
                     })
                     .finally(() => setBusy(false));
                 }}
@@ -319,7 +321,7 @@ function TicketCard({
                   setLocalError(null);
                   void onConfirmPayment()
                     .catch((err: unknown) => {
-                      setLocalError(err instanceof Error ? err.message : 'Payment not confirmed yet');
+                      setLocalError(friendlyError(err, 'Payment not confirmed yet'));
                     })
                     .finally(() => setBusy(false));
                 }}

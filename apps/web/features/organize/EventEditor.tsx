@@ -2,6 +2,7 @@
 
 import { routes } from '@cypher/contracts';
 import type { EventType, OrganizerDto, OrganizerEventDetailDto } from '@cypher/contracts';
+import { assertEndAfterStart, assertRegistrationWindow } from '@cypher/validation';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useMemo, useState } from 'react';
@@ -31,6 +32,7 @@ import { PosterField } from '@/features/organize/PosterField';
 import { StyleChipsField } from '@/features/organize/StyleChipsField';
 import { VenueMapField, type VenueCoords } from '@/features/organize/VenueMapField';
 import { PageBreadcrumb } from '@/features/shell/PageBreadcrumb';
+import { PageLoading, SoftError } from '@/features/shell/AsyncState';
 
 function toIsoFromLocal(value: string): string {
   const date = new Date(value);
@@ -76,7 +78,7 @@ type CategoryEdit = {
 export function EventEditor({ slug, eventId }: { slug: string; eventId?: string }) {
   return (
     <OrganizeGate>
-      <Suspense fallback={<p className="px-6 py-16 text-sm text-text-muted">Loading…</p>}>
+      <Suspense fallback={<PageLoading variant="form" className="px-6 py-16" label="Loading editor" />}>
         <EventEditorInner slug={slug} eventId={eventId} />
       </Suspense>
     </OrganizeGate>
@@ -98,6 +100,8 @@ function EventEditorInner({ slug, eventId }: { slug: string; eventId?: string })
   const [eventType, setEventType] = useState<EventType>('battle');
   const [startTime, setStartTime] = useState(() => (isCreate ? defaultStartLocal() : ''));
   const [endTime, setEndTime] = useState('');
+  const [regOpensAt, setRegOpensAt] = useState('');
+  const [regClosesAt, setRegClosesAt] = useState('');
   const [description, setDescription] = useState('');
   const [posterUrl, setPosterUrl] = useState('');
   const [styles, setStyles] = useState<string[]>(() => (isCreate ? ['Breaking'] : []));
@@ -110,7 +114,8 @@ function EventEditorInner({ slug, eventId }: { slug: string; eventId?: string })
   const [audiencePrice, setAudiencePrice] = useState('0');
   const [audienceCapacity, setAudienceCapacity] = useState('100');
   const [pending, setPending] = useState(false);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<unknown>(null);
+  const [reloadKey, setReloadKey] = useState(0);
   const [step, setStep] = useState<EventEditStepId>('basics');
 
   function goToStep(next: EventEditStepId) {
@@ -157,6 +162,8 @@ function EventEditorInner({ slug, eventId }: { slug: string; eventId?: string })
     setEventType(detail.eventType);
     setStartTime(toLocalInputValue(detail.startTime));
     setEndTime(toLocalInputValue(detail.endTime));
+    setRegOpensAt(toLocalInputValue(detail.registrationOpensAt));
+    setRegClosesAt(toLocalInputValue(detail.registrationClosesAt));
     setDescription(detail.description ?? '');
     setPosterUrl(detail.posterUrl ?? '');
     setStyles(detail.styles ?? []);
@@ -182,6 +189,7 @@ function EventEditorInner({ slug, eventId }: { slug: string; eventId?: string })
   useEffect(() => {
     let cancelled = false;
     async function load() {
+      setLoadError(null);
       try {
         const organizer = await auth.api.getMyOrganizerBySlug(slug);
         if (cancelled) return;
@@ -195,7 +203,7 @@ function EventEditorInner({ slug, eventId }: { slug: string; eventId?: string })
         syncFromEvent(detail);
       } catch (err) {
         if (!cancelled) {
-          setLoadError(err instanceof Error ? err.message : 'Could not load event');
+          setLoadError(err);
         }
       }
     }
@@ -203,7 +211,7 @@ function EventEditorInner({ slug, eventId }: { slug: string; eventId?: string })
     return () => {
       cancelled = true;
     };
-  }, [auth.api, eventId, slug]);
+  }, [auth.api, eventId, slug, reloadKey]);
 
   const isMultiDay = useMemo(() => {
     if (!event) return false;
@@ -237,9 +245,14 @@ function EventEditorInner({ slug, eventId }: { slug: string; eventId?: string })
       }
       const startIso = toIsoFromLocal(startTime);
       const endIso = endTime ? toIsoFromLocal(endTime) : null;
-      if (endIso && new Date(endIso).getTime() < new Date(startIso).getTime()) {
-        throw new Error('End time must be after start time');
-      }
+      const opensIso = regOpensAt ? toIsoFromLocal(regOpensAt) : null;
+      const closesIso = regClosesAt ? toIsoFromLocal(regClosesAt) : null;
+      assertEndAfterStart(startIso, endIso);
+      assertRegistrationWindow({
+        opensAt: opensIso,
+        closesAt: closesIso,
+        startTime: startIso,
+      });
 
       if (!event) {
         const created = await auth.api.createOrganizerEvent(org.id, {
@@ -251,6 +264,8 @@ function EventEditorInner({ slug, eventId }: { slug: string; eventId?: string })
           eventType,
           startTime: startIso,
           endTime: endIso ?? undefined,
+          registrationOpensAt: opensIso,
+          registrationClosesAt: closesIso,
           description: description || undefined,
           posterUrl: posterUrl.trim() || undefined,
           styles,
@@ -271,6 +286,8 @@ function EventEditorInner({ slug, eventId }: { slug: string; eventId?: string })
         eventType,
         startTime: startIso,
         endTime: endIso,
+        registrationOpensAt: opensIso,
+        registrationClosesAt: closesIso,
         description: description || null,
         posterUrl: posterUrl.trim() || null,
         styles,
@@ -393,19 +410,35 @@ function EventEditorInner({ slug, eventId }: { slug: string; eventId?: string })
   }
 
   if (loadError && !org) {
-    return <p className="px-6 py-16 text-sm text-error">{loadError}</p>;
+    return (
+      <div className="px-6 py-16">
+        <SoftError
+          title="Couldn’t load organizer"
+          error={loadError}
+          onRetry={() => setReloadKey((n) => n + 1)}
+        />
+      </div>
+    );
   }
 
   if (!org) {
-    return <p className="px-6 py-16 text-sm text-text-muted">Loading…</p>;
+    return <PageLoading variant="form" className="px-6 py-16" label="Loading editor" />;
   }
 
   if (loadError && !isCreate && !event) {
-    return <p className="px-6 py-16 text-sm text-error">{loadError}</p>;
+    return (
+      <div className="px-6 py-16">
+        <SoftError
+          title="Couldn’t load event"
+          error={loadError}
+          onRetry={() => setReloadKey((n) => n + 1)}
+        />
+      </div>
+    );
   }
 
   if (!isCreate && !event) {
-    return <p className="px-6 py-16 text-sm text-text-muted">Loading event…</p>;
+    return <PageLoading variant="form" className="px-6 py-16" label="Loading event" />;
   }
 
   const viewHref = event
@@ -545,6 +578,29 @@ function EventEditorInner({ slug, eventId }: { slug: string; eventId?: string })
               <Input type="datetime-local" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
               <span className="block text-[11px] font-normal text-text-muted">
                 Optional — set end on another day for multi-day pricing
+              </span>
+            </label>
+            <label className="block space-y-2 text-sm font-semibold text-text-secondary">
+              Registration opens
+              <Input
+                type="datetime-local"
+                value={regOpensAt}
+                onChange={(e) => setRegOpensAt(e.target.value)}
+              />
+              <span className="block text-[11px] font-normal text-text-muted">
+                Optional — leave blank to open immediately when published
+              </span>
+            </label>
+            <label className="block space-y-2 text-sm font-semibold text-text-secondary">
+              Registration closes
+              <Input
+                type="datetime-local"
+                value={regClosesAt}
+                max={startTime || undefined}
+                onChange={(e) => setRegClosesAt(e.target.value)}
+              />
+              <span className="block text-[11px] font-normal text-text-muted">
+                Optional — must be before the night starts
               </span>
             </label>
           </div>

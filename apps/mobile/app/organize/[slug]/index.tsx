@@ -4,6 +4,7 @@ import { Linking, Pressable, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { OrganizerDto, OrganizerEventDetailDto } from '@cypher/contracts';
 
+import { PageLoading, SoftError } from '@/components/AsyncState';
 import { Button } from '@/components/ui/Button';
 import { Text } from '@/components/ui/Text';
 import { EmptyState } from '@/components/EmptyState';
@@ -17,7 +18,7 @@ export default function OrganizerScreen() {
   const [org, setOrg] = useState<OrganizerDto | null>(null);
   const [events, setEvents] = useState<OrganizerEventDetailDto[]>([]);
   const [payoutReady, setPayoutReady] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<unknown>(null);
 
   const load = useCallback(async () => {
     if (!slug || !auth.token) return;
@@ -30,9 +31,9 @@ export default function OrganizerScreen() {
       setOrg(organizer);
       setEvents(list.items);
       setPayoutReady(Boolean(payout?.payoutReady));
-      setError(null);
+      setLoadError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Load failed');
+      setLoadError(err);
     }
   }, [auth.api, auth.token, slug]);
 
@@ -51,12 +52,10 @@ export default function OrganizerScreen() {
     return { upcoming, past };
   }, [events]);
 
-  if (error) {
+  if (loadError) {
     return (
       <SafeAreaView className="flex-1 bg-bg px-4">
-        <Text variant="caption" className="mt-8 text-danger">
-          {error}
-        </Text>
+        <SoftError title="Couldn’t load organizer" error={loadError} onRetry={() => void load()} />
       </SafeAreaView>
     );
   }
@@ -64,9 +63,7 @@ export default function OrganizerScreen() {
   if (!org) {
     return (
       <SafeAreaView className="flex-1 bg-bg px-4">
-        <Text variant="caption" className="mt-8">
-          Loading…
-        </Text>
+        <PageLoading />
       </SafeAreaView>
     );
   }
@@ -103,7 +100,7 @@ export default function OrganizerScreen() {
               variant="secondary"
               onPress={() =>
                 void Linking.openURL(
-                  `${webBaseUrl().replace(/\/$/, '')}/organize/${org.slug}?payout=1`,
+                  `${webBaseUrl().replace(/\/$/, '')}/organize/${org.slug}/payouts`,
                 )
               }
             >

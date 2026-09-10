@@ -1,13 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Linking, Pressable, ScrollView, View } from 'react-native';
+import { Linking, Pressable, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import QRCode from 'react-native-qrcode-svg';
 
 import type { RegistrationDto } from '@cypher/contracts';
 import { partitionRegistrationsForTickets } from '@cypher/utils';
 
+import { friendlyError, InlineNotice, ListLoading, SoftError } from '@/components/AsyncState';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Text } from '@/components/ui/Text';
@@ -25,7 +26,8 @@ export default function TicketsScreen() {
   const { token, me, api } = useAuth();
   const [items, setItems] = useState<RegistrationDto[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<unknown>(null);
+  const [actionError, setActionError] = useState<unknown>(null);
   const [selected, setSelected] = useState<RegistrationDto | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
 
@@ -39,9 +41,9 @@ export default function TicketsScreen() {
     try {
       const res = await api.listMyRegistrations();
       setItems(res.items);
-      setError(null);
+      setLoadError(null);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Could not load tickets');
+      setLoadError(err);
     } finally {
       setLoading(false);
     }
@@ -62,7 +64,7 @@ export default function TicketsScreen() {
       await api.confirmFreeRegistration(ticket.id);
       await load();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Could not confirm');
+      setActionError(err);
     } finally {
       setBusyId(null);
     }
@@ -74,7 +76,7 @@ export default function TicketsScreen() {
       await api.reconcileRegistrationCheckout(ticket.id);
       await load();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Payment not confirmed yet');
+      setActionError(err);
     } finally {
       setBusyId(null);
     }
@@ -104,16 +106,9 @@ export default function TicketsScreen() {
             </Button>
           </Card>
         ) : loading ? (
-          <ActivityIndicator className="mt-12" color={colors.lime} />
-        ) : error ? (
-          <View className="mt-8 gap-3">
-            <Text variant="caption" className="text-danger">
-              {error}
-            </Text>
-            <Button variant="secondary" onPress={() => void load()}>
-              Retry
-            </Button>
-          </View>
+          <ListLoading />
+        ) : loadError ? (
+          <SoftError title="Couldn’t load tickets" error={loadError} onRetry={() => void load()} />
         ) : empty ? (
           <Card className="mt-8 items-center px-6 py-10">
             <View className="h-16 w-16 items-center justify-center rounded-full border border-border bg-elevated">
@@ -131,6 +126,11 @@ export default function TicketsScreen() {
           </Card>
         ) : (
           <View className="mt-8 gap-8">
+            {actionError ? (
+              <InlineNotice tone="warn">
+                {friendlyError(actionError, 'Something went wrong')}
+              </InlineNotice>
+            ) : null}
             {needsAction.length > 0 ? (
               <View className="gap-3">
                 <Text variant="kicker">Needs action</Text>

@@ -11,28 +11,37 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useMemo, useState } from 'react';
 
+import { ByndIcon, type ByndIconName } from '@/components/icons/bynd8';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { toastCopy, toastPending, toastReject, toastResolve } from '@/components/ui/toaster';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { OrganizeGate } from '@/features/organize/OrganizeGate';
 import { EventRegistrationsPanel } from '@/features/organize/EventRegistrationsPanel';
+import {
+  EventUpdatesPanel,
+  PostUpdateDialog,
+} from '@/features/organize/EventUpdatesPanel';
+import { PayoutSetupPanel } from '@/features/organize/PayoutSetupPanel';
+import { TabEmptyState } from '@/features/organize/TabEmptyState';
 import { PageBreadcrumb } from '@/features/shell/PageBreadcrumb';
+import { PageLoading, SoftError } from '@/features/shell/AsyncState';
 import { cn } from '@/lib/utils';
 
-type TabId = 'overview' | 'registrations' | 'media' | 'payouts';
+type TabId = 'overview' | 'registrations' | 'updates' | 'media' | 'payouts';
 
-const TABS: Array<{ id: TabId; label: string }> = [
-  { id: 'overview', label: 'Overview' },
-  { id: 'registrations', label: 'Registrations' },
-  { id: 'media', label: 'Media' },
-  { id: 'payouts', label: 'Payouts' },
+const TABS: Array<{ id: TabId; label: string; icon: ByndIconName }> = [
+  { id: 'overview', label: 'Overview', icon: 'floor' },
+  { id: 'registrations', label: 'Registrations', icon: 'crew' },
+  { id: 'updates', label: 'Updates', icon: 'megaphone' },
+  { id: 'media', label: 'Media', icon: 'media' },
+  { id: 'payouts', label: 'Payouts', icon: 'wallet' },
 ];
 
 export function EventManageView({ slug, eventId }: { slug: string; eventId: string }) {
   return (
     <OrganizeGate>
-      <Suspense fallback={<p className="px-6 py-16 text-sm text-text-muted">Loading event…</p>}>
+      <Suspense fallback={<PageLoading variant="detail" className="px-6 py-16" label="Loading event" />}>
         <EventManageViewInner slug={slug} eventId={eventId} />
       </Suspense>
     </OrganizeGate>
@@ -49,28 +58,29 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
   const [org, setOrg] = useState<OrganizerDto | null>(null);
   const [event, setEvent] = useState<OrganizerEventDetailDto | null>(null);
   const [regs, setRegs] = useState<OrganizerEventRegistrationsResponse | null>(null);
-  const [payoutReady, setPayoutReady] = useState(false);
   const [pending, setPending] = useState(false);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<unknown>(null);
+  const [reloadKey, setReloadKey] = useState(0);
+  const [postUpdateOpen, setPostUpdateOpen] = useState(false);
+  const [updatesRefreshKey, setUpdatesRefreshKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
     async function load() {
+      setLoadError(null);
       try {
         const organizer = await auth.api.getMyOrganizerBySlug(slug);
-        const [detail, payout, regList] = await Promise.all([
+        const [detail, regList] = await Promise.all([
           auth.api.getOrganizerEvent(organizer.id, eventId),
-          auth.api.getOrganizerPaymentAccount(organizer.id).catch(() => null),
           auth.api.listOrganizerEventRegistrations(organizer.id, eventId).catch(() => null),
         ]);
         if (cancelled) return;
         setOrg(organizer);
         setEvent(detail);
-        setPayoutReady(Boolean(payout?.payoutReady));
         setRegs(regList);
       } catch (err) {
         if (!cancelled) {
-          setLoadError(err instanceof Error ? err.message : 'Could not load event');
+          setLoadError(err);
         }
       }
     }
@@ -78,7 +88,7 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
     return () => {
       cancelled = true;
     };
-  }, [auth.api, eventId, slug]);
+  }, [auth.api, eventId, slug, reloadKey]);
 
   const competeCats = useMemo(
     () => event?.competeCategories ?? (event?.categories ?? []).filter((c) => c.entryType !== 'viewer'),
@@ -117,11 +127,19 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
   }
 
   if (loadError && !event) {
-    return <p className="px-6 py-16 text-sm text-error">{loadError}</p>;
+    return (
+      <div className="px-6 py-16">
+        <SoftError
+          title="Couldn’t load event"
+          error={loadError}
+          onRetry={() => setReloadKey((n) => n + 1)}
+        />
+      </div>
+    );
   }
 
   if (!org || !event) {
-    return <p className="px-6 py-16 text-sm text-text-muted">Loading event…</p>;
+    return <PageLoading variant="detail" className="px-6 py-16" label="Loading event" />;
   }
 
   const editHref = `${routes.organize}/${org.slug}/events/${event.id}/edit`;
@@ -151,19 +169,52 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button asChild size="lg">
-            <Link href={editHref}>Edit</Link>
+          <Button asChild size="md" variant="secondary">
+            <Link href={editHref}>
+              <ByndIcon name="edit" />
+              Edit
+            </Link>
           </Button>
-          <Button type="button" variant="lime" disabled={pending} onClick={() => void togglePublish()}>
+          <Button
+            type="button"
+            size="md"
+            variant="outline"
+            onClick={() => setPostUpdateOpen(true)}
+          >
+            <ByndIcon name="megaphone" />
+            Post update
+          </Button>
+          <Button
+            type="button"
+            size="md"
+            variant={event.status === 'published' ? 'outline' : 'lime'}
+            disabled={pending}
+            onClick={() => void togglePublish()}
+          >
+            <ByndIcon name={event.status === 'published' ? 'unpublish' : 'publish'} />
             {event.status === 'published' ? 'Unpublish' : 'Publish'}
           </Button>
           {event.status === 'published' ? (
-            <Button asChild variant="outline">
-              <Link href={`${routes.events}/${event.slug}`}>Public page</Link>
+            <Button asChild size="md" variant="ghost">
+              <Link href={`${routes.events}/${event.slug}`}>
+                <ByndIcon name="external" />
+                Public page
+              </Link>
             </Button>
           ) : null}
         </div>
       </div>
+
+      <PostUpdateDialog
+        organizerId={org.id}
+        eventId={event.id}
+        open={postUpdateOpen}
+        onOpenChange={setPostUpdateOpen}
+        onPosted={() => {
+          setUpdatesRefreshKey((n) => n + 1);
+          setTab('updates');
+        }}
+      />
 
       <div className="flex gap-5 border-b border-border">
         {TABS.map((item) => (
@@ -172,12 +223,16 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
             type="button"
             onClick={() => setTab(item.id)}
             className={cn(
-              'border-b-2 px-0.5 py-2.5 text-[13.5px] font-semibold transition-colors',
+              'inline-flex items-center gap-1.5 border-b-2 px-0.5 py-2.5 text-[13.5px] font-semibold transition-colors',
               tab === item.id
                 ? 'border-accent text-text-primary'
                 : 'border-transparent text-text-muted hover:text-text-secondary',
             )}
           >
+            <ByndIcon
+              name={item.icon}
+              className={cn('size-3.5', tab === item.id ? 'text-accent' : 'text-current')}
+            />
             {item.label}
           </button>
         ))}
@@ -188,7 +243,7 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
           <div className="grid grid-cols-2 gap-3.5 md:grid-cols-3">
             <StatCard value={String(confirmedTotal)} label="Confirmed" />
             <StatCard value={String(pendingTotal)} label="Pending / held" />
-            <StatCard value="—" label="Checked in" hint="Door check-in ships with v1" />
+            <StatCard value="—" label="Checked in" />
           </div>
 
           <div className="grid gap-4 lg:grid-cols-2">
@@ -213,7 +268,19 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
                   />
                 ) : null}
                 {competeCats.length === 0 && !audience?.enabled ? (
-                  <li className="text-sm text-text-muted">No categories yet — edit the event to add them.</li>
+                  <li>
+                    <TabEmptyState
+                      icon="layers"
+                      kicker="Categories"
+                      title="Nothing to fill yet"
+                      body="Add a 1v1, 2v2, or open category in Edit — empty brackets are just vibes."
+                      className="border-0 bg-transparent px-0 py-2"
+                    >
+                      <Button asChild variant="outline" size="sm">
+                        <Link href={editHref}>Open edit</Link>
+                      </Button>
+                    </TabEmptyState>
+                  </li>
                 ) : null}
               </ul>
             </section>
@@ -222,12 +289,14 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
               <div>
                 <h2 className="font-display text-xl tracking-[0.04em]">Door check-in</h2>
                 <p className="mt-2 text-sm text-text-secondary">
-                  Scan dancer QRs at the door when check-in ships. For now this is a placeholder so the
-                  flow is visible in the product.
+                  Scan ticket QR payloads or enter a registration code, with a live door list.
                 </p>
               </div>
               <Button asChild className="mt-5 w-full sm:w-auto" size="lg">
-                <Link href={routes.checkIn}>Open check-in</Link>
+                <Link href={routes.organizeEventCheckIn(org.slug, event.id)}>
+                  <ByndIcon name="checkIn" />
+                  Open check-in
+                </Link>
               </Button>
             </section>
           </div>
@@ -244,7 +313,27 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
               </button>
             </div>
             {recentRegs.length === 0 ? (
-              <p className="text-sm text-text-muted">No registrations yet.</p>
+              <TabEmptyState
+                icon="crew"
+                kicker="Quiet night"
+                title="Nobody’s locked a spot"
+                body="Share the public page. Dancers won’t find you through telepathy (we checked)."
+                className="border-0 bg-transparent px-0 py-4"
+              >
+                {event.status === 'published' ? (
+                  <Button asChild variant="outline" size="sm">
+                    <Link href={`${routes.events}/${event.slug}`}>
+                      <ByndIcon name="external" />
+                      Public page
+                    </Link>
+                  </Button>
+                ) : (
+                  <Button type="button" variant="outline" size="sm" onClick={() => setTab('registrations')}>
+                    <ByndIcon name="tickets" />
+                    Registrations
+                  </Button>
+                )}
+              </TabEmptyState>
             ) : (
               <ul className="divide-y divide-border">
                 {recentRegs.map((row) => (
@@ -282,6 +371,14 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
         <EventRegistrationsPanel organizerId={org.id} eventId={eventId} />
       ) : null}
 
+      {tab === 'updates' ? (
+        <EventUpdatesPanel
+          organizerId={org.id}
+          eventId={event.id}
+          refreshKey={updatesRefreshKey}
+        />
+      ) : null}
+
       {tab === 'media' ? (
         <section className="space-y-4">
           <div className="flex flex-wrap items-end justify-between gap-3">
@@ -294,7 +391,19 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
             </Button>
           </div>
           {(event.mediaLinks ?? []).length === 0 ? (
-            <p className="text-sm text-text-muted">No media links yet.</p>
+            <TabEmptyState
+              icon="media"
+              kicker="Media"
+              title="No links on the wall"
+              body="Drop YouTube, IG, or Drive in Edit. We don’t host the aftermovie (your hard drive does)."
+            >
+              <Button asChild variant="outline" size="sm">
+                <Link href={`${editHref}#media`}>
+                  <ByndIcon name="link" />
+                  Add links in edit
+                </Link>
+              </Button>
+            </TabEmptyState>
           ) : (
             <ul className="divide-y divide-border border-y border-border">
               {(event.mediaLinks ?? []).map((link) => (
@@ -316,22 +425,7 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
       ) : null}
 
       {tab === 'payouts' ? (
-        <section className="space-y-3 rounded-md border border-border bg-surface p-5">
-          <p className="kicker text-accent">Settlement</p>
-          <h2 className="font-display text-3xl uppercase tracking-[0.04em]">
-            {payoutReady ? 'Connected' : 'Not connected'}
-          </h2>
-          <p className="text-sm text-text-secondary">
-            {payoutReady
-              ? 'Paid entry and audience fees for this organizer settle to the connected bank or UPI.'
-              : 'Connect settlement on the organizer page before charging fees above ₹0.'}
-          </p>
-          <Button asChild variant="outline" size="sm">
-            <Link href={`${routes.organize}/${org.slug}${payoutReady ? '?payout=1' : ''}`}>
-              {payoutReady ? 'View settlement' : 'Connect settlement'}
-            </Link>
-          </Button>
-        </section>
+        <PayoutSetupPanel organizerId={org.id} orgName={org.orgName} />
       ) : null}
 
       <Button asChild variant="ghost">
