@@ -1,4 +1,4 @@
-import { Injectable, type LoggerService } from '@nestjs/common';
+import { Inject, Injectable, Optional, type LoggerService } from '@nestjs/common';
 import type { LogLevel } from './env';
 
 const LEVEL_ORDER: Record<LogLevel, number> = {
@@ -28,6 +28,9 @@ export type StructuredLoggerOptions = {
   stderr?: WriteStream;
 };
 
+/** Optional Nest token — omit in AppModule so DI constructs with env defaults. */
+export const STRUCTURED_LOGGER_OPTIONS = Symbol('STRUCTURED_LOGGER_OPTIONS');
+
 @Injectable()
 export class StructuredLogger implements LoggerService {
   private readonly environment: string;
@@ -35,13 +38,17 @@ export class StructuredLogger implements LoggerService {
   private readonly stdout: WriteStream;
   private readonly stderr: WriteStream;
 
-  constructor(options: StructuredLoggerOptions = {}) {
-    this.environment = options.environment ?? process.env.APP_ENV ?? process.env.NODE_ENV ?? 'local';
+  constructor(
+    @Optional() @Inject(STRUCTURED_LOGGER_OPTIONS) options?: StructuredLoggerOptions | null,
+  ) {
+    // Also allows `new StructuredLogger({ ... })` in tests (first arg is options).
+    const opts = options ?? {};
+    this.environment = opts.environment ?? process.env.APP_ENV ?? process.env.NODE_ENV ?? 'local';
     this.minLevel =
-      LEVEL_ORDER[options.level ?? (process.env.LOG_LEVEL as LogLevel | undefined) ?? 'info'] ??
+      LEVEL_ORDER[opts.level ?? (process.env.LOG_LEVEL as LogLevel | undefined) ?? 'info'] ??
       LEVEL_ORDER.info;
-    this.stdout = options.stdout ?? process.stdout;
-    this.stderr = options.stderr ?? process.stderr;
+    this.stdout = opts.stdout ?? process.stdout;
+    this.stderr = opts.stderr ?? process.stderr;
   }
 
   log(message: unknown, context?: string): void {
