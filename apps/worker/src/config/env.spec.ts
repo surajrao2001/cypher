@@ -24,4 +24,19 @@ describe('validateEnv', () => {
   it('rejects a missing DATABASE_URL', () => {
     expect(() => validateEnv({ ...valid, DATABASE_URL: '' })).toThrow(/DATABASE_URL/);
   });
+
+  it('treats empty Cashfree vars as unset', () => {
+    expect(
+      validateEnv({
+        ...valid,
+        CASHFREE_ENV: '',
+        CASHFREE_APP_ID: '',
+        CASHFREE_SECRET_KEY: '',
+      }),
+    ).toMatchObject({
+      CASHFREE_ENV: 'sandbox',
+      CASHFREE_APP_ID: undefined,
+      CASHFREE_SECRET_KEY: undefined,
+    });
+  });
 });
