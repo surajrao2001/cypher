@@ -44,6 +44,14 @@ const nextConfig = {
     '@cypher/api-client',
     '@cypher/validation',
   ],
+  // Ensure `@/` resolves even when tsconfig extends / devDeps are missing on Vercel.
+  webpack: (config) => {
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@': __dirname,
+    };
+    return config;
+  },
   async redirects() {
     return [
       { source: '/', destination: '/discover', permanent: false },
