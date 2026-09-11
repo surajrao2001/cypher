@@ -70,7 +70,7 @@ function OrganizeHomeInner() {
         <div className="space-y-2">
           <h1 className="display-title text-5xl md:text-6xl">Organize</h1>
           <p className="max-w-md text-sm text-text-secondary">
-            You run the floor — we’ll run what’s around it.
+            Pick a crew, then manage nights — not a dashboard of KPIs.
           </p>
         </div>
         <Button asChild size="lg">

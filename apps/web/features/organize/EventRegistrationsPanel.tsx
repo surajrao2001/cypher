@@ -5,13 +5,17 @@ import type {
   OrganizerRegistrationItemDto,
 } from '@cypher/contracts';
 import { formatMinorUnits } from '@cypher/utils';
+import { routes } from '@cypher/contracts';
+import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { TabEmptyState } from '@/features/organize/TabEmptyState';
 import { PageLoading, SoftError } from '@/features/shell/AsyncState';
+import { ByndIcon } from '@/components/icons/bynd8';
 
 type StatusFilter = 'all' | 'confirmed' | 'pending' | 'other';
 
@@ -27,9 +31,15 @@ const selectClass =
 export function EventRegistrationsPanel({
   organizerId,
   eventId,
+  eventSlug,
+  eventStatus,
+  editHref,
 }: {
   organizerId: string;
   eventId: string;
+  eventSlug?: string;
+  eventStatus?: string;
+  editHref?: string;
 }) {
   const { api } = useAuth();
   const [data, setData] = useState<OrganizerEventRegistrationsResponse | null>(null);
@@ -113,8 +123,18 @@ export function EventRegistrationsPanel({
         icon="layers"
         kicker="Categories first"
         title="Can’t register into thin air"
-        body="Add a compete category in Edit, then this list will fill like a cypher circle."
-      />
+        body="Add a compete or audience category in Edit, then this list fills as people lock spots."
+      >
+        {editHref ? (
+          <Button asChild variant="outline" size="sm">
+            <Link href={editHref}>Open edit</Link>
+          </Button>
+        ) : (
+          <Button asChild variant="outline" size="sm">
+            <Link href={`${routes.organize}`}>Back to organize</Link>
+          </Button>
+        )}
+      </TabEmptyState>
     );
   }
 
@@ -190,16 +210,41 @@ export function EventRegistrationsPanel({
           icon="tickets"
           kicker="Empty floor"
           title="Nobody’s locked a spot"
-          body="Share the public event link. Waiting for telepathy is not a growth strategy."
-        />
+          body="Share the public event page. Waiting for telepathy is not a growth strategy."
+        >
+          {eventSlug && eventStatus === 'published' ? (
+            <Button asChild variant="outline" size="sm">
+              <Link href={`${routes.events}/${eventSlug}`}>
+                <ByndIcon name="external" />
+                Open public page
+              </Link>
+            </Button>
+          ) : (
+            <Button type="button" variant="outline" size="sm" onClick={() => setStatus('all')}>
+              Show any status
+            </Button>
+          )}
+        </TabEmptyState>
       ) : filtered.length === 0 ? (
         <TabEmptyState
           icon="filter"
           kicker="Filters"
           title="Nobody matches that combo"
-          body="Try another category or status — or clear search and stop gaslighting yourself."
+          body="Try another category or status — or clear search."
           className="py-8"
-        />
+        >
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setStatus('all');
+              setQuery('');
+            }}
+          >
+            Clear filters
+          </Button>
+        </TabEmptyState>
       ) : (
         <ul className="divide-y divide-border rounded-md border border-border">
           {filtered.map((row) => (

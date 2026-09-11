@@ -51,7 +51,7 @@ export function StickyRegisterBar({ event, spotsLeft: aggregateLeft }: StickyReg
     <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/95 backdrop-blur-md lg:left-64">
       <div className="mx-auto flex max-w-4xl items-center justify-between gap-4 px-4 py-3 md:px-6">
         <div className="min-w-0">
-          <p className="kicker text-text-muted">{soldOut ? 'Category full' : 'Register'}</p>
+          <p className="kicker text-text-muted">{soldOut ? 'Category full' : 'Get in'}</p>
           <p className="truncate font-display text-2xl uppercase tracking-[0.04em] text-text-primary md:text-3xl">
             {headline}
           </p>

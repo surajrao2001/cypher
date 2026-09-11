@@ -242,7 +242,10 @@ export function CheckInPanel({ slug, eventId }: { slug: string; eventId: string 
       </form>
       {message ? (
         message === 'Checked in.' ? (
-          <p className="text-sm text-text-secondary">{message}</p>
+          <div className="rounded-md border border-accent-2/40 bg-accent-2 px-4 py-3 text-bg">
+            <p className="font-display text-2xl uppercase tracking-[0.06em]">Checked in</p>
+            <p className="text-sm opacity-80">Ready for the next scan.</p>
+          </div>
         ) : (
           <InlineNotice tone="warn">{message}</InlineNotice>
         )
@@ -251,16 +254,27 @@ export function CheckInPanel({ slug, eventId }: { slug: string; eventId: string 
         <Stat label="Checked in" value={data?.totals.checkedIn ?? 0} />
         <Stat label="Confirmed" value={data?.totals.confirmed ?? 0} />
       </div>
-      <ul className="divide-y divide-border border-y border-border">
-        {(data?.items ?? []).map((item) => (
-          <li key={item.id} className="flex justify-between gap-3 py-3 text-sm">
-            <span>{item.dancerName ?? item.entryName ?? item.registrationCode}</span>
-            <span className="text-text-muted">
-              {new Date(item.checkedInAt).toLocaleTimeString()}
-            </span>
-          </li>
-        ))}
-      </ul>
+      {(data?.items ?? []).length === 0 ? (
+        <div className="rounded-lg border border-dashed border-border bg-surface px-5 py-8">
+          <p className="kicker text-accent">Door list</p>
+          <p className="mt-2 font-display text-2xl uppercase tracking-[0.04em]">No scans yet</p>
+          <p className="mt-2 text-sm text-text-secondary">
+            Start the camera or enter a registration code — confirmed guests appear here as they
+            check in.
+          </p>
+        </div>
+      ) : (
+        <ul className="divide-y divide-border border-y border-border">
+          {(data?.items ?? []).map((item) => (
+            <li key={item.id} className="flex justify-between gap-3 py-3 text-sm">
+              <span>{item.dancerName ?? item.entryName ?? item.registrationCode}</span>
+              <span className="text-text-muted">
+                {new Date(item.checkedInAt).toLocaleTimeString()}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

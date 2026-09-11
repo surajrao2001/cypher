@@ -1,6 +1,8 @@
 'use client';
 
 import type { EventListResponse } from '@cypher/contracts';
+import { routes } from '@cypher/contracts';
+import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
 import { EventCard } from '@/features/discovery/EventCard';
@@ -57,17 +59,27 @@ export function DiscoverBoard({ catalog }: { catalog: EventListResponse }) {
             </div>
             {filtered.length === 0 ? (
               <EmptyState
-                kicker="Filters"
-                title="Floor’s empty"
-                body="No nights match. Clear filters — or wait for the next cypher. Props for hunting."
+                kicker={catalog.items.length === 0 ? 'Discover' : 'Filters'}
+                title={catalog.items.length === 0 ? 'No nights live yet' : 'Floor’s empty'}
+                body={
+                  catalog.items.length === 0
+                    ? 'When organizers publish, battles and cyphers show here. Running a night? Open Organize.'
+                    : 'No nights match. Clear filters — or wait for the next cypher.'
+                }
               >
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setParams({ q: null, city: null, tag: null, type: null })}
-                >
-                  Clear filters
-                </Button>
+                {catalog.items.length === 0 ? (
+                  <Button asChild>
+                    <Link href={routes.organize}>Go to Organize</Link>
+                  </Button>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setParams({ q: null, city: null, tag: null, type: null })}
+                  >
+                    Clear filters
+                  </Button>
+                )}
               </EmptyState>
             ) : (
               <div className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-3">

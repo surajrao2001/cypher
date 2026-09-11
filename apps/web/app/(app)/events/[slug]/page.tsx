@@ -1,22 +1,16 @@
 import { routes } from '@cypher/contracts';
 import { formatMinorUnits, spotsLeft } from '@cypher/utils';
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
 import { EventDetailMeta } from '@/features/discovery/EventDetailMeta';
 import { EventMediaSection } from '@/features/discovery/EventMediaSection';
 import { EventPoster } from '@/features/discovery/EventPoster';
 import { StickyRegisterBar } from '@/features/discovery/StickyRegisterBar';
 import { spotsTone } from '@/features/discovery/catalog';
+import { EmptyState } from '@/features/shell/EmptyState';
 import { PageBreadcrumb } from '@/features/shell/PageBreadcrumb';
 import { getServerApi } from '@/lib/api';
 
@@ -61,27 +55,50 @@ function EventUpdatesFeed({
 }) {
   if (updates.length === 0) return null;
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Updates</CardTitle>
-        <CardDescription>Latest from the organizer.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <ul className="space-y-4">
-          {updates.map((update) => (
-            <li key={update.id} className="border-b border-border pb-4 last:border-0">
-              {update.title ? <p className="font-semibold text-text-primary">{update.title}</p> : null}
-              {update.posterUrl ? (
-                <div className="mt-2 overflow-hidden rounded-md border border-border bg-elevated">
-                  <img src={update.posterUrl} alt="" className="max-h-96 w-full object-cover" />
-                </div>
-              ) : null}
-              <p className="mt-1 whitespace-pre-wrap text-sm text-text-secondary">{update.body}</p>
-            </li>
-          ))}
-        </ul>
-      </CardContent>
-    </Card>
+    <section className="space-y-4">
+      <div>
+        <p className="kicker text-accent">From the floor</p>
+        <h2 className="display-title mt-1 text-3xl">Updates</h2>
+      </div>
+      <ul className="space-y-4">
+        {updates.map((update) => (
+          <li key={update.id} className="border-b border-border pb-4 last:border-0">
+            {update.title ? <p className="font-semibold text-text-primary">{update.title}</p> : null}
+            {update.posterUrl ? (
+              <div className="mt-2 overflow-hidden rounded-md border border-border bg-elevated">
+                <img src={update.posterUrl} alt="" className="max-h-96 w-full object-cover" />
+              </div>
+            ) : null}
+            <p className="mt-1 whitespace-pre-wrap text-sm text-text-secondary">{update.body}</p>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+function CategoryRow({
+  name,
+  price,
+  confirmed,
+  capacity,
+}: {
+  name: string;
+  price: string;
+  confirmed: number;
+  capacity: number;
+}) {
+  const left = spotsLeft(capacity, confirmed);
+  return (
+    <li className="flex flex-wrap items-baseline justify-between gap-2 border-b border-border py-3 last:border-0">
+      <div className="min-w-0">
+        <p className="font-display text-xl uppercase tracking-[0.04em] text-text-primary">{name}</p>
+        <p className="mt-0.5 text-xs uppercase tracking-[0.12em] text-text-muted">
+          {confirmed}/{capacity} confirmed · {left} left
+        </p>
+      </div>
+      <p className="text-sm font-semibold text-text-primary">{price}</p>
+    </li>
   );
 }
 
@@ -96,6 +113,11 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
     event.competeCategories?.length > 0
       ? event.competeCategories
       : event.categories.filter((c) => c.entryType !== 'viewer');
+  const viewers =
+    event.viewerCategories?.length > 0
+      ? event.viewerCategories
+      : event.categories.filter((c) => c.entryType === 'viewer');
+  const viewersOpen = viewers.length > 0 || event.audience?.enabled;
 
   return (
     <div className="pb-28">
@@ -127,7 +149,7 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
         </div>
       </div>
 
-      <div className="mx-auto max-w-4xl space-y-8 px-4 py-8 md:px-6">
+      <div className="mx-auto max-w-4xl space-y-10 px-4 py-8 md:px-6">
         <EventDetailMeta event={event} />
 
         <p className="max-w-2xl text-sm leading-relaxed text-text-secondary md:text-base">
@@ -135,104 +157,78 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
             `${event.organizerName} hosts this ${event.eventType} — show up and get on the floor.`}
         </p>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Compete</CardTitle>
-            <CardDescription>
-              Categories — 1v1, crew, prelims… How you enter the floor.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {compete.length === 0 ? (
-              <p className="text-sm text-text-muted">No compete categories yet.</p>
-            ) : (
-              <>
-                <ul className="space-y-3 sm:hidden">
-                  {compete.map((category) => {
-                    const categoryLeft = spotsLeft(category.capacity, category.confirmedCount);
-                    return (
-                      <li
-                        key={category.id}
-                        className="rounded-md border border-border bg-elevated px-3 py-3"
-                      >
-                        <p className="font-semibold text-text-primary">{category.name}</p>
-                        <p className="mt-1 text-sm text-text-secondary">
-                          {categoryPriceLabel(category)}
-                        </p>
-                        <p className="mt-1 text-xs uppercase tracking-[0.12em] text-text-muted">
-                          {category.confirmedCount}/{category.capacity} confirmed · {categoryLeft}{' '}
-                          left
-                        </p>
-                      </li>
-                    );
-                  })}
-                </ul>
-                <div className="hidden sm:block">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Category</TableHead>
-                        <TableHead>Price</TableHead>
-                        <TableHead>Confirmed</TableHead>
-                        <TableHead>Spots left</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {compete.map((category) => {
-                        const categoryLeft = spotsLeft(category.capacity, category.confirmedCount);
-                        return (
-                          <TableRow key={category.id}>
-                            <TableCell>{category.name}</TableCell>
-                            <TableCell>{categoryPriceLabel(category)}</TableCell>
-                            <TableCell>
-                              {category.confirmedCount} / {category.capacity}
-                            </TableCell>
-                            <TableCell>{categoryLeft}</TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                </div>
-              </>
-            )}
-          </CardContent>
-        </Card>
+        <section className="space-y-3">
+          <div>
+            <p className="kicker text-accent">Compete</p>
+            <h2 className="display-title mt-1 text-3xl">Enter the floor</h2>
+            <p className="mt-1 text-sm text-text-secondary">
+              Pick a category — 1v1, crew, open… Use Register below to lock a spot.
+            </p>
+          </div>
+          {compete.length === 0 ? (
+            <EmptyState
+              kicker="Categories"
+              title="No compete categories yet"
+              body={
+                viewersOpen
+                  ? 'This night is watch-only for now — grab an audience pass below.'
+                  : 'The organizer hasn’t opened compete entries. Check back, or browse other nights.'
+              }
+              className="py-8 md:py-10"
+            >
+              <Button asChild variant="outline">
+                <Link href={routes.discover}>Browse Discover</Link>
+              </Button>
+            </EmptyState>
+          ) : (
+            <ul className="rounded-lg border border-border bg-surface px-4">
+              {compete.map((category) => (
+                <CategoryRow
+                  key={category.id}
+                  name={category.name}
+                  price={categoryPriceLabel(category)}
+                  confirmed={category.confirmedCount}
+                  capacity={category.capacity}
+                />
+              ))}
+            </ul>
+          )}
+        </section>
 
-        {event.audience?.enabled || (event.viewerCategories?.length ?? 0) > 0 ? (
-          <Card>
-            <CardHeader>
-              <CardTitle>Viewers</CardTitle>
-              <CardDescription>
-                Pass for the crowd — presence without entering a category.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {(event.viewerCategories?.length ?? 0) > 1 ? (
-                <ul className="space-y-2">
-                  {event.viewerCategories.map((v) => (
-                    <li
-                      key={v.id}
-                      className="flex flex-wrap items-baseline justify-between gap-2 text-sm"
-                    >
-                      <span className="font-medium text-text-primary">{v.name}</span>
-                      <span className="text-text-secondary">
-                        {categoryPriceLabel(v)} · {spotsLeft(v.capacity, v.confirmedCount)} left
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-sm text-text-primary">
-                  {event.audience.priceMinor === 0
-                    ? 'Free'
-                    : formatMinorUnits(event.audience.priceMinor)}{' '}
-                  · {event.audience.spotsLeft} left · {event.audience.confirmedCount}/
-                  {event.audience.capacity} confirmed
-                </p>
-              )}
-            </CardContent>
-          </Card>
+        {viewersOpen ? (
+          <section className="space-y-3">
+            <div>
+              <p className="kicker text-accent">Watch</p>
+              <h2 className="display-title mt-1 text-3xl">Audience pass</h2>
+              <p className="mt-1 text-sm text-text-secondary">
+                Presence without entering a category — still a real pass at the door.
+              </p>
+            </div>
+            <ul className="rounded-lg border border-border bg-surface px-4">
+              {(viewers.length > 0
+                ? viewers
+                : [
+                    {
+                      id: 'audience',
+                      name: event.audience.name || 'Audience',
+                      priceMinor: event.audience.priceMinor,
+                      currentPriceMinor: event.audience.priceMinor,
+                      activeTierName: null as string | null,
+                      confirmedCount: event.audience.confirmedCount,
+                      capacity: event.audience.capacity,
+                    },
+                  ]
+              ).map((v) => (
+                <CategoryRow
+                  key={v.id}
+                  name={v.name}
+                  price={categoryPriceLabel(v)}
+                  confirmed={v.confirmedCount}
+                  capacity={v.capacity}
+                />
+              ))}
+            </ul>
+          </section>
         ) : null}
 
         <EventMediaSection links={event.mediaLinks ?? []} />
