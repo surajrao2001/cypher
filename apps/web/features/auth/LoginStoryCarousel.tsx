@@ -23,7 +23,7 @@ const SLIDES: StorySlide[] = [
     title: 'Who will rule the dance floor?',
     body: 'One cipher. One night. Everyone watching. This is the energy BYND8 is built around.',
     imageSrc: '/login/floor-01.jpg',
-    imageAlt: 'Dancer mid-battle in a cypher',
+    imageAlt: 'Crowd around the floor at a packed battle',
   },
   {
     id: 'scattered',
@@ -47,7 +47,7 @@ const SLIDES: StorySlide[] = [
     title: 'You run the floor. We’ll run what’s around it.',
     body: 'Categories, registrations, tickets, door check-in — so you can stay on the music, not the spreadsheet.',
     imageSrc: '/login/floor-04.jpg',
-    imageAlt: 'Intimate studio cypher with dancers watching',
+    imageAlt: 'B-boy freeze in front of a watching crowd',
   },
   {
     id: 'brand',
@@ -63,10 +63,15 @@ const INTERVAL_MS = 5500;
 
 export function LoginStoryCarousel() {
   const [index, setIndex] = useState(0);
+  /** Pause only while pointer is over the dots / controls — not the whole panel */
   const [paused, setPaused] = useState(false);
 
   useEffect(() => {
     if (paused) {
+      return;
+    }
+    const media = window.matchMedia('(prefers-reduced-motion: reduce)');
+    if (media.matches) {
       return;
     }
     const id = window.setInterval(() => {
@@ -85,8 +90,6 @@ export function LoginStoryCarousel() {
       className="relative hidden h-full min-h-dvh overflow-hidden lg:block"
       aria-roledescription="carousel"
       aria-label="Why BYND8"
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
     >
       {SLIDES.map((item, i) => (
         <div
@@ -98,7 +101,7 @@ export function LoginStoryCarousel() {
           aria-hidden={i !== index}
         >
           <Image
-            src={item.imageSrc}
+            src={`${item.imageSrc}?v=2`}
             alt={item.imageAlt}
             fill
             priority={i === 0}
@@ -129,7 +132,19 @@ export function LoginStoryCarousel() {
           </h2>
           <p className="max-w-md text-base leading-relaxed text-[#F4F2ED]/80">{slide.body}</p>
 
-          <div className="flex items-center gap-2 pt-4" role="tablist" aria-label="Story slides">
+          <div
+            className="flex items-center gap-2 pt-4"
+            role="tablist"
+            aria-label="Story slides"
+            onMouseEnter={() => setPaused(true)}
+            onMouseLeave={() => setPaused(false)}
+            onFocusCapture={() => setPaused(true)}
+            onBlurCapture={(event) => {
+              if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+                setPaused(false);
+              }
+            }}
+          >
             {SLIDES.map((item, i) => (
               <button
                 key={item.id}
