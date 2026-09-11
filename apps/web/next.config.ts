@@ -30,6 +30,7 @@ const nextConfig: NextConfig = {
     NEXT_PUBLIC_API_URL:
       process.env.NEXT_PUBLIC_API_URL || process.env.PUBLIC_API_URL || 'http://127.0.0.1:3001',
     NEXT_PUBLIC_CASHFREE_MODE: process.env.NEXT_PUBLIC_CASHFREE_MODE || '',
+    NEXT_PUBLIC_APP_STAGE: process.env.NEXT_PUBLIC_APP_STAGE || process.env.APP_ENV || 'local',
   },
   transpilePackages: ['@cypher/tokens', '@cypher/utils', '@cypher/contracts', '@cypher/api-client', '@cypher/validation'],
   async redirects() {
