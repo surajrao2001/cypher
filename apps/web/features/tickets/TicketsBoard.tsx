@@ -1,18 +1,17 @@
 'use client';
 
 import type { RegistrationDto } from '@cypher/contracts';
-import { formatEventDate, formatMinorUnits, partitionRegistrationsForTickets } from '@cypher/utils';
+import { partitionRegistrationsForTickets } from '@cypher/utils';
 import { routes } from '@cypher/contracts';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import QRCode from 'qrcode';
 
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { EmptyState } from '@/features/shell/EmptyState';
-import { friendlyError, InlineNotice, PageLoading, SoftError } from '@/features/shell/AsyncState';
+import { PageLoading, SoftError } from '@/features/shell/AsyncState';
+import { Bynd8Pass } from '@/features/tickets/Bynd8Pass';
 import { cn } from '@/lib/utils';
 
 type WalletTab = 'needs' | 'upcoming' | 'past';
@@ -101,8 +100,8 @@ export function TicketsBoard() {
       <EmptyState
         className="mt-10"
         kicker="Wallet"
-        title="Sign in to see tickets"
-        body="Confirmed entries show here with a registration code and QR."
+        title="Sign in for your passes"
+        body="Confirmed entries show here as a BYND8 Pass — name, category, and door QR."
       >
         <Button asChild>
           <Link href={`${routes.login}?next=${routes.tickets}`}>Sign in</Link>
@@ -132,8 +131,8 @@ export function TicketsBoard() {
       <EmptyState
         className="mt-10"
         kicker="Wallet"
-        title="No tickets yet"
-        body="Register for an event — confirmed passes land here with a QR."
+        title="No passes yet"
+        body="Register for a night — your BYND8 Pass lands here with a door QR."
       >
         <Button asChild>
           <Link href={routes.discover}>Find a cypher</Link>
@@ -151,8 +150,34 @@ export function TicketsBoard() {
   const activeList =
     tab === 'needs' ? needsAction : tab === 'upcoming' ? upcoming : past;
 
+  const tabEmpty = {
+    needs: {
+      title: 'Nothing left to finish',
+      body: 'Holds and unpaid entries show here. You’re clear — check Upcoming for live passes.',
+      cta: { href: routes.discover, label: 'Browse events' },
+    },
+    upcoming: {
+      title: 'No upcoming passes',
+      body: 'When you confirm a spot, the pass shows here for the door.',
+      cta: { href: routes.discover, label: 'Find a cypher' },
+    },
+    past: {
+      title: 'No past nights yet',
+      body: 'After an event ends, old passes archive here.',
+      cta: { href: routes.discover, label: 'Find a cypher' },
+    },
+  }[tab];
+
   return (
     <div className="mt-8 space-y-6">
+      <div>
+        <p className="kicker text-accent">Wallet</p>
+        <h1 className="display-title mt-1 text-4xl md:text-5xl">Your passes</h1>
+        <p className="mt-2 max-w-lg text-sm text-text-secondary">
+          Not a receipt — your credential for the night. Tap Show at door for a full-screen QR.
+        </p>
+      </div>
+
       <div className="flex gap-5 border-b border-border">
         {tabs.map((item) => (
           <button
@@ -173,13 +198,22 @@ export function TicketsBoard() {
       </div>
 
       {activeList.length === 0 ? (
-        <p className="py-8 text-sm text-text-muted">Nothing in this tab.</p>
+        <EmptyState
+          kicker={tabs.find((t) => t.id === tab)?.label ?? 'Passes'}
+          title={tabEmpty.title}
+          body={tabEmpty.body}
+          className="py-10 md:py-12"
+        >
+          <Button asChild variant="outline">
+            <Link href={tabEmpty.cta.href}>{tabEmpty.cta.label}</Link>
+          </Button>
+        </EmptyState>
       ) : (
         <ul className="space-y-4">
           {activeList.map((ticket) => (
             <li key={ticket.id}>
               {tab === 'needs' ? (
-                <TicketCard
+                <Bynd8Pass
                   ticket={ticket}
                   variant="hold"
                   onConfirmFree={
@@ -200,7 +234,7 @@ export function TicketsBoard() {
                   }
                 />
               ) : (
-                <TicketCard ticket={ticket} variant={tab === 'past' ? 'past' : 'upcoming'} />
+                <Bynd8Pass ticket={ticket} variant={tab === 'past' ? 'past' : 'upcoming'} />
               )}
             </li>
           ))}
@@ -211,161 +245,5 @@ export function TicketsBoard() {
         Refresh
       </Button>
     </div>
-  );
-}
-
-function categoryLabel(ticket: RegistrationDto): string {
-  return ticket.category.entryType === 'viewer' ? 'Viewers pass' : ticket.category.name;
-}
-
-function TicketCard({
-  ticket,
-  variant,
-  onConfirmFree,
-  onConfirmPayment,
-}: {
-  ticket: RegistrationDto;
-  variant: 'hold' | 'upcoming' | 'past';
-  onConfirmFree?: () => Promise<void>;
-  onConfirmPayment?: () => Promise<void>;
-}) {
-  const [qr, setQr] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [localError, setLocalError] = useState<string | null>(null);
-  const prominentQr = variant === 'upcoming';
-  const quiet = variant === 'past';
-
-  useEffect(() => {
-    if (!ticket.ticketQrPayload || variant === 'hold') {
-      setQr(null);
-      return;
-    }
-    void QRCode.toDataURL(ticket.ticketQrPayload, {
-      margin: 1,
-      width: prominentQr ? 200 : 120,
-      color: { dark: '#0a0a0a', light: '#ffffff' },
-    })
-      .then(setQr)
-      .catch(() => setQr(null));
-  }, [prominentQr, ticket.ticketQrPayload, variant]);
-
-  return (
-    <article
-      className={cn(
-        'overflow-hidden rounded-lg border border-border bg-surface',
-        quiet && 'opacity-70',
-      )}
-    >
-      {variant === 'hold' ? (
-        <div className="bg-accent/15 px-4 py-2 text-[12.5px] font-semibold text-accent">
-          Spot held — finish confirm or payment
-          {ticket.reservationExpiresAt
-            ? ` · until ${new Date(ticket.reservationExpiresAt).toLocaleString()}`
-            : ''}
-        </div>
-      ) : null}
-
-      <div className="grid gap-0 sm:grid-cols-[1fr_auto]">
-        <div className="min-w-0 p-5">
-          <div className="flex flex-wrap items-center gap-2">
-            {variant === 'hold' ? <Badge variant="muted">pending</Badge> : null}
-            {ticket.category.entryType === 'viewer' ? <Badge variant="lime">Viewers</Badge> : null}
-            <p className="kicker text-accent">{categoryLabel(ticket)}</p>
-          </div>
-          <h2 className="mt-1 font-display text-3xl uppercase tracking-[0.04em]">{ticket.event.title}</h2>
-          <p className="mt-2 text-sm text-text-secondary">
-            {ticket.event.city} · {formatEventDate(ticket.event.startTime)}
-          </p>
-          <p className="mt-1 text-sm text-text-secondary">{ticket.event.organizerName}</p>
-          <p className="mt-4 text-sm text-text-primary">
-            Code <span className="font-semibold tracking-wide">{ticket.registrationCode}</span>
-          </p>
-          <p className="mt-1 text-xs uppercase tracking-[0.14em] text-text-muted">
-            {ticket.totalAmountMinor === 0 ? 'Free' : formatMinorUnits(ticket.totalAmountMinor)}
-            {variant === 'hold' ? ' · hold' : ' · confirmed'}
-          </p>
-          {localError ? (
-            <InlineNotice tone="warn" className="mt-2">
-              {localError}
-            </InlineNotice>
-          ) : null}
-          <div className="mt-4 flex flex-wrap gap-2">
-            <Button asChild variant="outline" size="sm">
-              <Link href={`/events/${ticket.event.slug}`}>Open event</Link>
-            </Button>
-            {onConfirmFree ? (
-              <Button
-                type="button"
-                size="sm"
-                disabled={busy}
-                onClick={() => {
-                  setBusy(true);
-                  setLocalError(null);
-                  void onConfirmFree()
-                    .catch((err: unknown) => {
-                      setLocalError(friendlyError(err, 'Could not confirm'));
-                    })
-                    .finally(() => setBusy(false));
-                }}
-              >
-                {busy ? 'Confirming…' : 'Confirm'}
-              </Button>
-            ) : null}
-            {onConfirmPayment ? (
-              <Button
-                type="button"
-                size="sm"
-                disabled={busy}
-                onClick={() => {
-                  setBusy(true);
-                  setLocalError(null);
-                  void onConfirmPayment()
-                    .catch((err: unknown) => {
-                      setLocalError(friendlyError(err, 'Payment not confirmed yet'));
-                    })
-                    .finally(() => setBusy(false));
-                }}
-              >
-                {busy ? 'Checking…' : 'I already paid'}
-              </Button>
-            ) : null}
-          </div>
-        </div>
-
-        {variant !== 'hold' ? (
-          <div
-            className={cn(
-              'flex flex-col items-center justify-center border-t border-border bg-elevated/40 px-5 py-4 sm:border-l sm:border-t-0',
-              quiet && 'opacity-90',
-            )}
-          >
-            {qr ? (
-              <img
-                src={qr}
-                alt={`QR for ${ticket.registrationCode}`}
-                className={cn(
-                  'rounded-md bg-white p-2',
-                  prominentQr ? 'h-40 w-40' : 'h-24 w-24',
-                )}
-              />
-            ) : (
-              <div
-                className={cn(
-                  'flex items-center justify-center rounded-md border border-border bg-elevated text-xs text-text-muted',
-                  prominentQr ? 'h-40 w-40' : 'h-24 w-24',
-                )}
-              >
-                QR pending
-              </div>
-            )}
-            {prominentQr ? (
-              <p className="mt-2 max-w-[9rem] text-center text-[10px] text-text-muted">
-                Show at the door
-              </p>
-            ) : null}
-          </div>
-        ) : null}
-      </div>
-    </article>
   );
 }

@@ -3,7 +3,7 @@ import type { EventType } from '@cypher/contracts';
 
 import { EVENT_TYPE_GROUPS, normalizeStyleLabel } from '@/features/organize/event-taxonomy';
 
-export const CITIES = ['Mumbai', 'Delhi', 'Bengaluru', 'Pune'] as const;
+export const CITIES = ['Bengaluru', 'Mumbai', 'Delhi', 'Hyderabad', 'Pune', 'Chennai'] as const;
 
 export type City = (typeof CITIES)[number];
 
