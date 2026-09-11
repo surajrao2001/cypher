@@ -40,9 +40,9 @@ export function SceneEmptyBoard({ surface = 'discover', className }: SceneEmptyB
         <h1 className="display-title text-5xl md:text-7xl">{title}</h1>
         <p className="text-sm leading-relaxed text-text-secondary md:text-base">{body}</p>
         <ul className="space-y-2 text-sm text-text-secondary">
-          <li>Coming soon: nights near you, with real spots — not a WhatsApp rumour.</li>
-          <li>Sign in so your name’s ready when you register.</li>
-          <li>Running a cypher? Host it here and open the door when people show up.</li>
+          <li>When a crew publishes, the night shows up here — register, get a pass, check in at the door.</li>
+          <li>Got a floor to run? Host it and manage entries without the group-chat scramble.</li>
+          <li>Later: brackets, battle day tools, and dancer history. Not on this screen yet.</li>
         </ul>
       </div>
 
