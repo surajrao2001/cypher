@@ -31,31 +31,24 @@ export function SceneEmptyBoard({ surface = 'discover', className }: SceneEmptyB
   return (
     <div
       className={cn(
-        'flex flex-col gap-8 border-b border-border pb-12 pt-2 md:gap-10 md:pb-16',
+        'mx-auto flex w-full max-w-2xl flex-col items-center gap-8 border-b border-border px-2 pb-12 pt-6 text-center md:gap-10 md:pb-16 md:pt-10',
         className,
       )}
     >
-      <div className="max-w-2xl space-y-4">
+      <div className="w-full space-y-4">
         <p className="kicker text-accent">{kicker}</p>
         <h1 className="display-title text-5xl md:text-7xl">{title}</h1>
-        <p className="max-w-xl text-sm leading-relaxed text-text-secondary md:text-base">{body}</p>
-        <ul className="space-y-2 text-sm text-text-secondary">
-          <li className="flex gap-2">
-            <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-accent" aria-hidden />
-            Find what’s on — battles, jams, labs with real confirmed spots.
-          </li>
-          <li className="flex gap-2">
-            <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-accent" aria-hidden />
-            Register, pay or confirm free, carry a BYND8 Pass to the door.
-          </li>
-          <li className="flex gap-2">
-            <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-accent-2" aria-hidden />
-            Host a night — categories, registrations, check-in, payouts.
-          </li>
+        <p className="mx-auto max-w-xl text-sm leading-relaxed text-text-secondary md:text-base">
+          {body}
+        </p>
+        <ul className="mx-auto max-w-md space-y-2 text-sm text-text-secondary">
+          <li>Find what’s on — battles, jams, labs with real confirmed spots.</li>
+          <li>Register, pay or confirm free, carry a BYND8 Pass to the door.</li>
+          <li>Host a night — categories, registrations, check-in, payouts.</li>
         </ul>
       </div>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+      <div className="flex w-full flex-col items-stretch justify-center gap-3 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
         <Button asChild size="lg">
           <Link href={signedIn ? routes.organize : `${routes.login}?next=${routes.organize}`}>
             Host a night
