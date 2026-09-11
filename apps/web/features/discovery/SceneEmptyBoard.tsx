@@ -22,33 +22,31 @@ export function SceneEmptyBoard({ surface = 'discover', className }: SceneEmptyB
   const signedIn = status === 'authenticated';
 
   const kicker = surface === 'events' ? 'All floors' : 'Discover';
-  const title = surface === 'events' ? 'No nights on the board.' : 'The floor’s quiet — for now.';
+  const title = surface === 'events' ? 'Nothing live yet.' : 'Quiet night on the board.';
   const body =
     surface === 'events'
-      ? 'Published battles, jams, and labs will list here. Until then: claim your dancer card, or put your own night live.'
-      : 'BYND8 is infrastructure around the floor — discover the night, lock a category, walk in with a pass. Organizers run registrations and the door without five group chats.';
+      ? 'When battles and jams go up, you’ll find them here. Meanwhile — set up your dancer card, or host the first night yourself.'
+      : 'This is where upcoming battles, jams, and labs will show. Nothing’s published yet — so start with who you are on the floor, or put your own night live.';
 
   return (
     <div
       className={cn(
-        'mx-auto flex w-full max-w-2xl flex-col items-center gap-8 border-b border-border px-2 pb-12 pt-6 text-center md:gap-10 md:pb-16 md:pt-10',
+        'mx-auto flex w-full max-w-2xl flex-col items-start gap-8 border-b border-border pb-12 pt-6 text-left md:gap-10 md:pb-16 md:pt-10',
         className,
       )}
     >
-      <div className="w-full space-y-4">
+      <div className="w-full max-w-xl space-y-4">
         <p className="kicker text-accent">{kicker}</p>
         <h1 className="display-title text-5xl md:text-7xl">{title}</h1>
-        <p className="mx-auto max-w-xl text-sm leading-relaxed text-text-secondary md:text-base">
-          {body}
-        </p>
-        <ul className="mx-auto max-w-md space-y-2 text-sm text-text-secondary">
-          <li>Find what’s on — battles, jams, labs with real confirmed spots.</li>
-          <li>Register, pay or confirm free, carry a BYND8 Pass to the door.</li>
-          <li>Host a night — categories, registrations, check-in, payouts.</li>
+        <p className="text-sm leading-relaxed text-text-secondary md:text-base">{body}</p>
+        <ul className="space-y-2 text-sm text-text-secondary">
+          <li>Coming soon: nights near you, with real spots — not a WhatsApp rumour.</li>
+          <li>Sign in so your name’s ready when you register.</li>
+          <li>Running a cypher? Host it here and open the door when people show up.</li>
         </ul>
       </div>
 
-      <div className="flex w-full flex-col items-stretch justify-center gap-3 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
         <Button asChild size="lg">
           <Link href={signedIn ? routes.organize : `${routes.login}?next=${routes.organize}`}>
             Host a night
@@ -74,10 +72,6 @@ export function SceneEmptyBoard({ surface = 'discover', className }: SceneEmptyB
           </>
         )}
       </div>
-
-      <p className="max-w-lg text-xs uppercase tracking-[0.14em] text-text-muted">
-        When organizers publish, nights land here first — no empty carousels, no fake filters.
-      </p>
     </div>
   );
 }
