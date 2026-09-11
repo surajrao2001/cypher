@@ -1,17 +1,18 @@
+import type { ReactNode } from 'react';
 import { routes } from '@cypher/contracts';
-import { formatMinorUnits, spotsLeft } from '@cypher/utils';
+import { formatEventDateRange, formatMinorUnits, spotsLeft } from '@cypher/utils';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
+import { ByndIcon } from '@/components/icons/bynd8';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { EventDetailMeta } from '@/features/discovery/EventDetailMeta';
 import { EventMediaSection } from '@/features/discovery/EventMediaSection';
 import { EventPoster } from '@/features/discovery/EventPoster';
 import { StickyRegisterBar } from '@/features/discovery/StickyRegisterBar';
+import { VenueMapView } from '@/features/discovery/VenueMapView';
 import { spotsTone } from '@/features/discovery/catalog';
 import { EmptyState } from '@/features/shell/EmptyState';
-import { PageBreadcrumb } from '@/features/shell/PageBreadcrumb';
 import { getServerApi } from '@/lib/api';
 
 interface EventDetailPageProps {
@@ -55,17 +56,14 @@ function EventUpdatesFeed({
 }) {
   if (updates.length === 0) return null;
   return (
-    <section className="space-y-4">
-      <div>
-        <p className="kicker text-accent">From the floor</p>
-        <h2 className="display-title mt-1 text-3xl">Updates</h2>
-      </div>
+    <section className="space-y-4" id="updates">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">Updates</p>
       <ul className="space-y-4">
         {updates.map((update) => (
           <li key={update.id} className="border-b border-border pb-4 last:border-0">
             {update.title ? <p className="font-semibold text-text-primary">{update.title}</p> : null}
             {update.posterUrl ? (
-              <div className="mt-2 overflow-hidden rounded-md border border-border bg-elevated">
+              <div className="mt-2 overflow-hidden rounded-xl border border-border bg-elevated">
                 <img src={update.posterUrl} alt="" className="max-h-96 w-full object-cover" />
               </div>
             ) : null}
@@ -74,31 +72,6 @@ function EventUpdatesFeed({
         ))}
       </ul>
     </section>
-  );
-}
-
-function CategoryRow({
-  name,
-  price,
-  confirmed,
-  capacity,
-}: {
-  name: string;
-  price: string;
-  confirmed: number;
-  capacity: number;
-}) {
-  const left = spotsLeft(capacity, confirmed);
-  return (
-    <li className="flex flex-wrap items-baseline justify-between gap-2 border-b border-border py-3 last:border-0">
-      <div className="min-w-0">
-        <p className="font-display text-xl uppercase tracking-[0.04em] text-text-primary">{name}</p>
-        <p className="mt-0.5 text-xs uppercase tracking-[0.12em] text-text-muted">
-          {confirmed}/{capacity} confirmed · {left} left
-        </p>
-      </div>
-      <p className="text-sm font-semibold text-text-primary">{price}</p>
-    </li>
   );
 }
 
@@ -118,125 +91,209 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
       ? event.viewerCategories
       : event.categories.filter((c) => c.entryType === 'viewer');
   const viewersOpen = viewers.length > 0 || event.audience?.enabled;
+  const hasPin = event.venueLatitude != null && event.venueLongitude != null;
 
   return (
     <div className="pb-28">
-      <div className="mx-auto max-w-4xl px-4 pt-4 md:px-6">
-        <PageBreadcrumb
-          items={[
-            { label: 'Discover', href: routes.discover },
-            { label: event.title },
-          ]}
-        />
-      </div>
-      <div className="relative min-h-[18rem] overflow-hidden border-b border-border md:min-h-[26rem]">
+      <div className="relative min-h-[20rem] overflow-hidden border-b border-border md:min-h-[28rem]">
         <EventPoster title={event.title} src={event.posterUrl} priority sizes="100vw" />
-        <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/50 to-transparent" />
-        <div className="relative z-10 mx-auto flex min-h-[18rem] max-w-4xl flex-col justify-end px-4 py-8 md:min-h-[26rem] md:px-6">
-          <p className="kicker text-accent">{event.kicker}</p>
-          <h1 className="display-title mt-2 max-w-3xl text-5xl md:text-7xl">{event.title}</h1>
-          <div className="mt-4 flex flex-wrap items-center gap-2">
-            {event.styles.map((style) => (
-              <Badge key={style} variant="lime">
+        <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/60 to-bg/20" />
+        <div className="relative z-10 mx-auto flex min-h-[20rem] max-w-6xl flex-col justify-end px-4 py-8 md:min-h-[28rem] md:px-8">
+          <Link
+            href={routes.events}
+            className="mb-4 inline-flex w-fit items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-text-secondary hover:text-accent"
+          >
+            <span aria-hidden>←</span> Events
+          </Link>
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge className="rounded-full bg-accent text-bg">{event.eventType}</Badge>
+            {event.styles.slice(0, 3).map((style) => (
+              <Badge key={style} variant="outline" className="rounded-full">
                 {style}
               </Badge>
             ))}
-            <Badge variant="outline">{event.city}</Badge>
             <span className={`text-xs font-semibold uppercase tracking-[0.14em] ${tone.className}`}>
               {tone.label}
             </span>
           </div>
+          <h1 className="display-title mt-3 max-w-4xl text-5xl md:text-7xl">{event.title}</h1>
+          <p className="mt-3 text-sm text-text-secondary">
+            by {event.organizerName}
+            <span className="text-text-muted"> · {event.city}</span>
+          </p>
         </div>
       </div>
 
-      <div className="mx-auto max-w-4xl space-y-10 px-4 py-8 md:px-6">
-        <EventDetailMeta event={event} />
+      <div className="mx-auto grid max-w-6xl gap-8 px-4 py-8 md:px-8 lg:grid-cols-[minmax(0,1fr)_20rem]">
+        <div className="space-y-10">
+          <section className="space-y-3" id="details">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
+              About
+            </p>
+            <p className="max-w-2xl text-sm leading-relaxed text-text-secondary md:text-base">
+              {event.description ??
+                `${event.organizerName} hosts this ${event.eventType} — show up and get on the floor.`}
+            </p>
+          </section>
 
-        <p className="max-w-2xl text-sm leading-relaxed text-text-secondary md:text-base">
-          {event.description ??
-            `${event.organizerName} hosts this ${event.eventType} — show up and get on the floor.`}
-        </p>
+          <section className="space-y-4">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
+              Compete
+            </p>
+            {compete.length === 0 ? (
+              <EmptyState
+                kicker="Categories"
+                title="No compete categories yet"
+                body={
+                  viewersOpen
+                    ? 'This night is watch-only for now — grab an audience pass below.'
+                    : 'The organizer hasn’t opened compete entries yet.'
+                }
+                className="py-8 md:py-10"
+              >
+                <Button asChild variant="outline" className="rounded-full">
+                  <Link href={routes.discover}>Browse Discover</Link>
+                </Button>
+              </EmptyState>
+            ) : (
+              <ul className="space-y-2">
+                {compete.map((category) => {
+                  const categoryLeft = spotsLeft(category.capacity, category.confirmedCount);
+                  return (
+                    <li
+                      key={category.id}
+                      className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-surface px-4 py-3.5"
+                    >
+                      <div className="min-w-0">
+                        <p className="font-display text-xl uppercase tracking-[0.04em] text-text-primary">
+                          {category.name}
+                        </p>
+                        <p className="mt-0.5 text-xs uppercase tracking-[0.12em] text-text-muted">
+                          {categoryPriceLabel(category)} · {categoryLeft} left
+                        </p>
+                      </div>
+                      <Button asChild size="sm" className="rounded-full">
+                        <a href="#get-in">Get in</a>
+                      </Button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </section>
 
-        <section className="space-y-3">
-          <div>
-            <p className="kicker text-accent">Compete</p>
-            <h2 className="display-title mt-1 text-3xl">Enter the floor</h2>
-            <p className="mt-1 text-sm text-text-secondary">
-              Pick a category — 1v1, crew, open… Use Register below to lock a spot.
+          {viewersOpen ? (
+            <section className="space-y-4">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
+                Watch
+              </p>
+              <div className="rounded-xl border border-border border-l-accent-2 bg-surface px-4 py-4">
+                <p className="font-display text-xl uppercase tracking-[0.04em] text-text-primary">
+                  Audience pass
+                </p>
+                <p className="mt-1 text-sm text-text-secondary">
+                  Presence without entering a category — still a real pass at the door.
+                </p>
+                <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                  <p className="text-sm font-semibold text-text-primary">
+                    {viewers.length > 0
+                      ? categoryPriceLabel(viewers[0]!)
+                      : event.audience.priceMinor === 0
+                        ? 'Free'
+                        : formatMinorUnits(event.audience.priceMinor)}
+                  </p>
+                  <Button asChild variant="outline" size="sm" className="rounded-full">
+                    <a href="#get-in">Watch the floor</a>
+                  </Button>
+                </div>
+              </div>
+            </section>
+          ) : null}
+
+          <EventMediaSection links={event.mediaLinks ?? []} />
+          <EventUpdatesFeed updates={event.updates ?? []} />
+
+          {hasPin ? (
+            <section className="overflow-hidden rounded-xl border border-border bg-surface">
+              <div className="border-b border-border px-4 py-3">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
+                  Venue
+                </p>
+                <p className="mt-0.5 text-sm text-text-primary">
+                  {event.venue ?? event.city}
+                  <span className="text-text-secondary"> · {event.city}</span>
+                </p>
+              </div>
+              <VenueMapView
+                lat={event.venueLatitude!}
+                lng={event.venueLongitude!}
+                venueLabel={event.venue}
+                mapClassName="h-56 rounded-none border-0 md:h-72"
+              />
+            </section>
+          ) : null}
+        </div>
+
+        <aside className="h-fit space-y-4 rounded-xl border border-border bg-surface p-5 lg:sticky lg:top-24">
+          <MetaRow icon="events" label="Date">
+            {formatEventDateRange(event.startTime, event.endTime)}
+          </MetaRow>
+          <MetaRow icon="pin" label="Venue">
+            {event.venue ?? event.city}
+            <span className="block text-text-secondary">{event.city}</span>
+          </MetaRow>
+          <MetaRow icon="crew" label="Organizer">
+            {event.organizerName}
+          </MetaRow>
+          <MetaRow icon="tickets" label="Spots">
+            <span className={tone.className}>{tone.label}</span>
+            <span className="block text-text-secondary">
+              {event.spotsConfirmed} confirmed
+              {event.spotsCapacity > 0 ? ` · ${left} left` : ''}
+            </span>
+          </MetaRow>
+
+          <div className="space-y-2 border-t border-border pt-4" id="get-in">
+            <Button asChild size="lg" className="w-full rounded-full">
+              <a href="#get-in-bar">
+                Compete <span aria-hidden>→</span>
+              </a>
+            </Button>
+            {viewersOpen ? (
+              <Button asChild size="lg" variant="outline" className="w-full rounded-full">
+                <a href="#get-in-bar">Watch the floor</a>
+              </Button>
+            ) : null}
+            <p className="text-center text-[11px] text-text-muted">
+              Free and paid entries both end in a pass + QR.
             </p>
           </div>
-          {compete.length === 0 ? (
-            <EmptyState
-              kicker="Categories"
-              title="No compete categories yet"
-              body={
-                viewersOpen
-                  ? 'This night is watch-only for now — grab an audience pass below.'
-                  : 'The organizer hasn’t opened compete entries. Check back, or browse other nights.'
-              }
-              className="py-8 md:py-10"
-            >
-              <Button asChild variant="outline">
-                <Link href={routes.discover}>Browse Discover</Link>
-              </Button>
-            </EmptyState>
-          ) : (
-            <ul className="rounded-lg border border-border bg-surface px-4">
-              {compete.map((category) => (
-                <CategoryRow
-                  key={category.id}
-                  name={category.name}
-                  price={categoryPriceLabel(category)}
-                  confirmed={category.confirmedCount}
-                  capacity={category.capacity}
-                />
-              ))}
-            </ul>
-          )}
-        </section>
-
-        {viewersOpen ? (
-          <section className="space-y-3">
-            <div>
-              <p className="kicker text-accent">Watch</p>
-              <h2 className="display-title mt-1 text-3xl">Audience pass</h2>
-              <p className="mt-1 text-sm text-text-secondary">
-                Presence without entering a category — still a real pass at the door.
-              </p>
-            </div>
-            <ul className="rounded-lg border border-border bg-surface px-4">
-              {(viewers.length > 0
-                ? viewers
-                : [
-                    {
-                      id: 'audience',
-                      name: event.audience.name || 'Audience',
-                      priceMinor: event.audience.priceMinor,
-                      currentPriceMinor: event.audience.priceMinor,
-                      activeTierName: null as string | null,
-                      confirmedCount: event.audience.confirmedCount,
-                      capacity: event.audience.capacity,
-                    },
-                  ]
-              ).map((v) => (
-                <CategoryRow
-                  key={v.id}
-                  name={v.name}
-                  price={categoryPriceLabel(v)}
-                  confirmed={v.confirmedCount}
-                  capacity={v.capacity}
-                />
-              ))}
-            </ul>
-          </section>
-        ) : null}
-
-        <EventMediaSection links={event.mediaLinks ?? []} />
-
-        <EventUpdatesFeed updates={event.updates ?? []} />
+        </aside>
       </div>
 
-      <StickyRegisterBar event={event} spotsLeft={left} />
+      <div id="get-in-bar">
+        <StickyRegisterBar event={event} spotsLeft={left} />
+      </div>
+    </div>
+  );
+}
+
+function MetaRow({
+  icon,
+  label,
+  children,
+}: {
+  icon: 'events' | 'pin' | 'crew' | 'tickets';
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="flex gap-3">
+      <ByndIcon name={icon} className="mt-0.5 size-4 shrink-0 text-accent" />
+      <div className="min-w-0">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-text-muted">{label}</p>
+        <div className="mt-0.5 text-sm text-text-primary">{children}</div>
+      </div>
     </div>
   );
 }

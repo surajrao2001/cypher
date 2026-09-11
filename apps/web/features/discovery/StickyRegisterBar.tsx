@@ -57,7 +57,9 @@ export function StickyRegisterBar({ event, spotsLeft: aggregateLeft }: StickyReg
           </p>
           <p className="truncate text-xs text-text-secondary">{sub}</p>
         </div>
-        <RegisterCta event={event} spotsLeft={aggregateLeft} />
+        <div className="shrink-0 [&_button]:rounded-full [&_a]:rounded-full">
+          <RegisterCta event={event} spotsLeft={aggregateLeft} />
+        </div>
       </div>
     </div>
   );
