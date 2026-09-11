@@ -9,7 +9,9 @@ import { GoogleGlyph } from '@/components/brand/GoogleGlyph';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/features/auth/AuthProvider';
+import { ReleaseBadge } from '@/features/shell/ReleaseBadge';
 import { friendlyError, InlineNotice } from '@/features/shell/AsyncState';
+import { LEGAL_URLS } from '@/lib/release';
 import type { SocialProvider } from '@/lib/supabase/browser';
 import { cn } from '@/lib/utils';
 
@@ -66,8 +68,9 @@ export function LoginForm() {
   return (
     <div className="mx-auto flex w-full max-w-md flex-col justify-center">
       <div className="mb-8 space-y-5 lg:mb-10">
-        <div className="flex justify-center">
+        <div className="flex flex-col items-center gap-3">
           <BrandLogo variant="lockup" size="lg" href={null} priority />
+          <ReleaseBadge />
         </div>
         <div className="space-y-2">
           <p className="kicker text-accent">Sign in</p>
@@ -147,7 +150,38 @@ export function LoginForm() {
         </InlineNotice>
       ) : null}
 
-      <p className="mt-10 text-[11px] uppercase tracking-[0.18em] text-text-muted">
+      <p className="mt-8 text-center text-xs leading-relaxed text-text-muted">
+        By continuing, you agree to BYND8&apos;s{' '}
+        <a
+          href={LEGAL_URLS.terms}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-text-secondary underline underline-offset-2 hover:text-accent"
+        >
+          Terms of Use
+        </a>{' '}
+        and{' '}
+        <a
+          href={LEGAL_URLS.privacy}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-text-secondary underline underline-offset-2 hover:text-accent"
+        >
+          Privacy Policy
+        </a>
+        . For paid events, also see our{' '}
+        <a
+          href={LEGAL_URLS.refunds}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-text-secondary underline underline-offset-2 hover:text-accent"
+        >
+          Cancellation &amp; Refund Policy
+        </a>
+        .
+      </p>
+
+      <p className="mt-6 text-[11px] uppercase tracking-[0.18em] text-text-muted">
         The culture is the centre. BYND8 builds around it.
       </p>
     </div>

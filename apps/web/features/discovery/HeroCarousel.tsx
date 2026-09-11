@@ -32,11 +32,7 @@ export function HeroCarousel({ events }: HeroCarouselProps) {
   }, [paused, reduceMotion, count]);
 
   if (!current) {
-    return (
-      <div className="flex h-72 items-center justify-center rounded-lg border border-border bg-surface text-sm text-text-muted">
-        No featured battles in this city yet.
-      </div>
-    );
+    return null;
   }
 
   const tone = spotsTone(current.spotsConfirmed, current.spotsCapacity);

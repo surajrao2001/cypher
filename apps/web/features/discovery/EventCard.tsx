@@ -5,70 +5,82 @@ import { formatEventDate } from '@cypher/utils';
 import { motion, useReducedMotion } from 'framer-motion';
 import Link from 'next/link';
 
-import { ByndIcon } from '@/components/icons/bynd8';
-import { Badge } from '@/components/ui/badge';
 import { EventPoster } from '@/features/discovery/EventPoster';
-import { spotsTone } from '@/features/discovery/catalog';
+import { cn } from '@/lib/utils';
 
 interface EventCardProps {
   event: EventCardDto;
+  /** Poster tile (discover grid) vs compact feed row */
+  variant?: 'poster' | 'row';
 }
 
-export function EventCard({ event }: EventCardProps) {
+export function EventCard({ event, variant = 'poster' }: EventCardProps) {
   const reduceMotion = useReducedMotion();
-  const tone = spotsTone(event.spotsConfirmed, event.spotsCapacity);
-  const start = new Date(event.startTime);
-  const day = start.toLocaleDateString('en-IN', { day: '2-digit', timeZone: 'Asia/Kolkata' });
-  const month = start.toLocaleDateString('en-IN', { month: 'short', timeZone: 'Asia/Kolkata' });
+
+  if (variant === 'row') {
+    return (
+      <motion.article
+        whileHover={reduceMotion ? undefined : { x: 2 }}
+        transition={{ duration: 0.15, ease: 'easeOut' }}
+        className="group"
+      >
+        <Link
+          href={`/events/${event.slug}`}
+          className="flex gap-3 overflow-hidden rounded-xl border border-border bg-surface p-2.5 transition-colors hover:border-accent/40"
+        >
+          <div className="relative h-20 w-16 shrink-0 overflow-hidden rounded-lg bg-elevated sm:h-24 sm:w-20">
+            <EventPoster title={event.title} src={event.posterUrl} sizes="80px" />
+          </div>
+          <div className="min-w-0 flex-1 py-0.5">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-accent">
+              {event.eventType}
+            </p>
+            <h3 className="mt-0.5 truncate font-display text-xl uppercase tracking-[0.04em] text-text-primary">
+              {event.title}
+            </h3>
+            <p className="mt-1 text-xs text-text-secondary">
+              {formatEventDate(event.startTime)} · {event.city}
+            </p>
+          </div>
+          <p className="shrink-0 self-center pr-1 text-xs font-semibold uppercase tracking-[0.12em] text-accent">
+            Open
+          </p>
+        </Link>
+      </motion.article>
+    );
+  }
 
   return (
     <motion.article
-      whileHover={reduceMotion ? undefined : { y: -4 }}
+      whileHover={reduceMotion ? undefined : { y: -3 }}
       transition={{ duration: 0.2, ease: 'easeOut' }}
       className="group h-full"
     >
       <Link
         href={`/events/${event.slug}`}
-        className="flex h-full flex-col overflow-hidden rounded-lg border border-border bg-surface shadow-poster"
+        className={cn(
+          'relative block aspect-[4/5] overflow-hidden rounded-xl border border-border bg-elevated',
+        )}
       >
-        <div className="relative aspect-[3/4] overflow-hidden bg-elevated">
-          <EventPoster
-            title={event.title}
-            src={event.posterUrl}
-            sizes="(max-width: 768px) 100vw, (max-width: 1280px) 33vw, 280px"
-          />
-          <div className="absolute left-3 top-3 flex h-14 w-12 flex-col items-center justify-center rounded-sm bg-bg/90 text-center ring-1 ring-border">
-            <span className="font-body text-[9px] font-semibold uppercase tracking-[0.18em] text-accent">
-              {month}
-            </span>
-            <span className="font-display text-2xl leading-none text-text-primary">{day}</span>
-          </div>
-          <Badge variant="lime" className="absolute right-3 top-3">
-            {event.styles[0] ?? event.eventType}
-          </Badge>
-          <div className="absolute inset-x-0 bottom-0 p-3">
-            <p className="kicker text-accent-2">{event.kicker}</p>
-            <h3 className="display-title mt-1 text-[1.65rem]">{event.title}</h3>
-          </div>
-        </div>
-        <div className="flex flex-1 flex-col gap-2 p-3">
-          <p className="flex items-start gap-1.5 font-body text-sm text-text-secondary">
-            <ByndIcon name="pin" className="mt-0.5 size-3.5 shrink-0 text-text-muted" />
-            <span>
-              {event.venue ?? event.city}
-              <span className="text-text-muted"> · {event.city}</span>
-            </span>
+        <EventPoster
+          title={event.title}
+          src={event.posterUrl}
+          sizes="(max-width: 768px) 100vw, (max-width: 1280px) 33vw, 280px"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/45 to-transparent" />
+        <span className="absolute left-3 top-3 rounded-full bg-bg/80 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-accent ring-1 ring-border">
+          {event.eventType}
+        </span>
+        <div className="absolute inset-x-0 bottom-0 space-y-1 p-4">
+          <h3 className="display-title text-2xl leading-none text-text-primary md:text-3xl">
+            {event.title}
+          </h3>
+          <p className="text-xs text-text-secondary">
+            {formatEventDate(event.startTime)} · {event.city}
           </p>
-          <p className="flex items-center gap-1.5 text-xs text-text-muted">
-            <ByndIcon name="events" className="size-3.5" />
-            {formatEventDate(event.startTime)}
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-accent">
+            {event.styles[0] ?? event.crew}
           </p>
-          <div className="mt-auto flex items-center justify-between pt-1">
-            <p className={`font-body text-xs font-semibold uppercase tracking-[0.12em] ${tone.className}`}>
-              {tone.label}
-            </p>
-            <span className="text-[11px] uppercase tracking-[0.14em] text-text-muted">{event.crew}</span>
-          </div>
         </div>
       </Link>
     </motion.article>

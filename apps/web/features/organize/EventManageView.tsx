@@ -169,7 +169,13 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button asChild size="md" variant="secondary">
+          <Button asChild size="lg">
+            <Link href={routes.organizeEventCheckIn(org.slug, event.id)}>
+              <ByndIcon name="checkIn" />
+              Check in
+            </Link>
+          </Button>
+          <Button asChild size="lg" variant="secondary">
             <Link href={editHref}>
               <ByndIcon name="edit" />
               Edit
@@ -177,7 +183,7 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
           </Button>
           <Button
             type="button"
-            size="md"
+            size="lg"
             variant="outline"
             onClick={() => setPostUpdateOpen(true)}
           >
@@ -186,7 +192,7 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
           </Button>
           <Button
             type="button"
-            size="md"
+            size="lg"
             variant={event.status === 'published' ? 'outline' : 'lime'}
             disabled={pending}
             onClick={() => void togglePublish()}
@@ -195,7 +201,7 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
             {event.status === 'published' ? 'Unpublish' : 'Publish'}
           </Button>
           {event.status === 'published' ? (
-            <Button asChild size="md" variant="ghost">
+            <Button asChild size="lg" variant="ghost">
               <Link href={`${routes.events}/${event.slug}`}>
                 <ByndIcon name="external" />
                 Public page
@@ -240,10 +246,19 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
 
       {tab === 'overview' ? (
         <div className="space-y-6">
-          <div className="grid grid-cols-2 gap-3.5 md:grid-cols-3">
-            <StatCard value={String(confirmedTotal)} label="Confirmed" />
-            <StatCard value={String(pendingTotal)} label="Pending / held" />
-            <StatCard value="—" label="Checked in" />
+          <div className="flex flex-col gap-3 rounded-lg border border-border bg-surface px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-semibold text-text-primary">
+                {confirmedTotal} confirmed
+                {pendingTotal > 0 ? ` · ${pendingTotal} held` : ''}
+              </p>
+              <p className="text-[12.5px] text-text-secondary">
+                Door ops and registrations for this night — not a BI dashboard.
+              </p>
+            </div>
+            <Button asChild variant="lime" size="sm">
+              <Link href={routes.organizeEventCheckIn(org.slug, event.id)}>Open check-in</Link>
+            </Button>
           </div>
 
           <div className="grid gap-4 lg:grid-cols-2">
@@ -368,7 +383,13 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
       ) : null}
 
       {tab === 'registrations' ? (
-        <EventRegistrationsPanel organizerId={org.id} eventId={eventId} />
+        <EventRegistrationsPanel
+          organizerId={org.id}
+          eventId={eventId}
+          eventSlug={event.slug}
+          eventStatus={event.status}
+          editHref={editHref}
+        />
       ) : null}
 
       {tab === 'updates' ? (
@@ -431,24 +452,6 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
       <Button asChild variant="ghost">
         <Link href={`${routes.organize}/${org.slug}`}>Back to organizer</Link>
       </Button>
-    </div>
-  );
-}
-
-function StatCard({
-  value,
-  label,
-  hint,
-}: {
-  value: string;
-  label: string;
-  hint?: string;
-}) {
-  return (
-    <div className="rounded-lg border border-border bg-surface p-[18px]">
-      <p className="font-display text-3xl text-text-primary">{value}</p>
-      <p className="text-xs text-text-muted">{label}</p>
-      {hint ? <p className="mt-1 text-[11px] text-text-muted">{hint}</p> : null}
     </div>
   );
 }
