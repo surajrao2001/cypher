@@ -4,7 +4,7 @@ import type { EventDetailDto, RegistrationDto } from '@cypher/contracts';
 import { routes } from '@cypher/contracts';
 import { formatMinorUnits, spotsLeft as calcSpotsLeft } from '@cypher/utils';
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -25,6 +25,10 @@ import {
   toastResolve,
 } from '@/components/ui/toaster';
 import { useAuth } from '@/features/auth/AuthProvider';
+import {
+  OPEN_REGISTER_EVENT,
+  type OpenRegisterDetail,
+} from '@/features/discovery/register-events';
 import { openCashfreeCheckout } from '@/features/payments/cashfree-checkout';
 import { friendlyError, InlineNotice } from '@/features/shell/AsyncState';
 import { cn } from '@/lib/utils';
@@ -87,24 +91,43 @@ export function RegisterCta({ event }: RegisterCtaProps) {
     return steps;
   }, [held, isConfirmed, mode, viewers.length]);
 
-  function openMode(next: Mode) {
+  function openMode(next: Mode, preferredCategoryId?: string) {
     setMode(next);
     setHeld(null);
     setError(null);
     setEntryName('');
     setCustomerPhone('');
     if (next === 'compete') {
-      const first = compete[0];
+      const first =
+        (preferredCategoryId
+          ? compete.find((row) => row.id === preferredCategoryId)
+          : undefined) ?? compete[0];
       setCategoryId(first?.id ?? '');
       setNames(Array.from({ length: first?.minTeamSize ?? 1 }, () => ''));
-      setStep(compete.length > 1 ? 'category' : 'details');
+      setStep(compete.length > 1 && !preferredCategoryId ? 'category' : 'details');
     } else {
-      const first = viewers[0];
+      const first =
+        (preferredCategoryId
+          ? viewers.find((row) => row.id === preferredCategoryId)
+          : undefined) ?? viewers[0];
       setViewerCategoryId(first?.id ?? '');
       setNames(['']);
-      setStep(viewers.length > 1 ? 'category' : 'details');
+      setStep(viewers.length > 1 && !preferredCategoryId ? 'category' : 'details');
     }
   }
+
+  const openModeRef = useRef(openMode);
+  openModeRef.current = openMode;
+
+  useEffect(() => {
+    function onOpen(event: Event) {
+      const detail = (event as CustomEvent<OpenRegisterDetail>).detail;
+      if (!detail?.mode) return;
+      openModeRef.current(detail.mode, detail.categoryId);
+    }
+    window.addEventListener(OPEN_REGISTER_EVENT, onOpen);
+    return () => window.removeEventListener(OPEN_REGISTER_EVENT, onOpen);
+  }, []);
 
   function syncParticipantSlots(nextCategoryId: string) {
     const next = compete.find((row) => row.id === nextCategoryId);

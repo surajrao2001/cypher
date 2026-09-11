@@ -209,9 +209,9 @@ export function TicketsBoard() {
           </Button>
         </EmptyState>
       ) : (
-        <ul className="space-y-4">
+        <ul className="flex flex-wrap justify-center gap-6 sm:justify-start">
           {activeList.map((ticket) => (
-            <li key={ticket.id}>
+            <li key={ticket.id} className="w-full max-w-[17.5rem]">
               {tab === 'needs' ? (
                 <Bynd8Pass
                   ticket={ticket}

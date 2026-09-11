@@ -44,7 +44,8 @@ describe('event-gates', () => {
     ).toThrow(/before the event starts/);
   });
 
-  it('requires a compete category to publish', () => {
-    expect(() => assertPublishCategories([{ entryType: 'viewer' }])).toThrow(/compete/);
+  it('allows publishing with no compete categories', () => {
+    expect(() => assertPublishCategories([{ entryType: 'viewer' }])).not.toThrow();
+    expect(() => assertPublishCategories([])).not.toThrow();
   });
 });

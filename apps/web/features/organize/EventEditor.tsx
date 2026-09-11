@@ -661,7 +661,7 @@ function EventEditorInner({ slug, eventId }: { slug: string; eventId?: string })
           <div className="space-y-3">
             {categoryEdits.length === 0 ? (
               <p className="rounded-md border border-dashed border-border px-3 py-4 text-sm text-text-muted">
-                No categories yet. Add 1v1 / 2v2 / open below before you publish.
+                No categories yet. Optional for free sessions — add 1v1 / 2v2 / open if people need to register.
               </p>
             ) : null}
             {categoryEdits.map((row) => {
