@@ -20,6 +20,8 @@ import {
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { AuthSlotLoading } from '@/features/shell/AsyncState';
+import { ReleaseBadge } from '@/features/shell/ReleaseBadge';
+import { LEGAL_URLS } from '@/lib/release';
 import { cn } from '@/lib/utils';
 
 const navItems = [
@@ -35,6 +37,7 @@ function BrandMark() {
     <div className="px-1">
       <BrandLogo variant="lockup" size="md" href={routes.discover} />
       <p className="kicker mt-2 px-0.5 text-[10px]">Everything beyond the count</p>
+      <ReleaseBadge className="mt-3" />
     </div>
   );
 }
@@ -90,6 +93,34 @@ function SupportSlot() {
         <div className="space-y-2 rounded-md border border-border bg-elevated p-4 text-sm text-text-secondary">
           <p>
             Email: <span className="text-text-primary">support@bynd8.in</span>
+          </p>
+          <p className="text-xs leading-relaxed">
+            <a
+              href={LEGAL_URLS.terms}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline underline-offset-2 hover:text-accent"
+            >
+              Terms
+            </a>
+            {' · '}
+            <a
+              href={LEGAL_URLS.privacy}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline underline-offset-2 hover:text-accent"
+            >
+              Privacy
+            </a>
+            {' · '}
+            <a
+              href={LEGAL_URLS.refunds}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline underline-offset-2 hover:text-accent"
+            >
+              Refunds
+            </a>
           </p>
         </div>
         <DialogFooter>
