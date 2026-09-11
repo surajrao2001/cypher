@@ -1,8 +1,6 @@
 'use client';
 
 import type { EventListResponse } from '@cypher/contracts';
-import { routes } from '@cypher/contracts';
-import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
 import { EventCard } from '@/features/discovery/EventCard';
@@ -11,6 +9,7 @@ import { EventTypeTabs } from '@/features/discovery/EventTypeTabs';
 import { ForYouTags } from '@/features/discovery/ForYouTags';
 import { HeroCarousel } from '@/features/discovery/HeroCarousel';
 import { NextUpList } from '@/features/discovery/NextUpList';
+import { SceneEmptyBoard } from '@/features/discovery/SceneEmptyBoard';
 import { TrustBadgesFooter } from '@/features/discovery/TrustBadgesFooter';
 import { applyDiscoverFilters, featuredForFilters, nextUpForFilters } from '@/features/discovery/filter-events';
 import { useDiscoverQuery } from '@/features/discovery/use-discover-query';
@@ -23,10 +22,22 @@ export function DiscoverBoard({ catalog }: { catalog: EventListResponse }) {
     tag: searchParams.get('tag'),
     type: searchParams.get('type'),
   };
+  const boardEmpty = catalog.items.length === 0;
   const filtered = applyDiscoverFilters(catalog.items, filters);
   const featured = featuredForFilters(catalog.items, filters);
   const upcoming = nextUpForFilters(filtered);
   const cityLabel = filters.city && filters.city !== 'all' ? filters.city : 'India';
+
+  if (boardEmpty) {
+    return (
+      <div className="flex min-h-full flex-col">
+        <div className="flex flex-1 flex-col px-4 py-6 md:px-6 md:py-8">
+          <SceneEmptyBoard surface="discover" />
+        </div>
+        <TrustBadgesFooter />
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-full flex-col">
@@ -36,14 +47,13 @@ export function DiscoverBoard({ catalog }: { catalog: EventListResponse }) {
             <p className="kicker text-accent">Cypher season · {cityLabel}</p>
             <h1 className="display-title mt-2 text-5xl md:text-7xl">Find the cipher.</h1>
             <p className="mt-3 max-w-xl text-sm text-text-secondary md:text-base">
-              Battles, jams, and labs from Mumbai City Breakers, Namma Cypher, Old School Delhi, and
-              Deccan Rockers. Spots are live — confirmed vs capacity, not a vanity counter.
+              Battles, jams, and labs with live confirmed spots — not a vanity counter.
             </p>
           </div>
           <EventTypeTabs />
         </div>
 
-        <HeroCarousel events={featured} />
+        {featured.length > 0 ? <HeroCarousel events={featured} /> : null}
         <ForYouTags />
 
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_20rem]">
@@ -59,27 +69,17 @@ export function DiscoverBoard({ catalog }: { catalog: EventListResponse }) {
             </div>
             {filtered.length === 0 ? (
               <EmptyState
-                kicker={catalog.items.length === 0 ? 'Discover' : 'Filters'}
-                title={catalog.items.length === 0 ? 'No nights live yet' : 'Floor’s empty'}
-                body={
-                  catalog.items.length === 0
-                    ? 'When organizers publish, battles and cyphers show here. Running a night? Open Organize.'
-                    : 'No nights match. Clear filters — or wait for the next cypher.'
-                }
+                kicker="Filters"
+                title="Nothing matches that cut"
+                body="Widen the net — clear type, city, or tags and the floor comes back."
               >
-                {catalog.items.length === 0 ? (
-                  <Button asChild>
-                    <Link href={routes.organize}>Go to Organize</Link>
-                  </Button>
-                ) : (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setParams({ q: null, city: null, tag: null, type: null })}
-                  >
-                    Clear filters
-                  </Button>
-                )}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setParams({ q: null, city: null, tag: null, type: null })}
+                >
+                  Clear filters
+                </Button>
               </EmptyState>
             ) : (
               <div className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-3">
@@ -89,7 +89,7 @@ export function DiscoverBoard({ catalog }: { catalog: EventListResponse }) {
               </div>
             )}
           </section>
-          <NextUpList events={upcoming} />
+          {upcoming.length > 0 ? <NextUpList events={upcoming} /> : null}
         </div>
       </div>
       <TrustBadgesFooter />
