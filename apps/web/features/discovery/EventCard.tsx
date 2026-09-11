@@ -52,35 +52,37 @@ export function EventCard({ event, variant = 'poster' }: EventCardProps) {
 
   return (
     <motion.article
-      whileHover={reduceMotion ? undefined : { y: -3 }}
+      whileHover={reduceMotion ? undefined : { y: -4 }}
       transition={{ duration: 0.2, ease: 'easeOut' }}
       className="group h-full"
     >
       <Link
         href={`/events/${event.slug}`}
         className={cn(
-          'relative block aspect-[4/5] overflow-hidden rounded-xl border border-border bg-elevated',
+          'relative block aspect-[3/4] overflow-hidden rounded-2xl border border-border bg-elevated',
         )}
       >
         <EventPoster
           title={event.title}
           src={event.posterUrl}
-          sizes="(max-width: 768px) 100vw, (max-width: 1280px) 33vw, 280px"
+          sizes="(max-width: 768px) 50vw, (max-width: 1280px) 33vw, 280px"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/45 to-transparent" />
-        <span className="absolute left-3 top-3 rounded-full bg-bg/80 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-accent ring-1 ring-border">
+        <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/50 to-transparent" />
+        <span className="absolute left-2.5 top-2.5 rounded-full bg-accent px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-bg sm:left-3 sm:top-3">
           {event.eventType}
         </span>
-        <div className="absolute inset-x-0 bottom-0 space-y-1 p-4">
-          <h3 className="display-title text-2xl leading-none text-text-primary md:text-3xl">
+        <div className="absolute inset-x-0 bottom-0 space-y-1 p-3 sm:p-4">
+          <h3 className="display-title text-xl leading-[0.95] text-text-primary sm:text-2xl md:text-3xl">
             {event.title}
           </h3>
-          <p className="text-xs text-text-secondary">
+          <p className="text-[11px] text-text-secondary sm:text-xs">
             {formatEventDate(event.startTime)} · {event.city}
           </p>
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-accent">
-            {event.styles[0] ?? event.crew}
-          </p>
+          {event.styles[0] || event.crew ? (
+            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-accent sm:text-xs">
+              {event.styles[0] ?? event.crew}
+            </p>
+          ) : null}
         </div>
       </Link>
     </motion.article>

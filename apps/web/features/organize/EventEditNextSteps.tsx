@@ -21,12 +21,10 @@ type Step = {
   body: string;
   href: string;
   done: boolean;
-  requiredForPublish?: boolean;
 };
 
 /**
- * After draft create (and while draft is incomplete), tell organizers
- * what’s left on this edit screen — categories, viewers pass, etc.
+ * After draft create, suggest optional next steps — nothing blocks publish.
  */
 export function EventEditNextSteps({ checklist }: { checklist: EventEditChecklist }) {
   const searchParams = useSearchParams();
@@ -36,7 +34,6 @@ export function EventEditNextSteps({ checklist }: { checklist: EventEditChecklis
 
   useEffect(() => {
     if (!fresh) return;
-    // Drop ?fresh=1 from the URL after mount so refresh doesn’t re-shout
     const url = new URL(window.location.href);
     url.searchParams.delete('fresh');
     router.replace(`${url.pathname}${url.search}${url.hash}`, { scroll: false });
@@ -45,11 +42,10 @@ export function EventEditNextSteps({ checklist }: { checklist: EventEditChecklis
   const steps: Step[] = [
     {
       id: 'categories',
-      title: 'Add categories',
-      body: '1v1, crew, prelims — how people register to compete. Needed before you publish.',
+      title: 'Add categories (optional)',
+      body: '1v1, crew, prelims — only if people register to compete. Skip for a free session or open floor.',
       href: '#categories',
       done: checklist.hasCategories,
-      requiredForPublish: true,
     },
     {
       id: 'viewers',
@@ -81,11 +77,7 @@ export function EventEditNextSteps({ checklist }: { checklist: EventEditChecklis
     },
   ];
 
-  const missingRequired = steps.filter((s) => s.requiredForPublish && !s.done);
-  const show =
-    checklist.isDraft &&
-    !dismissed &&
-    (fresh || missingRequired.length > 0);
+  const show = checklist.isDraft && !dismissed && fresh;
 
   if (!show) return null;
 
@@ -97,21 +89,17 @@ export function EventEditNextSteps({ checklist }: { checklist: EventEditChecklis
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="space-y-1">
-          <p className="kicker text-accent">{fresh ? 'Draft saved' : 'Still on this draft'}</p>
+          <p className="kicker text-accent">Draft saved</p>
           <h2 className="text-lg font-bold text-text-primary md:text-xl">
-            {fresh ? 'Next — flesh out the night here' : 'Finish these before you publish'}
+            Add more when you’re ready
           </h2>
           <p className="max-w-xl text-sm leading-relaxed text-text-secondary">
-            What’s cooking is locked in. Stay on this edit screen and add the rest when you’re ready —
-            categories first, then viewers pass, poster, media. You can come back anytime; nights
-            aren’t announced complete.
+            You can publish now, or flesh out categories, viewers, poster, and media anytime.
           </p>
         </div>
-        {!fresh && missingRequired.length === 0 ? null : (
-          <Button type="button" variant="ghost" size="sm" onClick={() => setDismissed(true)}>
-            Got it
-          </Button>
-        )}
+        <Button type="button" variant="ghost" size="sm" onClick={() => setDismissed(true)}>
+          Got it
+        </Button>
       </div>
 
       <ol className="space-y-2">
@@ -135,14 +123,7 @@ export function EventEditNextSteps({ checklist }: { checklist: EventEditChecklis
                 {step.done ? '✓' : String(index + 1)}
               </span>
               <span className="min-w-0">
-                <span className="block text-sm font-semibold text-text-primary">
-                  {step.title}
-                  {step.requiredForPublish && !step.done ? (
-                    <span className="ml-2 text-[11px] font-medium uppercase tracking-[0.12em] text-accent">
-                      needed to publish
-                    </span>
-                  ) : null}
-                </span>
+                <span className="block text-sm font-semibold text-text-primary">{step.title}</span>
                 <span className="mt-0.5 block text-xs leading-relaxed text-text-muted">{step.body}</span>
               </span>
             </a>
@@ -151,8 +132,8 @@ export function EventEditNextSteps({ checklist }: { checklist: EventEditChecklis
       </ol>
 
       <p className="text-xs text-text-muted">
-        When categories are in, hit <span className="text-text-secondary">Publish</span> up top —
-        or keep it draft until the lineup and details settle.
+        Hit <span className="text-text-secondary">Publish</span> up top whenever the night is ready
+        to show on Discover.
       </p>
     </section>
   );

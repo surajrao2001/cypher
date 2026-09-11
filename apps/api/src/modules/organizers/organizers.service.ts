@@ -697,9 +697,6 @@ export class OrganizersService {
     if (category.reservedCount + category.confirmedCount > 0) {
       throw new BadRequestException('Cannot delete a category with reserved or confirmed spots');
     }
-    if (event.status === EventStatus.published && event.categories.length <= 1) {
-      throw new BadRequestException('Published events need at least one category');
-    }
     const registrationCount = await this.prisma.registration.count({ where: { categoryId } });
     if (registrationCount > 0) {
       throw new BadRequestException('Cannot delete a category that already has registrations');

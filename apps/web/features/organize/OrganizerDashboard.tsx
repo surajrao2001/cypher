@@ -131,7 +131,7 @@ function OrganizerDashboardInner({ slug }: { slug: string }) {
             </Link>
           </p>
           <div className="mt-2 flex flex-wrap gap-2">
-            {payoutReady ? <Badge variant="lime">Settlement connected</Badge> : null}
+            {payoutReady ? <Badge variant="lime">Payouts connected</Badge> : null}
           </div>
         </div>
         <Button asChild size="lg">
@@ -143,13 +143,13 @@ function OrganizerDashboardInner({ slug }: { slug: string }) {
         <div className="space-y-3">
           <div className="flex flex-col gap-3 rounded-lg border border-accent/50 bg-[linear-gradient(90deg,rgba(255,104,0,0.1),transparent)] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-sm font-semibold text-text-primary">Settlement not connected</p>
+              <p className="text-sm font-semibold text-text-primary">Payouts not connected</p>
               <p className="text-[12.5px] text-text-secondary">
-                Connect settlement to receive payouts for paid entries and audience passes.
+                Add bank or UPI to receive money from paid entries and audience passes.
               </p>
             </div>
             <Button type="button" variant="lime" size="sm" onClick={() => setShowPayout((v) => !v)}>
-              {showPayout ? 'Hide setup' : 'Connect settlement'}
+              {showPayout ? 'Hide setup' : 'Connect bank or UPI'}
             </Button>
           </div>
           {showPayout ? (

@@ -74,7 +74,7 @@ function OrganizeHomeInner() {
           </p>
         </div>
         <Button asChild size="lg">
-          <Link href={`${routes.organize}/new`}>+ New organizer</Link>
+          <Link href={`${routes.organize}/new`}>+ New organizer profile</Link>
         </Button>
       </div>
 
@@ -89,11 +89,11 @@ function OrganizeHomeInner() {
       ) : orgs.length === 0 ? (
         <EmptyState
           kicker="No crews yet"
-          title="Start an organizer"
-          body="Any signed-in dancer can create an organizer. You are the owner; teammate invites come later."
+          title="Create an organizer profile"
+          body="Any signed-in dancer can set up a profile for the crew or brand that runs nights."
         >
           <Button asChild>
-            <Link href={`${routes.organize}/new`}>Create organizer</Link>
+            <Link href={`${routes.organize}/new`}>New organizer profile</Link>
           </Button>
         </EmptyState>
       ) : (
