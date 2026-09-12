@@ -2,47 +2,50 @@
 
 import { Toaster as SonnerToaster, toast } from 'sonner';
 
-/** Casual hood-voice lines — keep short. */
+/** Short functional lines for routine feedback. */
 export const toastCopy = {
-  basicsSaved: 'What’s cooking is locked. Floor’s got a date.',
-  viewersOn: 'Viewers pass is live. Crowd can roll up.',
-  viewersOff: 'Viewers pass off. Compete-only night.',
-  published: 'It’s live on Discover. Go pull the room.',
-  unpublished: 'Back to draft. Nobody sees it but you.',
-  categoryAdded: 'New category on the board. Nice.',
-  categoryUpdated: (name: string) => `“${name}” updated. Clean.`,
-  categoryDeleted: (name: string) => `“${name}” gone. Room to breathe.`,
-  categoryNameNeeded: 'Gotta name the category first, cuh.',
+  basicsSaved: 'Saved.',
+  viewersOn: 'Audience pass saved.',
+  viewersOff: 'Audience pass turned off.',
+  published: 'It’s live.',
+  unpublished: 'Event unpublished.',
+  categoryAdded: 'Entry added.',
+  categoryUpdated: (name: string) => `“${name}” saved.`,
+  categoryDeleted: (name: string) => `“${name}” removed.`,
+  categoryNameNeeded: 'Add a name first.',
   earlyBirdSaved: (n: number) =>
-    n === 1 ? 'Early bird locked for that ticket.' : `Early bird locked for ${String(n)} tickets.`,
-  daysSaved: 'Days named. Schedule’s not vibes anymore.',
-  dayPassesReady: 'Day + all-days tickets ready. Crowd can pick.',
-  mediaAdded: 'Link dropped. Poster’s not lonely anymore.',
-  mediaRemoved: 'Link yeeted.',
-  draftSaved: 'Draft’s in the bag. Categories next — don’t ghost it.',
-  organizerCreated: 'Crew’s on the map. Time to throw something.',
-  posterUploaded: 'Poster looks hard. Saved.',
-  profileSaved: 'Profile locked. They know what to call you.',
-  payoutStarted: 'Payout setup saved. Check Cashfree if they ping you.',
+    n === 1 ? 'Early bird saved.' : `Early bird saved for ${String(n)} entries.`,
+  daysSaved: 'Days saved.',
+  dayPassesReady: 'Audience day passes ready.',
+  mediaAdded: 'Link added.',
+  mediaRemoved: 'Link removed.',
+  draftSaved: 'Draft saved.',
+  organizerCreated: 'Host profile created.',
+  posterUploaded: 'Poster saved.',
+  profileSaved: 'Profile saved.',
+  payoutStarted: 'Payout details saved.',
+  audienceSaved: 'Audience pass saved.',
+  audienceRemoved: 'Audience pass removed.',
+  entrySaved: 'Entry saved.',
 
-  registered: 'Spot’s held. Finish confirm before it ghosts.',
-  confirmed: 'Confirmed. See you on the floor.',
-  payDone: 'Payment’s in. Tickets should light up soon.',
-  payCancelled: 'Checkout bounced — spot’s still held. Hit Pay again.',
+  registered: 'Your spot is held.',
+  confirmed: 'You’re in.',
+  payDone: 'Payment received. Your pass should be ready.',
+  payCancelled: 'Checkout cancelled. Your spot is still held.',
 
-  saving: 'Saving… hold up.',
-  publishing: 'Flipping the switch…',
-  uploading: 'Uploading… almost there.',
-  registering: 'Locking your spot…',
-  paying: 'Talking to Cashfree…',
+  saving: 'Saving…',
+  publishing: 'Publishing…',
+  uploading: 'Uploading…',
+  registering: 'Holding your spot…',
+  paying: 'Opening secure payment…',
 
-  saveFailed: 'That save bounced. Try again?',
-  publishFailed: 'Publish didn’t land. One more try.',
-  uploadFailed: 'Upload flopped. Smaller file or retry?',
-  registerFailed: 'Registration bounced. Check the deets.',
-  payFailed: 'Checkout didn’t finish. Spot’s still held.',
-  payoutFailed: 'Payout setup tripped. Check the fields.',
-  genericFail: 'Something tripped. Run it back.',
+  saveFailed: 'Couldn’t save. Try again.',
+  publishFailed: 'Couldn’t publish. Try again.',
+  uploadFailed: 'Upload failed. Try a smaller file.',
+  registerFailed: 'Registration didn’t complete. Check your details.',
+  payFailed: 'Payment didn’t finish. Your spot is still held.',
+  payoutFailed: 'Payout setup failed. Check the fields.',
+  genericFail: 'Something went wrong. Try again.',
 } as const;
 
 export function Toaster() {
@@ -86,7 +89,6 @@ export function toastSuccess(message: string, description?: string) {
   });
 }
 
-/** Casual title + optional API detail underneath. */
 export function toastError(title: string, detail?: string) {
   return toast.error(title, {
     description: detail && detail !== title ? detail : undefined,
@@ -106,12 +108,10 @@ export function toastDismiss(id?: string | number) {
   toast.dismiss(id);
 }
 
-/** Replace a pending toast with success. */
 export function toastResolve(id: string | number, message: string, description?: string) {
   return toast.success(message, { id, description, duration: 3400 });
 }
 
-/** Replace a pending toast with error. */
 export function toastReject(id: string | number, title: string, detail?: string) {
   return toast.error(title, {
     id,

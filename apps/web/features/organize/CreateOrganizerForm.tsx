@@ -56,10 +56,11 @@ function CreateOrganizerFormInner() {
   return (
     <div className="mx-auto max-w-4xl space-y-8 px-4 py-8 md:px-8">
       <div className="max-w-2xl space-y-2">
-        <p className="kicker text-accent">Organize</p>
-        <h1 className="display-title text-4xl md:text-5xl">New organizer profile</h1>
+        <p className="kicker text-accent">Host profile</p>
+        <h1 className="display-title text-4xl md:text-5xl">New host profile</h1>
         <p className="text-sm text-text-secondary">
-          Name the crew or brand that runs nights. You can create events right after this.
+          For crews and collectives that host under their own name. Most people can just use Create
+          from Your Events.
         </p>
       </div>
 

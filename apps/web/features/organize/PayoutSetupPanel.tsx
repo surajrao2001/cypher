@@ -372,7 +372,7 @@ export function PayoutSetupPanel({
           icon="wallet"
           kicker="Payouts"
           title="Where should the money land?"
-          body="Free nights don’t need this. Paid tickets do — bank or UPI, your call. Cashfree handles the boring paperwork."
+          body="Free events don’t need this. Paid entry does — bank or UPI."
         >
           {!editing ? (
             <Button type="button" size="md" onClick={() => setEditing(true)}>

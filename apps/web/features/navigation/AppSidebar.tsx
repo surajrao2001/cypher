@@ -28,7 +28,7 @@ const navItems = [
   { href: routes.discover, label: 'Discover', icon: 'discover' as const },
   { href: routes.events, label: 'Events', icon: 'events' as const },
   { href: routes.organize, label: 'Organize', icon: 'organize' as const },
-  { href: routes.tickets, label: 'Tickets', icon: 'tickets' as const },
+  { href: routes.tickets, label: 'Passes', icon: 'tickets' as const },
   { href: routes.profile, label: 'Profile', icon: 'profile' as const },
 ];
 

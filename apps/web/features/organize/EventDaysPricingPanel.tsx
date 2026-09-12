@@ -63,8 +63,8 @@ type Props = {
 };
 
 /**
- * Multi-day only: name each day, then sell per-day + full-run viewers passes.
- * Early bird lives in the shared Early bird step — not here.
+ * Multi-day only: name each day, then sell per-day + full-run audience passes.
+ * Early bird is configured per Entry on the Entry surface — not here.
  */
 export function EventDaysPricingPanel({ organizerId, eventId, event, onUpdated }: Props) {
   const { api } = useAuth();
@@ -156,7 +156,7 @@ export function EventDaysPricingPanel({ organizerId, eventId, event, onUpdated }
         <h2 className="text-sm font-bold text-text-primary">Multi-day schedule</h2>
         <p className="mt-1 text-sm leading-relaxed text-text-secondary">
           Your start and end span more than one calendar day. Name each day (e.g. Saturday /
-          Sunday), then set viewers tickets: one for a single day, and one for all days.
+          Sunday), then set audience passes: one for a single day, and one for all days.
         </p>
       </div>
 
@@ -242,15 +242,15 @@ export function EventDaysPricingPanel({ organizerId, eventId, event, onUpdated }
               Saved: {event.days.map((d) => d.label).join(' · ')}
             </p>
           ) : (
-            <p className="text-xs text-text-muted">Save at least two days before viewers passes.</p>
+            <p className="text-xs text-text-muted">Save at least two days before audience passes.</p>
           )}
         </div>
       </section>
 
       <section className="space-y-3 border-t border-border pt-6">
-        <h3 className="text-sm font-bold text-text-primary">2 · Viewers tickets</h3>
+        <h3 className="text-sm font-bold text-text-primary">2 · Audience passes</h3>
         <p className="text-sm text-text-secondary">
-          People can buy a ticket for <em>one day only</em>, or one ticket that covers{' '}
+          People can buy a pass for <em>one day only</em>, or one pass that covers{' '}
           <em>every day</em>. Set the prices below, then save.
         </p>
         {!canBuildPasses ? (
@@ -268,7 +268,7 @@ export function EventDaysPricingPanel({ organizerId, eventId, event, onUpdated }
                   min={0}
                 />
               </FormField>
-              <FormField label="All days (₹)" hint="One ticket for the whole event" hintReserve>
+              <FormField label="All days (₹)" hint="One pass for the whole event" hintReserve>
                 <Input
                   value={fullPrice}
                   onChange={(e) => setFullPrice(e.target.value)}
@@ -276,7 +276,7 @@ export function EventDaysPricingPanel({ organizerId, eventId, event, onUpdated }
                   min={0}
                 />
               </FormField>
-              <FormField label="Spots per day" hint="Max viewers each day" hintReserve>
+              <FormField label="Spots per day" hint="Max audience each day" hintReserve>
                 <Input
                   value={capacity}
                   onChange={(e) => setCapacity(e.target.value)}
@@ -287,12 +287,12 @@ export function EventDaysPricingPanel({ organizerId, eventId, event, onUpdated }
             </div>
             <Button type="button" disabled={pending} onClick={() => void createMultiDayViewersPasses()}>
               {event.viewerCategories.length > 1
-                ? 'Update day & all-days tickets'
-                : 'Create day & all-days tickets'}
+                ? 'Update day & all-days passes'
+                : 'Create day & all-days passes'}
             </Button>
             <p className="text-[11px] text-text-muted">
-              This makes a ticket for each saved day, plus one ticket for the whole event. Sold
-              tickets stay; empty ones get replaced.
+              This makes a pass for each saved day, plus one for the whole event. Sold
+              passes stay; empty ones get replaced.
             </p>
           </div>
         )}

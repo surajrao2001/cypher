@@ -92,6 +92,7 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
       ? event.viewerCategories
       : event.categories.filter((c) => c.entryType === 'viewer');
   const viewersOpen = viewers.length > 0 || event.audience?.enabled;
+  const hasEntry = compete.length > 0 || viewersOpen;
   const hasPin = event.venueLatitude != null && event.venueLongitude != null;
 
   return (
@@ -138,24 +139,18 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
           </section>
 
           <section className="space-y-4">
+            {hasEntry ? (
+              <>
             <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
               Compete
             </p>
             {compete.length === 0 ? (
               <EmptyState
-                kicker="Categories"
-                title="No compete categories yet"
-                body={
-                  viewersOpen
-                    ? 'This night is watch-only for now — grab an audience pass below.'
-                    : 'The organizer hasn’t opened compete entries yet.'
-                }
+                kicker="Compete"
+                title="Watch-only for now"
+                body="Grab an audience pass below to watch the floor."
                 className="py-8 md:py-10"
-              >
-                <Button asChild variant="outline" className="rounded-full">
-                  <Link href={routes.discover}>Browse Discover</Link>
-                </Button>
-              </EmptyState>
+              />
             ) : (
               <ul className="space-y-2">
                 {compete.map((category) => {
@@ -181,6 +176,15 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
                 })}
               </ul>
             )}
+              </>
+            ) : (
+              <EmptyState
+                kicker="Get in"
+                title="No registration needed"
+                body="This one’s open — check the details and show up."
+                className="py-8 md:py-10"
+              />
+            )}
           </section>
 
           {viewersOpen ? (
@@ -193,7 +197,7 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
                   Audience pass
                 </p>
                 <p className="mt-1 text-sm text-text-secondary">
-                  Presence without entering a category — still a real pass at the door.
+                  Watch the floor without entering a competition.
                 </p>
                 <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
                   <p className="text-sm font-semibold text-text-primary">
@@ -259,25 +263,33 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
           </MetaRow>
 
           <div className="space-y-2 border-t border-border pt-4">
-            {compete.length > 0 ? (
-              <OpenRegisterButton mode="compete" size="lg" className="w-full">
-                Compete <span aria-hidden>→</span>
-              </OpenRegisterButton>
-            ) : null}
-            {viewersOpen ? (
-              <OpenRegisterButton
-                mode="watch"
-                categoryId={viewers[0]?.id}
-                size="lg"
-                variant="outline"
-                className="w-full"
-              >
-                Watch the floor
-              </OpenRegisterButton>
-            ) : null}
-            <p className="text-center text-[11px] text-text-muted">
-              Free and paid entries both end in a pass + QR.
-            </p>
+            {hasEntry ? (
+              <>
+                {compete.length > 0 ? (
+                  <OpenRegisterButton mode="compete" size="lg" className="w-full">
+                    Compete <span aria-hidden>→</span>
+                  </OpenRegisterButton>
+                ) : null}
+                {viewersOpen ? (
+                  <OpenRegisterButton
+                    mode="watch"
+                    categoryId={viewers[0]?.id}
+                    size="lg"
+                    variant="outline"
+                    className="w-full"
+                  >
+                    Watch the floor
+                  </OpenRegisterButton>
+                ) : null}
+                <p className="text-center text-[11px] text-text-muted">
+                  Confirmed entries get a BYND8 Pass + QR.
+                </p>
+              </>
+            ) : (
+              <p className="text-sm text-text-secondary">
+                No registration needed — check the details and show up.
+              </p>
+            )}
           </div>
         </aside>
       </div>

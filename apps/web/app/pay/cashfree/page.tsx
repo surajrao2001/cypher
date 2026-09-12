@@ -17,14 +17,14 @@ function CashfreePayInner() {
       return;
     }
     void openCashfreeCheckout(session).catch((err: unknown) => {
-      setError(err instanceof Error ? err.message : 'Could not open Cashfree');
+      setError(err instanceof Error ? err.message : 'Could not open payment');
     });
   }, [session]);
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-4 px-6 py-16">
-      <p className="kicker text-accent">Cashfree</p>
-      <h1 className="display-title text-4xl">Opening checkout…</h1>
+      <p className="kicker text-accent">Payment</p>
+      <h1 className="display-title text-4xl">Opening secure payment…</h1>
       {error ? (
         <InlineNotice tone="warn">{friendlyError(error, error)}</InlineNotice>
       ) : (

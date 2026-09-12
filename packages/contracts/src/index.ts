@@ -568,6 +568,8 @@ export const routes = {
   organizePayouts: (slug: string) => `/organize/${slug}/payouts` as const,
   organizeEventCheckIn: (slug: string, eventId: string) =>
     `/organize/${slug}/events/${eventId}/check-in` as const,
+  organizeEventEntry: (slug: string, eventId: string) =>
+    `/organize/${slug}/events/${eventId}/entry` as const,
   organizeEventUpdates: (slug: string, eventId: string) =>
     `/organize/${slug}/events/${eventId}/updates` as const,
 } as const;
