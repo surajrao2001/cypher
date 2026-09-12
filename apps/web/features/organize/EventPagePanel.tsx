@@ -42,7 +42,6 @@ export function EventPagePanel({
               Poster
             </p>
             {event.posterUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={event.posterUrl}
                 alt=""

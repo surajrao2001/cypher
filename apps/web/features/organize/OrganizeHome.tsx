@@ -1,7 +1,7 @@
 'use client';
 
 import { routes } from '@cypher/contracts';
-import type { EventType, OrganizerDto, OrganizerEventDetailDto } from '@cypher/contracts';
+import type { OrganizerDto, OrganizerEventDetailDto } from '@cypher/contracts';
 import { eventEffectiveEndIso, formatEventDate, formatMinorUnits } from '@cypher/utils';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';

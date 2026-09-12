@@ -6,7 +6,6 @@ import { notFound } from 'next/navigation';
 
 import { ByndIcon } from '@/components/icons/bynd8';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { EventMediaSection } from '@/features/discovery/EventMediaSection';
 import { EventPoster } from '@/features/discovery/EventPoster';
 import { OpenRegisterButton } from '@/features/discovery/OpenRegisterButton';
