@@ -9,8 +9,15 @@ import type {
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useMemo, useState } from 'react';
 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { toastCopy, toastPending, toastReject, toastResolve } from '@/components/ui/toaster';
 import { useAuth } from '@/features/auth/AuthProvider';
+import { EditEventDrawer } from '@/features/organize/EditEventDrawer';
 import { EventControlHeader } from '@/features/organize/EventControlHeader';
 import { EventControlNav } from '@/features/organize/EventControlNav';
 import { EventHomePanel } from '@/features/organize/EventHomePanel';
@@ -23,7 +30,7 @@ import {
 } from '@/features/organize/event-control';
 import { OrganizeGate } from '@/features/organize/OrganizeGate';
 import { OrganizerWorkspace } from '@/features/organize/organizer-ui';
-import { PostUpdateDialog } from '@/features/organize/EventUpdatesPanel';
+import { EventUpdatesPanel, PostUpdateDialog } from '@/features/organize/EventUpdatesPanel';
 import { PageLoading, SoftError } from '@/features/shell/AsyncState';
 
 export function EventManageView({ slug, eventId }: { slug: string; eventId: string }) {
@@ -53,6 +60,9 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
   const [loadError, setLoadError] = useState<unknown>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [postUpdateOpen, setPostUpdateOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [updatesOpen, setUpdatesOpen] = useState(false);
+  const [updatesRefreshKey, setUpdatesRefreshKey] = useState(0);
 
   useEffect(() => {
     if (initialDest === 'entry') {
@@ -173,7 +183,6 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
 
   const entryHref = routes.organizeEventEntry(org.slug, event.id);
   const peopleHref = routes.organizeEventPeople(org.slug, event.id);
-  const editHref = `${routes.organize}/${org.slug}/events/${event.id}/edit`;
 
   const shell = (
     <OrganizerWorkspace width="full" className="relative z-10 space-y-6">
@@ -183,9 +192,12 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
         pending={pending}
         onPublishToggle={() => void togglePublish()}
         onPostUpdate={() => setPostUpdateOpen(true)}
+        onEditEvent={() => setEditOpen(true)}
       />
 
-      <EventControlNav active={dest} onChange={navigate} showMoney={showMoney} />
+      {dest !== 'home' ? (
+        <EventControlNav active={dest} onChange={navigate} showMoney={showMoney} />
+      ) : null}
 
       <PostUpdateDialog
         organizerId={org.id}
@@ -194,6 +206,41 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
         onOpenChange={setPostUpdateOpen}
         onPosted={() => {
           setPostUpdateOpen(false);
+          setUpdatesRefreshKey((n) => n + 1);
+        }}
+      />
+
+      <Dialog open={updatesOpen} onOpenChange={setUpdatesOpen}>
+        <DialogContent className="max-h-[85vh] max-w-lg overflow-y-auto border-[#2a2a2a] bg-[#141414]">
+          <DialogHeader>
+            <DialogTitle>Updates</DialogTitle>
+          </DialogHeader>
+          <EventUpdatesPanel
+            organizerId={org.id}
+            eventId={event.id}
+            refreshKey={updatesRefreshKey}
+          />
+          <button
+            type="button"
+            onClick={() => {
+              setUpdatesOpen(false);
+              setPostUpdateOpen(true);
+            }}
+            className="mt-2 text-sm font-semibold text-accent hover:underline"
+          >
+            Post update
+          </button>
+        </DialogContent>
+      </Dialog>
+
+      <EditEventDrawer
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        organizerId={org.id}
+        orgSlug={org.slug}
+        event={event}
+        onUpdated={(next) => {
+          setEvent(next);
           setReloadKey((n) => n + 1);
         }}
       />
@@ -207,8 +254,11 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
           checkedInCount={checkedInCount}
           entryHref={entryHref}
           peopleHref={peopleHref}
-          editHref={editHref}
           onNavigate={navigate}
+          onEditEvent={() => setEditOpen(true)}
+          onPostUpdate={() => setPostUpdateOpen(true)}
+          onViewAllUpdates={() => setUpdatesOpen(true)}
+          updatesRefreshKey={updatesRefreshKey}
           onPublished={(next) => {
             setEvent(next);
             setReloadKey((n) => n + 1);
@@ -225,14 +275,7 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
   }
 
   return (
-    <div className="relative overflow-hidden before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-[28rem] before:bg-[radial-gradient(ellipse_at_top_right,rgba(255,104,0,0.28)_0%,rgba(255,104,0,0.08)_35%,transparent_70%)] before:content-['']">
-      {event.posterUrl ? (
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-x-0 top-0 h-[28rem] bg-cover bg-[position:80%_25%] opacity-[0.28] [mask-image:linear-gradient(to_bottom,black_0%,black_40%,transparent_100%)]"
-          style={{ backgroundImage: `url(${event.posterUrl})` }}
-        />
-      ) : null}
+    <div className="relative overflow-hidden before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-[22rem] before:bg-[radial-gradient(ellipse_at_top_right,rgba(255,104,0,0.32)_0%,rgba(255,104,0,0.1)_32%,transparent_68%)] before:content-['']">
       {shell}
     </div>
   );
