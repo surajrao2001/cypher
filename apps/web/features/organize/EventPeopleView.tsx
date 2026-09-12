@@ -224,9 +224,9 @@ function EventPeoplePanel({ slug, eventId }: { slug: string; eventId: string }) 
             </Button>
           </OrganizeEmpty>
         ) : (
-          <div>
+          <div className="max-w-3xl">
             <div
-              className="hidden grid-cols-[minmax(0,1.3fr)_minmax(0,1.1fr)_8.5rem_10rem] gap-4 border-b border-[#2a2a2a] pb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted md:grid"
+              className="hidden grid-cols-[minmax(0,11rem)_minmax(0,10rem)_auto_auto] gap-x-8 border-b border-[#2a2a2a] pb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted md:grid"
               aria-hidden
             >
               <span>Name</span>
@@ -242,16 +242,15 @@ function EventPeoplePanel({ slug, eventId }: { slug: string; eventId: string }) 
                 const checkLabel = checked ? `✓ ${formatCheckInTime(checked)}` : '—';
                 return (
                   <li key={row.id} className="py-4">
-                    {/* Phone: compact row — name/entry left, status/check-in right */}
-                    <div className="flex items-start justify-between gap-3 md:hidden">
-                      <div className="min-w-0">
-                        <p className="truncate font-semibold text-text-primary">{name}</p>
-                        <p className="mt-0.5 truncate text-sm text-text-secondary">
-                          {row.categoryName}
-                        </p>
-                      </div>
-                      <div className="shrink-0 space-y-1 text-right">
-                        <StatusCell status={row.registrationStatus} className="justify-end" />
+                    {/* Phone: left-aligned compact row — no justify-between stretch */}
+                    <div className="space-y-1 md:hidden">
+                      <p className="truncate font-semibold text-text-primary">{name}</p>
+                      <p className="truncate text-sm text-text-secondary">{row.categoryName}</p>
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-0.5">
+                        <StatusCell status={row.registrationStatus} />
+                        <span className="text-text-muted" aria-hidden>
+                          ·
+                        </span>
                         <p
                           className={cn(
                             'text-sm',
@@ -263,8 +262,8 @@ function EventPeoplePanel({ slug, eventId }: { slug: string; eventId: string }) 
                       </div>
                     </div>
 
-                    {/* Desktop: full table row */}
-                    <div className="hidden grid-cols-[minmax(0,1.3fr)_minmax(0,1.1fr)_8.5rem_10rem] items-center gap-4 md:grid">
+                    {/* Desktop: tight columns (not full-bleed fr stretch) */}
+                    <div className="hidden grid-cols-[minmax(0,11rem)_minmax(0,10rem)_auto_auto] items-center gap-x-8 md:grid">
                       <p className="truncate font-semibold text-text-primary">{name}</p>
                       <p className="truncate text-sm text-text-secondary">{row.categoryName}</p>
                       <StatusCell status={row.registrationStatus} />

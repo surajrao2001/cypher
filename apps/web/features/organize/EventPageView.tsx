@@ -65,27 +65,6 @@ function EventPagePanel({ slug, eventId }: { slug: string; eventId: string }) {
     };
   }, [auth.api, eventId, reloadKey, slug]);
 
-  useEffect(() => {
-    const ids = SECTIONS.map((s) => s.id);
-    const nodes = ids
-      .map((id) => document.getElementById(`event-page-${id}`))
-      .filter((n): n is HTMLElement => Boolean(n));
-    if (nodes.length === 0) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((e) => e.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-        const id = visible?.target.id.replace('event-page-', '') as SectionId | undefined;
-        if (id && ids.includes(id)) setActive(id);
-      },
-      { rootMargin: '-20% 0px -55% 0px', threshold: [0.1, 0.35, 0.6] },
-    );
-    for (const node of nodes) observer.observe(node);
-    return () => observer.disconnect();
-  }, [event?.id]);
-
   if (error && !event) {
     return (
       <div className="px-6 py-16">
@@ -106,11 +85,6 @@ function EventPagePanel({ slug, eventId }: { slug: string; eventId: string }) {
   const editHref = `${routes.organize}/${org.slug}/events/${event.id}/edit`;
   const isLive = event.status === 'published';
   const place = [event.venue, event.city].filter(Boolean).join(', ') || 'City TBD';
-
-  function scrollTo(id: SectionId) {
-    setActive(id);
-    document.getElementById(`event-page-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
 
   return (
     <div className="relative overflow-hidden before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-[28rem] before:bg-[radial-gradient(ellipse_at_top_right,rgba(255,104,0,0.28)_0%,rgba(255,104,0,0.08)_35%,transparent_70%)] before:content-['']">
@@ -148,16 +122,21 @@ function EventPagePanel({ slug, eventId }: { slug: string; eventId: string }) {
           )}
         </header>
 
-        <div className="grid gap-8 lg:grid-cols-[10.5rem_minmax(0,1fr)] lg:items-start">
-          <nav aria-label="Event page sections" className="lg:sticky lg:top-24">
-            <ul className="flex gap-1 overflow-x-auto pb-1 lg:flex-col lg:gap-0 lg:overflow-visible lg:pb-0">
+        <div className="grid gap-6 lg:grid-cols-[9.5rem_minmax(0,40rem)] lg:items-start lg:gap-10">
+          <nav aria-label="Event page sections" className="lg:pt-1">
+            <ul
+              className="flex gap-1 overflow-x-auto pb-1 lg:flex-col lg:gap-0.5 lg:overflow-visible lg:pb-0"
+              role="tablist"
+            >
               {SECTIONS.map((section) => {
                 const isActive = active === section.id;
                 return (
                   <li key={section.id}>
                     <button
                       type="button"
-                      onClick={() => scrollTo(section.id)}
+                      role="tab"
+                      aria-selected={isActive}
+                      onClick={() => setActive(section.id)}
                       className={cn(
                         'whitespace-nowrap border-l-2 px-3 py-2.5 text-left text-sm font-semibold transition-colors lg:w-full',
                         isActive
@@ -173,16 +152,15 @@ function EventPagePanel({ slug, eventId }: { slug: string; eventId: string }) {
             </ul>
           </nav>
 
-          <div className="min-w-0 space-y-10">
-            <div className="grid gap-8 md:grid-cols-[minmax(10rem,16rem)_minmax(0,1fr)] md:items-start">
-              <section id="event-page-poster" className="scroll-mt-28">
-                <div className="relative mx-auto aspect-[3/4] w-full max-w-[16rem] overflow-hidden rounded-2xl border border-[#2a2a2a] bg-[#141414] md:mx-0">
+          <div className="min-w-0" role="tabpanel">
+            {active === 'poster' ? (
+              <section className="space-y-4">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
+                  Poster
+                </p>
+                <div className="relative aspect-[3/4] w-full max-w-[16rem] overflow-hidden rounded-2xl border border-[#2a2a2a] bg-[#141414]">
                   {event.posterUrl ? (
-                    <img
-                      src={event.posterUrl}
-                      alt=""
-                      className="h-full w-full object-cover"
-                    />
+                    <img src={event.posterUrl} alt="" className="h-full w-full object-cover" />
                   ) : (
                     <div className="flex h-full w-full flex-col items-center justify-center gap-1 bg-[linear-gradient(160deg,#1c1207,#141414)]">
                       <span className="font-display text-2xl text-text-muted/40">+</span>
@@ -199,96 +177,88 @@ function EventPagePanel({ slug, eventId }: { slug: string; eventId: string }) {
                   </Link>
                 </div>
               </section>
+            ) : null}
 
-              <div className="min-w-0 space-y-0">
-                <section
-                  id="event-page-details"
-                  className="scroll-mt-28 flex flex-wrap items-start justify-between gap-3 border-b border-[#2a2a2a] py-5 first:pt-0"
-                >
-                  <div className="min-w-0 space-y-2">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
-                      Event details
-                    </p>
-                    <p className="text-base text-text-primary">
-                      {formatEventDateRange(event.startTime, event.endTime)}
-                    </p>
-                    <p className="text-sm text-text-secondary">{place}</p>
-                  </div>
+            {active === 'details' ? (
+              <section className="space-y-4">
+                <div className="flex items-start justify-between gap-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
+                    Event details
+                  </p>
+                  <Button asChild variant="outline" size="sm" className="rounded-xl border-[#2a2a2a]">
+                    <Link href={`${editHref}#basics`}>Edit</Link>
+                  </Button>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-base text-text-primary">
+                    {formatEventDateRange(event.startTime, event.endTime)}
+                  </p>
+                  <p className="text-sm text-text-secondary">{place}</p>
+                </div>
+              </section>
+            ) : null}
+
+            {active === 'description' ? (
+              <section className="space-y-4">
+                <div className="flex items-start justify-between gap-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
+                    Description
+                  </p>
+                  <Button asChild variant="outline" size="sm" className="rounded-xl border-[#2a2a2a]">
+                    <Link href={`${editHref}#basics`}>Edit</Link>
+                  </Button>
+                </div>
+                <p className="whitespace-pre-wrap text-sm leading-relaxed text-text-secondary">
+                  {event.description?.trim() || 'No description yet'}
+                </p>
+              </section>
+            ) : null}
+
+            {active === 'media' ? (
+              <section className="space-y-4">
+                <div className="flex items-start justify-between gap-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
+                    Media
+                  </p>
+                  <Button asChild variant="outline" size="sm" className="rounded-xl border-[#2a2a2a]">
+                    <Link href={`${editHref}#media`}>Edit</Link>
+                  </Button>
+                </div>
+                <EventMediaLinksEditor
+                  organizerId={org.id}
+                  eventId={event.id}
+                  links={event.mediaLinks ?? []}
+                  categories={event.categories
+                    .filter((c) => c.entryType !== 'viewer')
+                    .map((c) => ({ id: c.id, name: c.name }))}
+                  onUpdated={setEvent}
+                />
+              </section>
+            ) : null}
+
+            {active === 'updates' ? (
+              <section className="space-y-4">
+                <div className="flex items-start justify-between gap-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
+                    Updates
+                  </p>
                   <Button
-                    asChild
+                    type="button"
                     variant="outline"
                     size="sm"
                     className="rounded-xl border-[#2a2a2a]"
+                    onClick={() => setPostOpen(true)}
                   >
-                    <Link href={`${editHref}#basics`}>Edit</Link>
+                    Post update
                   </Button>
-                </section>
-
-                <section
-                  id="event-page-description"
-                  className="scroll-mt-28 flex flex-wrap items-start justify-between gap-3 py-5"
-                >
-                  <div className="min-w-0 flex-1 space-y-2 pr-2">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
-                      Description
-                    </p>
-                    <p className="whitespace-pre-wrap text-sm leading-relaxed text-text-secondary">
-                      {event.description?.trim() || 'No description yet'}
-                    </p>
-                  </div>
-                  <Button
-                    asChild
-                    variant="outline"
-                    size="sm"
-                    className="rounded-xl border-[#2a2a2a]"
-                  >
-                    <Link href={`${editHref}#basics`}>Edit</Link>
-                  </Button>
-                </section>
-              </div>
-            </div>
-
-            <section id="event-page-media" className="scroll-mt-28 space-y-4 border-t border-[#2a2a2a] pt-8">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
-                  Media
-                </p>
-                <Button asChild variant="outline" size="sm" className="rounded-xl border-[#2a2a2a]">
-                  <Link href={`${editHref}#media`}>Edit</Link>
-                </Button>
-              </div>
-              <EventMediaLinksEditor
-                organizerId={org.id}
-                eventId={event.id}
-                links={event.mediaLinks ?? []}
-                categories={event.categories
-                  .filter((c) => c.entryType !== 'viewer')
-                  .map((c) => ({ id: c.id, name: c.name }))}
-                onUpdated={setEvent}
-              />
-            </section>
-
-            <section id="event-page-updates" className="scroll-mt-28 space-y-4 border-t border-[#2a2a2a] pt-8">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
-                  Updates
-                </p>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="rounded-xl border-[#2a2a2a]"
-                  onClick={() => setPostOpen(true)}
-                >
-                  Post update
-                </Button>
-              </div>
-              <EventUpdatesPanel
-                organizerId={org.id}
-                eventId={event.id}
-                refreshKey={updatesKey}
-              />
-            </section>
+                </div>
+                <EventUpdatesPanel
+                  organizerId={org.id}
+                  eventId={event.id}
+                  refreshKey={updatesKey}
+                />
+              </section>
+            ) : null}
           </div>
         </div>
 
