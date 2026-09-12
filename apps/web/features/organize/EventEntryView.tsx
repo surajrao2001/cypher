@@ -32,7 +32,6 @@ import {
   eventTypeGroup,
 } from '@/features/organize/event-type-copy';
 import { OrganizeGate } from '@/features/organize/OrganizeGate';
-import { EventSectionNav } from '@/features/organize/EventSectionNav';
 import {
   CapacityMeter,
   OrganizeEmpty,
@@ -271,15 +270,12 @@ export function EventEntryPanel({
   const content = (
     <>
       {showChrome ? (
-        <>
-          <PageBreadcrumb
-            items={[
-              { label: event.title, href: manageHref },
-              { label: 'Entry' },
-            ]}
-          />
-          <EventSectionNav slug={slug} eventId={eventId} event={event} active="entry" />
-        </>
+        <PageBreadcrumb
+          items={[
+            { label: event.title, href: manageHref },
+            { label: 'Entry' },
+          ]}
+        />
       ) : null}
       {body}
     </>

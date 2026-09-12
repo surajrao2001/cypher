@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type {
   EventUpdateDto,
   OrganizerDto,
@@ -11,7 +11,7 @@ import { routes } from '@cypher/contracts';
 import { formatMinorUnits } from '@cypher/utils';
 import Link from 'next/link';
 
-import { ByndIcon, type ByndIconName } from '@/components/icons/bynd8';
+import { ByndIcon } from '@/components/icons/bynd8';
 import { useAuth } from '@/features/auth/AuthProvider';
 import {
   hasPaidEntry,
@@ -20,15 +20,205 @@ import {
   statusLabel,
   type ControlDest,
 } from '@/features/organize/event-control';
-import { formatEventHomeWhen } from '@/features/organize/EventControlHeader';
+import {
+  formatEventHomeWhen,
+  formatEventHomeWhenShort,
+} from '@/features/organize/EventControlHeader';
 import {
   entryCopyForType,
   eventTypeDisplayLabel,
   eventTypeGroup,
   hasAnyEntry,
+  type EventTypeGroup,
 } from '@/features/organize/event-type-copy';
 import { EventReadiness } from '@/features/organize/EventReadiness';
 import { cn } from '@/lib/utils';
+import {
+  ChevronRight,
+  Eye,
+  IndianRupee,
+  Ticket,
+  Trophy,
+  Users,
+  type LucideIcon,
+} from 'lucide-react';
+
+type Metric = {
+  id: string;
+  Icon: LucideIcon;
+  iconClass: string;
+  value: string;
+  label: string;
+  detail: string;
+};
+
+function buildHomeMetrics(args: {
+  group: EventTypeGroup;
+  anyEntry: boolean;
+  showMoney: boolean;
+  confirmed: number;
+  competeConfirmed: number;
+  audienceConfirmed: number;
+  competeCount: number;
+  audienceCount: number;
+  spotsLeft: number | null;
+  capacity: number;
+  filled: number;
+  money: { collectedMinor: number; pendingMinor: number };
+}): Metric[] {
+  const {
+    group,
+    anyEntry,
+    showMoney,
+    confirmed,
+    competeConfirmed,
+    audienceConfirmed,
+    competeCount,
+    audienceCount,
+    spotsLeft,
+    capacity,
+    filled,
+    money,
+  } = args;
+
+  // Jam / Session / Other with no Entry — no empty KPI strip
+  if ((group === 'jam' || group === 'session' || group === 'other') && !anyEntry) {
+    return [];
+  }
+
+  const metrics: Metric[] = [];
+
+  if (group === 'workshop') {
+    if (capacity > 0) {
+      metrics.push({
+        id: 'filled',
+        Icon: Users,
+        iconClass: 'text-[#5B9DFF]',
+        value: String(filled),
+        label: 'Spots filled',
+        detail: `${String(filled)} / ${String(capacity)}`,
+      });
+    } else if (anyEntry) {
+      metrics.push({
+        id: 'registered',
+        Icon: Users,
+        iconClass: 'text-[#5B9DFF]',
+        value: String(confirmed),
+        label: 'Registered',
+        detail: 'Workshop attendance',
+      });
+    }
+    if (spotsLeft != null) {
+      metrics.push({
+        id: 'spots',
+        Icon: Ticket,
+        iconClass: 'text-accent',
+        value: String(spotsLeft),
+        label: 'Spots left',
+        detail: `${String(filled)} / ${String(capacity)} filled`,
+      });
+    }
+    if (showMoney) {
+      metrics.push({
+        id: 'money',
+        Icon: IndianRupee,
+        iconClass: 'text-accent',
+        value: formatMinorUnits(money.collectedMinor),
+        label: 'Collected',
+        detail:
+          money.pendingMinor > 0
+            ? `${formatMinorUnits(money.pendingMinor)} pending`
+            : 'No pending',
+      });
+    }
+    return metrics;
+  }
+
+  if (group === 'battle') {
+    metrics.push({
+      id: 'registered',
+      Icon: Users,
+      iconClass: 'text-[#5B9DFF]',
+      value: String(confirmed),
+      label: 'Registered',
+      detail: anyEntry
+        ? `${String(competeConfirmed)} competitors · ${String(audienceConfirmed)} audience`
+        : 'No entry yet',
+    });
+    metrics.push({
+      id: 'compete',
+      Icon: Trophy,
+      iconClass: 'text-[#E8B84A]',
+      value: String(competeCount),
+      label: competeCount === 1 ? 'Competition' : 'Competitions',
+      detail:
+        audienceCount > 0
+          ? `${String(audienceCount)} audience pass${audienceCount === 1 ? '' : 'es'}`
+          : 'No audience pass',
+    });
+    if (showMoney) {
+      metrics.push({
+        id: 'money',
+        Icon: IndianRupee,
+        iconClass: 'text-accent',
+        value: formatMinorUnits(money.collectedMinor),
+        label: 'Collected',
+        detail:
+          money.pendingMinor > 0
+            ? `${formatMinorUnits(money.pendingMinor)} pending`
+            : 'No pending',
+      });
+    }
+    if (spotsLeft != null || anyEntry) {
+      metrics.push({
+        id: 'spots',
+        Icon: Ticket,
+        iconClass: 'text-accent',
+        value: spotsLeft == null ? '—' : String(spotsLeft),
+        label: 'Spots left',
+        detail:
+          capacity > 0
+            ? `${String(filled)} / ${String(capacity)} filled`
+            : 'No capacity set',
+      });
+    }
+    return metrics;
+  }
+
+  // Jam / Session / Other WITH entry — attendance/capacity only (not "1 Entry" KPI)
+  metrics.push({
+    id: 'registered',
+    Icon: Users,
+    iconClass: 'text-[#5B9DFF]',
+    value: String(confirmed),
+    label: 'Registered',
+    detail: confirmed === 1 ? '1 person in' : `${String(confirmed)} people in`,
+  });
+  if (spotsLeft != null) {
+    metrics.push({
+      id: 'spots',
+      Icon: Ticket,
+      iconClass: 'text-accent',
+      value: String(spotsLeft),
+      label: 'Spots left',
+      detail: `${String(filled)} / ${String(capacity)} filled`,
+    });
+  }
+  if (showMoney) {
+    metrics.push({
+      id: 'money',
+      Icon: IndianRupee,
+      iconClass: 'text-accent',
+      value: formatMinorUnits(money.collectedMinor),
+      label: 'Collected',
+      detail:
+        money.pendingMinor > 0
+          ? `${formatMinorUnits(money.pendingMinor)} pending`
+          : 'No pending',
+    });
+  }
+  return metrics;
+}
 
 export function EventHomePanel({
   org,
@@ -65,8 +255,7 @@ export function EventHomePanel({
   const isDraft = event.status === 'draft';
   const isLive = event.status === 'published';
   const past = isPastEvent(event);
-  const paid = hasPaidEntry(event);
-  const showMoney = paid;
+  const showMoney = hasPaidEntry(event);
   const copy = entryCopyForType(event.eventType);
   const group = eventTypeGroup(event.eventType);
   const anyEntry = hasAnyEntry(event);
@@ -82,11 +271,11 @@ export function EventHomePanel({
     (n, c) => n + c.confirmedCount + c.reservedCount,
     0,
   );
-  const spotsLeft =
-    capacity > 0 ? Math.max(0, capacity - filled) : null;
+  const spotsLeft = capacity > 0 ? Math.max(0, capacity - filled) : null;
   const money = moneyFromRegistrations(regs);
   const publicHref = `${routes.events}/${event.slug}`;
   const when = formatEventHomeWhen(event.startTime);
+  const whenShort = formatEventHomeWhenShort(event.startTime);
   const place = [event.venue, event.city].filter(Boolean).join(', ');
 
   const [latestUpdate, setLatestUpdate] = useState<EventUpdateDto | null>(null);
@@ -112,222 +301,86 @@ export function EventHomePanel({
     };
   }, [auth.api, event.id, org.id, updatesRefreshKey]);
 
-  const entrySub =
-    audienceCats.length > 0
-      ? `${String(audienceCats.length)} audience pass${audienceCats.length === 1 ? '' : 'es'}`
-      : group === 'battle'
-        ? 'No audience pass'
-        : copy.emptyEntryHome;
-
-  if (isDraft) {
-    return (
-      <div className="space-y-6">
-        <EventReadiness org={org} event={event} onPublished={onPublished} />
-        <HomeBody
-          event={event}
-          confirmed={confirmed}
-          competeConfirmed={competeConfirmed}
-          audienceConfirmed={audienceConfirmed}
-          competeCount={compete.length}
-          entryCount={compete.length + audienceCats.length}
-          anyEntry={anyEntry}
-          showMoney={showMoney}
-          money={money}
-          entrySub={entrySub}
-          spotsLeft={spotsLeft}
-          capacity={capacity}
-          filled={filled}
-          group={group}
-          peopleHref={peopleHref}
-          entryHref={entryHref}
-          publicHref={publicHref}
-          when={when}
-          place={place}
-          isLive={false}
-          past={false}
-          latestUpdate={latestUpdate}
-          updateCount={updateCount}
-          onNavigate={onNavigate}
-          onEditEvent={onEditEvent}
-          onPostUpdate={onPostUpdate}
-          onViewAllUpdates={onViewAllUpdates}
-        />
-      </div>
-    );
-  }
-
-  return (
-    <HomeBody
-      event={event}
-      confirmed={confirmed}
-      competeConfirmed={competeConfirmed}
-      audienceConfirmed={audienceConfirmed}
-      competeCount={compete.length}
-      entryCount={compete.length + audienceCats.length}
-      anyEntry={anyEntry}
-      showMoney={showMoney}
-      money={money}
-      entrySub={entrySub}
-      spotsLeft={spotsLeft}
-      capacity={capacity}
-      filled={filled}
-      group={group}
-      peopleHref={peopleHref}
-      entryHref={entryHref}
-      publicHref={publicHref}
-      when={when}
-      place={place}
-      isLive={isLive}
-      past={past}
-      latestUpdate={latestUpdate}
-      updateCount={updateCount}
-      onNavigate={onNavigate}
-      onEditEvent={onEditEvent}
-      onPostUpdate={onPostUpdate}
-      onViewAllUpdates={onViewAllUpdates}
-    />
+  const metrics = useMemo(
+    () =>
+      buildHomeMetrics({
+        group,
+        anyEntry,
+        showMoney,
+        confirmed,
+        competeConfirmed,
+        audienceConfirmed,
+        competeCount: compete.length,
+        audienceCount: audienceCats.length,
+        spotsLeft,
+        capacity,
+        filled,
+        money,
+      }),
+    [
+      group,
+      anyEntry,
+      showMoney,
+      confirmed,
+      competeConfirmed,
+      audienceConfirmed,
+      compete.length,
+      audienceCats.length,
+      spotsLeft,
+      capacity,
+      filled,
+      money,
+    ],
   );
-}
 
-function HomeBody({
-  event,
-  confirmed,
-  competeConfirmed,
-  audienceConfirmed,
-  competeCount,
-  entryCount,
-  anyEntry,
-  showMoney,
-  money,
-  entrySub,
-  spotsLeft,
-  capacity,
-  filled,
-  group,
-  peopleHref,
-  entryHref,
-  publicHref,
-  when,
-  place,
-  isLive,
-  past,
-  latestUpdate,
-  updateCount,
-  onNavigate,
-  onEditEvent,
-  onPostUpdate,
-  onViewAllUpdates,
-}: {
-  event: OrganizerEventDetailDto;
-  confirmed: number;
-  competeConfirmed: number;
-  audienceConfirmed: number;
-  competeCount: number;
-  entryCount: number;
-  anyEntry: boolean;
-  showMoney: boolean;
-  money: { collectedMinor: number; pendingMinor: number; refundedMinor: number };
-  entrySub: string;
-  spotsLeft: number | null;
-  capacity: number;
-  filled: number;
-  group: ReturnType<typeof eventTypeGroup>;
-  peopleHref: string;
-  entryHref: string;
-  publicHref: string;
-  when: string;
-  place: string;
-  isLive: boolean;
-  past: boolean;
-  latestUpdate: EventUpdateDto | null;
-  updateCount: number;
-  onNavigate: (dest: ControlDest) => void;
-  onEditEvent: () => void;
-  onPostUpdate?: () => void;
-  onViewAllUpdates?: () => void;
-}) {
-  const registeredDetail =
-    group === 'battle' && anyEntry
-      ? `${String(competeConfirmed)} competitors · ${String(audienceConfirmed)} audience`
-      : anyEntry
-        ? `${String(confirmed)} confirmed`
-        : 'No registration needed';
+  const noEntryBreath =
+    !anyEntry && (group === 'jam' || group === 'session' || group === 'other') && !isDraft;
 
-  return (
-    <div className="space-y-6">
-      {/* Metric squares */}
-      <div
-        className={cn(
-          'grid gap-3',
-          showMoney ? 'grid-cols-2 lg:grid-cols-4' : 'grid-cols-2 lg:grid-cols-3',
-        )}
-      >
-        <MetricCard
-          icon="crew"
-          iconClass="text-[#5B9DFF]"
-          value={String(confirmed)}
-          label="Registered"
-          detail={registeredDetail}
-        />
-        <MetricCard
-          icon="trophy"
-          iconClass="text-[#E8B84A]"
-          value={String(anyEntry ? (group === 'battle' ? competeCount : entryCount) : 0)}
-          label={
-            group === 'battle'
-              ? Number(anyEntry ? competeCount : 0) === 1
-                ? 'Competition'
-                : 'Competitions'
-              : group === 'workshop'
-                ? Number(anyEntry ? entryCount : 0) === 1
-                  ? 'Pass'
-                  : 'Passes'
-                : Number(anyEntry ? entryCount : 0) === 1
-                  ? 'Entry'
-                  : 'Entries'
-          }
-          detail={anyEntry ? entrySub : 'Add entry when ready'}
-        />
-        {showMoney ? (
-          <MetricCard
-            icon="wallet"
-            iconClass="text-accent"
-            value={formatMinorUnits(money.collectedMinor)}
-            label="Collected"
-            detail={
-              money.pendingMinor > 0
-                ? `${formatMinorUnits(money.pendingMinor)} pending`
-                : 'No pending'
-            }
-          />
-        ) : null}
-        <MetricCard
-          icon="tickets"
-          iconClass="text-accent"
-          value={spotsLeft == null ? '—' : String(spotsLeft)}
-          label="Spots left"
-          detail={
-            capacity > 0
-              ? `${String(filled)} / ${String(capacity)} filled`
-              : anyEntry
-                ? 'No capacity set'
-                : 'Open'
-          }
-        />
-      </div>
+  const body = (
+    <div className="space-y-7 md:space-y-8">
+      {noEntryBreath ? (
+        <p className="text-[15px] text-text-secondary">
+          No registration needed.
+          <button
+            type="button"
+            onClick={() => {
+              if (typeof window !== 'undefined') window.location.href = entryHref;
+            }}
+            className="ml-2 font-semibold text-accent hover:underline"
+          >
+            Add entry
+          </button>
+          <span className="text-text-muted"> if you want capacity or payment.</span>
+        </p>
+      ) : null}
 
-      {/* Destinations + Public page */}
-      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,22rem)] lg:items-stretch">
-        <div className="flex flex-col gap-3">
+      {metrics.length > 0 ? (
+        <div
+          className={cn(
+            'grid gap-3',
+            metrics.length === 1 && 'grid-cols-1 sm:max-w-xs',
+            metrics.length === 2 && 'grid-cols-2 sm:max-w-xl',
+            metrics.length === 3 && 'grid-cols-2 lg:grid-cols-3',
+            metrics.length >= 4 && 'grid-cols-2 lg:grid-cols-4',
+          )}
+        >
+          {metrics.map((m) => (
+            <MetricCard key={m.id} {...m} />
+          ))}
+        </div>
+      ) : null}
+
+      <div className="grid items-stretch gap-4 lg:grid-cols-[minmax(0,1.05fr)_minmax(17rem,0.55fr)] lg:gap-5">
+        <div className="flex flex-col gap-2.5">
           <DestRow
-            icon="crew"
+            Icon={Users}
             iconWrap="bg-[#1a2740] text-[#5B9DFF]"
             title="People"
             body="View registrations, check-ins and manage attendees"
             href={peopleHref}
           />
           <DestRow
-            icon="tickets"
+            Icon={Ticket}
             iconWrap="bg-[#2a1a0e] text-accent"
             title="Entry"
             body={
@@ -341,7 +394,7 @@ function HomeBody({
           />
           {showMoney ? (
             <DestRow
-              icon="wallet"
+              Icon={IndianRupee}
               iconWrap="bg-[#142418] text-[#6FCF97]"
               title="Money"
               body="View revenue, payouts and payment status"
@@ -352,7 +405,7 @@ function HomeBody({
 
         <PublicPageCard
           event={event}
-          when={when}
+          when={whenShort || when}
           place={place}
           isLive={isLive}
           publicHref={publicHref}
@@ -360,11 +413,10 @@ function HomeBody({
         />
       </div>
 
-      {/* Latest update */}
       {!past || latestUpdate ? (
         <section className="space-y-3">
           <div className="flex items-center justify-between gap-3">
-            <h2 className="inline-flex items-center gap-2 text-sm font-semibold text-text-primary">
+            <h2 className="inline-flex items-center gap-2 text-[15px] font-semibold text-text-primary">
               <ByndIcon name="megaphone" className="size-4 text-accent" />
               Latest update
             </h2>
@@ -372,7 +424,7 @@ function HomeBody({
               <button
                 type="button"
                 onClick={() => onViewAllUpdates?.()}
-                className="text-sm font-medium text-accent hover:underline"
+                className="text-sm font-medium text-accent transition-colors hover:text-accent/80"
               >
                 View all →
               </button>
@@ -380,21 +432,17 @@ function HomeBody({
               <button
                 type="button"
                 onClick={() => onPostUpdate()}
-                className="text-sm font-medium text-accent hover:underline"
+                className="text-sm font-medium text-accent transition-colors hover:text-accent/80"
               >
                 Post update →
               </button>
             ) : null}
           </div>
           {latestUpdate ? (
-            <article className="flex gap-3.5 rounded-2xl border border-[#2a2a2a] bg-[#141414] p-3.5 sm:gap-4 sm:p-4">
-              <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-[#1a1a1a] sm:h-20 sm:w-20">
-                {latestUpdate.posterUrl || event.posterUrl ? (
-                  <img
-                    src={latestUpdate.posterUrl || event.posterUrl || ''}
-                    alt=""
-                    className="h-full w-full object-cover"
-                  />
+            <article className="flex gap-4 rounded-2xl border border-[#252525] bg-gradient-to-br from-[#161616] to-[#121212] p-4">
+              <div className="relative h-[4.5rem] w-[4.5rem] shrink-0 overflow-hidden rounded-xl bg-[#1a1a1a]">
+                {latestUpdate.posterUrl ? (
+                  <img src={latestUpdate.posterUrl} alt="" className="h-full w-full object-cover" />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center">
                     <ByndIcon name="megaphone" className="size-5 text-text-muted" />
@@ -402,69 +450,95 @@ function HomeBody({
                 )}
               </div>
               <div className="min-w-0 flex-1 space-y-1">
-                <p className="font-semibold text-text-primary">
+                <p className="text-[15px] font-semibold text-text-primary">
                   {latestUpdate.title?.trim() || 'Update'}
                 </p>
                 <p className="text-xs text-text-muted">{relativeTime(latestUpdate.publishedAt)}</p>
-                <p className="line-clamp-2 text-sm text-text-secondary">{latestUpdate.body}</p>
+                <p className="line-clamp-2 text-sm leading-snug text-text-secondary">
+                  {latestUpdate.body}
+                </p>
               </div>
             </article>
           ) : (
-            <div className="rounded-2xl border border-dashed border-[#2a2a2a] bg-[#141414]/40 px-4 py-6 text-center">
-              <p className="text-sm text-text-secondary">No updates yet</p>
+            <p className="text-sm text-text-muted">
+              No updates yet.
               {onPostUpdate ? (
-                <button
-                  type="button"
-                  onClick={onPostUpdate}
-                  className="mt-2 text-sm font-semibold text-accent hover:underline"
-                >
-                  Post update
-                </button>
+                <>
+                  {' '}
+                  <button
+                    type="button"
+                    onClick={onPostUpdate}
+                    className="font-semibold text-accent hover:underline"
+                  >
+                    Post one
+                  </button>
+                </>
               ) : null}
-            </div>
+            </p>
           )}
         </section>
       ) : null}
+
+      {isDraft && copy.suggestEntryTitle && !anyEntry ? (
+        <p className="text-sm text-text-secondary">
+          {copy.suggestEntryBody}{' '}
+          <Link href={entryHref} className="font-semibold text-accent hover:underline">
+            {copy.addCompete}
+          </Link>
+        </p>
+      ) : null}
     </div>
   );
+
+  if (isDraft) {
+    return (
+      <div className="space-y-7">
+        <EventReadiness org={org} event={event} onPublished={onPublished} />
+        {body}
+      </div>
+    );
+  }
+
+  return body;
 }
 
 function MetricCard({
-  icon,
+  Icon,
   iconClass,
   value,
   label,
   detail,
-}: {
-  icon: ByndIconName;
-  iconClass: string;
-  value: string;
-  label: string;
-  detail: string;
-}) {
+}: Metric) {
   return (
-    <div className="flex min-h-[7.5rem] flex-col rounded-2xl border border-[#2a2a2a] bg-[#141414] p-4">
-      <ByndIcon name={icon} className={cn('size-5', iconClass)} />
-      <div className="mt-auto space-y-1 pt-4">
-        <p className="font-display text-[1.55rem] leading-none tracking-[0.02em] text-text-primary sm:text-[1.75rem]">
-          {value}{' '}
-          <span className="text-[0.92rem] font-semibold tracking-normal sm:text-[1rem]">{label}</span>
+    <div className="flex min-h-[7.75rem] flex-col rounded-2xl border border-[#252525] bg-gradient-to-b from-[#171717] to-[#121212] px-4 py-4 transition-[border-color] duration-150 hover:border-[#333]">
+      <Icon
+        className={cn('size-5 shrink-0', iconClass)}
+        strokeWidth={1.85}
+        absoluteStrokeWidth
+        aria-hidden
+      />
+      <div className="mt-auto space-y-1.5 pt-5">
+        <p className="font-display text-[2rem] leading-none tracking-[0.02em] text-text-primary sm:text-[2.15rem]">
+          {value}
         </p>
-        <p className="text-xs leading-snug text-text-secondary sm:text-[13px]">{detail}</p>
+        <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-text-secondary">
+          {label}
+        </p>
+        <p className="text-[12px] leading-snug text-text-muted sm:text-[13px]">{detail}</p>
       </div>
     </div>
   );
 }
 
 function DestRow({
-  icon,
+  Icon,
   iconWrap,
   title,
   body,
   href,
   onClick,
 }: {
-  icon: ByndIconName;
+  Icon: LucideIcon;
   iconWrap: string;
   title: string;
   body: string;
@@ -472,22 +546,28 @@ function DestRow({
   onClick?: () => void;
 }) {
   const className =
-    'flex w-full items-center gap-3.5 rounded-2xl border border-[#2a2a2a] bg-[#141414] px-4 py-4 text-left transition-colors hover:border-accent/40';
+    'group flex w-full items-center gap-3.5 rounded-2xl border border-[#252525] bg-[#141414] px-3.5 py-3.5 text-left transition-[border-color,background-color,transform] duration-150 hover:border-accent/35 hover:bg-[#171717] sm:px-4 sm:py-3.5';
   const inner = (
     <>
       <span
         className={cn(
-          'flex size-11 shrink-0 items-center justify-center rounded-xl',
+          'flex size-10 shrink-0 items-center justify-center rounded-xl sm:size-11',
           iconWrap,
         )}
       >
-        <ByndIcon name={icon} className="size-5" />
+        <Icon className="size-5" strokeWidth={1.85} absoluteStrokeWidth aria-hidden />
       </span>
       <span className="min-w-0 flex-1">
         <span className="block text-[15px] font-semibold text-text-primary">{title}</span>
-        <span className="mt-0.5 block text-xs text-text-secondary sm:text-[13px]">{body}</span>
+        <span className="mt-0.5 block text-[12px] leading-snug text-text-secondary sm:text-[13px]">
+          {body}
+        </span>
       </span>
-      <ByndIcon name="chevronRight" className="size-4 shrink-0 text-text-muted" aria-hidden />
+      <ChevronRight
+        className="size-4 shrink-0 text-text-muted transition-transform duration-150 group-hover:translate-x-0.5 group-hover:text-accent"
+        strokeWidth={2}
+        aria-hidden
+      />
     </>
   );
   if (href) {
@@ -520,14 +600,14 @@ function PublicPageCard({
   onEditEvent: () => void;
 }) {
   return (
-    <section className="flex h-full flex-col rounded-2xl border border-[#2a2a2a] bg-[#141414] p-4 sm:p-5">
-      <div className="mb-3 flex items-start justify-between gap-2">
+    <section className="flex h-full flex-col rounded-2xl border border-[#252525] bg-gradient-to-b from-[#171717] to-[#121212] p-4 sm:p-5">
+      <div className="mb-3.5 flex items-start justify-between gap-2">
         <div className="space-y-1">
-          <p className="inline-flex items-center gap-2 text-sm font-semibold text-text-primary">
-            <ByndIcon name="eye" className="size-4 text-[#E8B84A]" />
+          <p className="inline-flex items-center gap-2 text-[15px] font-semibold text-text-primary">
+            <Eye className="size-4 text-[#E8B84A]" strokeWidth={1.85} absoluteStrokeWidth aria-hidden />
             Public Page
           </p>
-          <p className="text-xs text-text-muted">This is what dancers see.</p>
+          <p className="text-[12px] text-text-muted">This is what dancers see.</p>
         </div>
         <span
           className={cn(
@@ -539,48 +619,51 @@ function PublicPageCard({
         </span>
       </div>
 
-      <div className="flex flex-1 gap-3 rounded-xl border border-[#2a2a2a] bg-[#101010] p-3">
-        <div className="relative size-16 shrink-0 overflow-hidden rounded-lg bg-[#1a1a1a] sm:size-[4.5rem]">
+      <div className="flex flex-1 gap-3.5 rounded-xl border border-[#2a2a2a] bg-[#0e0e0e] p-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+        <div className="relative aspect-[3/4] w-[4.25rem] shrink-0 overflow-hidden rounded-lg bg-[#1a1a1a] sm:w-[4.75rem]">
           {event.posterUrl ? (
             <img src={event.posterUrl} alt="" className="h-full w-full object-cover" />
           ) : (
-            <div className="flex h-full w-full items-center justify-center">
-              <ByndIcon name="poster" className="size-5 text-text-muted/50" />
+            <div className="flex h-full w-full flex-col items-center justify-center gap-0.5">
+              <span className="font-display text-sm text-text-muted/40">+</span>
+              <span className="text-[8px] font-semibold uppercase tracking-[0.14em] text-text-muted/50">
+                Poster
+              </span>
             </div>
           )}
         </div>
-        <div className="min-w-0 space-y-1">
-          <p className="truncate font-display text-lg tracking-[0.04em] text-text-primary">
+        <div className="min-w-0 flex-1 space-y-1.5 py-0.5">
+          <p className="truncate font-display text-xl leading-none tracking-[0.04em] text-text-primary">
             {event.title}
           </p>
-          {when ? <p className="truncate text-xs text-text-secondary">{when}</p> : null}
-          {place ? <p className="truncate text-xs text-text-muted">{place}</p> : null}
-          <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-text-muted">
+          {when ? <p className="truncate text-[12px] text-text-secondary">{when}</p> : null}
+          {place ? <p className="truncate text-[12px] text-text-muted">{place}</p> : null}
+          <p className="pt-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-text-muted">
             {eventTypeDisplayLabel(event.eventType)}
           </p>
         </div>
       </div>
 
-      <div className="mt-4 grid grid-cols-2 gap-2">
+      <div className="mt-4 grid grid-cols-2 gap-2.5">
         {isLive ? (
           <Link
             href={publicHref}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-[#2a2a2a] px-3 text-xs font-semibold uppercase tracking-[0.1em] text-text-primary transition-colors hover:border-accent/40"
+            className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-[#2a2a2a] bg-[#141414] px-3 text-[11px] font-semibold uppercase tracking-[0.1em] text-text-primary transition-colors duration-150 hover:border-accent/40"
           >
             View Event
             <ByndIcon name="external" className="size-3.5" />
           </Link>
         ) : (
-          <span className="inline-flex min-h-10 items-center justify-center rounded-xl border border-[#2a2a2a] px-3 text-xs font-semibold uppercase tracking-[0.1em] text-text-muted">
+          <span className="inline-flex min-h-10 items-center justify-center rounded-xl border border-[#2a2a2a] px-3 text-[11px] font-semibold uppercase tracking-[0.1em] text-text-muted">
             Not live yet
           </span>
         )}
         <button
           type="button"
           onClick={onEditEvent}
-          className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-[#2a2a2a] px-3 text-xs font-semibold uppercase tracking-[0.1em] text-text-primary transition-colors hover:border-accent/40"
+          className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-accent/50 bg-accent/10 px-3 text-[11px] font-semibold uppercase tracking-[0.1em] text-accent transition-colors duration-150 hover:border-accent hover:bg-accent/15"
         >
           <ByndIcon name="edit" className="size-3.5" />
           Edit Event

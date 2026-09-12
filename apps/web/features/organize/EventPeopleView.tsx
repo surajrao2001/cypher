@@ -14,7 +14,6 @@ import { ByndIcon } from '@/components/icons/bynd8';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { OrganizeGate } from '@/features/organize/OrganizeGate';
-import { EventSectionNav } from '@/features/organize/EventSectionNav';
 import { OrganizeEmpty, OrganizerWorkspace } from '@/features/organize/organizer-ui';
 import { PageLoading, SoftError } from '@/features/shell/AsyncState';
 import { PageBreadcrumb } from '@/features/shell/PageBreadcrumb';
@@ -225,9 +224,9 @@ function EventPeoplePanel({ slug, eventId }: { slug: string; eventId: string }) 
             </Button>
           </OrganizeEmpty>
         ) : (
-          <div className="max-w-3xl">
+          <div className="w-full">
             <div
-              className="hidden grid-cols-[minmax(0,11rem)_minmax(0,10rem)_auto_auto] gap-x-8 border-b border-[#2a2a2a] pb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted md:grid"
+              className="hidden grid-cols-4 gap-4 border-b border-[#2a2a2a] pb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted md:grid"
               aria-hidden
             >
               <span>Name</span>
@@ -243,7 +242,6 @@ function EventPeoplePanel({ slug, eventId }: { slug: string; eventId: string }) 
                 const checkLabel = checked ? `✓ ${formatCheckInTime(checked)}` : '—';
                 return (
                   <li key={row.id} className="py-4">
-                    {/* Phone: left-aligned compact row — no justify-between stretch */}
                     <div className="space-y-1 md:hidden">
                       <p className="truncate font-semibold text-text-primary">{name}</p>
                       <p className="truncate text-sm text-text-secondary">{row.categoryName}</p>
@@ -263,10 +261,9 @@ function EventPeoplePanel({ slug, eventId }: { slug: string; eventId: string }) 
                       </div>
                     </div>
 
-                    {/* Desktop: tight columns (not full-bleed fr stretch) */}
-                    <div className="hidden grid-cols-[minmax(0,11rem)_minmax(0,10rem)_auto_auto] items-center gap-x-8 md:grid">
-                      <p className="truncate font-semibold text-text-primary">{name}</p>
-                      <p className="truncate text-sm text-text-secondary">{row.categoryName}</p>
+                    <div className="hidden grid-cols-4 items-center gap-4 md:grid">
+                      <p className="min-w-0 truncate font-semibold text-text-primary">{name}</p>
+                      <p className="min-w-0 truncate text-sm text-text-secondary">{row.categoryName}</p>
                       <StatusCell status={row.registrationStatus} />
                       <p className={cn('text-sm', checked ? 'text-[#9BE15D]' : 'text-text-muted')}>
                         {checkLabel}
@@ -287,14 +284,13 @@ function EventPeoplePanel({ slug, eventId }: { slug: string; eventId: string }) 
         aria-hidden
         className="pointer-events-none absolute inset-x-0 top-0 h-[28rem] bg-[url('/organize/people-crowd.png')] bg-cover bg-[position:85%_20%] opacity-[0.35] [mask-image:linear-gradient(to_bottom,black_0%,black_45%,transparent_100%)]"
       />
-      <OrganizerWorkspace width="full" className="relative z-10 space-y-6">
+      <OrganizerWorkspace width="canvas" className="relative z-10 space-y-6">
         <PageBreadcrumb
           items={[
             { label: event.title, href: manageHref },
             { label: 'People' },
           ]}
         />
-        <EventSectionNav slug={slug} eventId={eventId} event={event} active="people" />
         {body}
       </OrganizerWorkspace>
     </div>

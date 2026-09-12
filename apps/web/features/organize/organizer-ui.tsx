@@ -2,12 +2,13 @@ import type { ReactNode } from 'react';
 
 import { cn } from '@/lib/utils';
 
-type WorkspaceWidth = 'form' | 'default' | 'wide' | 'full';
+type WorkspaceWidth = 'form' | 'default' | 'wide' | 'canvas' | 'full';
 
 const WIDTH: Record<WorkspaceWidth, string> = {
   form: 'max-w-[40rem]',
   default: 'max-w-[72rem]',
   wide: 'max-w-[82rem]',
+  canvas: 'max-w-[92rem]',
   full: 'max-w-none',
 };
 
@@ -75,13 +76,13 @@ export function PosterThumb({
     sm: 'aspect-[3/4] w-16',
     md: 'aspect-[3/4] w-24 sm:w-28',
     lg: 'aspect-[3/4] w-32 sm:w-40',
-    hero: 'aspect-[3/4] w-40 sm:w-52 md:w-56',
+    hero: 'aspect-[3/4] w-[11.5rem] sm:w-[14rem] md:w-[15.5rem] lg:w-[16rem]',
   } as const;
 
   return (
     <div
       className={cn(
-        'relative shrink-0 overflow-hidden rounded-sm bg-[linear-gradient(160deg,#1c1207_0%,#141414_55%,#0f0f0f_100%)]',
+        'relative shrink-0 overflow-hidden rounded-2xl bg-[linear-gradient(160deg,#1c1207_0%,#141414_55%,#0f0f0f_100%)]',
         sizes[size],
         className,
       )}

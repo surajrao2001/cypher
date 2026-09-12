@@ -185,7 +185,7 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
   const peopleHref = routes.organizeEventPeople(org.slug, event.id);
 
   const shell = (
-    <OrganizerWorkspace width="full" className="relative z-10 space-y-6">
+    <OrganizerWorkspace width="canvas" className="relative z-10 space-y-7 md:space-y-8">
       <EventControlHeader
         org={org}
         event={event}
@@ -275,7 +275,7 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
   }
 
   return (
-    <div className="relative overflow-hidden before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-[22rem] before:bg-[radial-gradient(ellipse_at_top_right,rgba(255,104,0,0.32)_0%,rgba(255,104,0,0.1)_32%,transparent_68%)] before:content-['']">
+    <div className="relative overflow-hidden">
       {shell}
     </div>
   );

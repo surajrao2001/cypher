@@ -165,7 +165,7 @@ export function EditEventDrawer({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="flex w-full max-w-none flex-col border-l border-[#2a2a2a] bg-[#121212] p-0 sm:max-w-[min(100%,36rem)]"
+        className="flex h-full w-full max-w-none flex-col border-l border-[#2a2a2a] bg-[#121212] p-0 sm:max-w-[min(100%,38rem)] md:max-w-[40rem]"
       >
         <SheetHeader className="space-y-1 border-b border-[#2a2a2a] px-5 pb-4 pt-5 pr-12 text-left">
           <SheetTitle className="font-display text-2xl tracking-[0.06em] text-text-primary">
@@ -397,12 +397,12 @@ export function EditEventDrawer({
             </div>
 
             {tab !== 'media' ? (
-              <div className="flex gap-2 border-t border-[#2a2a2a] px-5 py-4">
+              <div className="sticky bottom-0 z-10 flex gap-2.5 border-t border-[#2a2a2a] bg-[#121212]/95 px-5 py-4 backdrop-blur-md">
                 <Button
                   type="button"
                   disabled={pending}
                   onClick={() => void save()}
-                  className="h-11 flex-1 rounded-xl text-xs tracking-[0.12em]"
+                  className="h-11 flex-1 rounded-xl text-xs font-semibold tracking-[0.12em]"
                 >
                   Save changes
                 </Button>
@@ -411,18 +411,18 @@ export function EditEventDrawer({
                   variant="outline"
                   disabled={pending}
                   onClick={() => onOpenChange(false)}
-                  className="h-11 rounded-xl border-[#2a2a2a] px-5 text-xs tracking-[0.12em]"
+                  className="h-11 rounded-xl border-[#2a2a2a] bg-[#141414] px-5 text-xs tracking-[0.12em]"
                 >
                   Cancel
                 </Button>
               </div>
             ) : (
-              <div className="flex justify-end border-t border-[#2a2a2a] px-5 py-4">
+              <div className="sticky bottom-0 z-10 flex justify-end border-t border-[#2a2a2a] bg-[#121212]/95 px-5 py-4 backdrop-blur-md">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => onOpenChange(false)}
-                  className="h-11 rounded-xl border-[#2a2a2a] px-5 text-xs tracking-[0.12em]"
+                  className="h-11 rounded-xl border-[#2a2a2a] bg-[#141414] px-5 text-xs tracking-[0.12em]"
                 >
                   Done
                 </Button>
