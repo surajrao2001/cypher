@@ -191,8 +191,13 @@ export function EventEntryPanel({
     panel.kind === 'edit-audience'
       ? audienceCats.find((c) => c.id === panel.categoryId)
       : null;
+  const formOpen =
+    panel.kind === 'add-competition' ||
+    panel.kind === 'edit-competition' ||
+    panel.kind === 'add-audience' ||
+    panel.kind === 'edit-audience';
 
-  const body =
+  const form =
     panel.kind === 'add-competition' || panel.kind === 'edit-competition' ? (
       <CompetitionEntryForm
         organizerId={org.id}
@@ -215,19 +220,46 @@ export function EventEntryPanel({
         onUpdated={(next) => closePanel(next)}
         onCancel={() => closePanel()}
       />
-    ) : (
-      <EntryList
-        compete={compete}
-        audienceCats={audienceCats}
-        posterUrl={event.posterUrl}
-        pendingDelete={pendingDelete}
-        onAddCompetition={(el) => openPanel({ kind: 'add-competition' }, el)}
-        onEditCompetition={(id, el) => openPanel({ kind: 'edit-competition', categoryId: id }, el)}
-        onAddAudience={(el) => openPanel({ kind: 'add-audience' }, el)}
-        onEditAudience={(id, el) => openPanel({ kind: 'edit-audience', categoryId: id }, el)}
-        onRemove={removeCategory}
-      />
-    );
+    ) : null;
+
+  const list = (
+    <EntryList
+      compete={compete}
+      audienceCats={audienceCats}
+      posterUrl={event.posterUrl}
+      pendingDelete={pendingDelete}
+      onAddCompetition={(el) => openPanel({ kind: 'add-competition' }, el)}
+      onEditCompetition={(id, el) => openPanel({ kind: 'edit-competition', categoryId: id }, el)}
+      onAddAudience={(el) => openPanel({ kind: 'add-audience' }, el)}
+      onEditAudience={(id, el) => openPanel({ kind: 'edit-audience', categoryId: id }, el)}
+      onRemove={removeCategory}
+    />
+  );
+
+  const body = (
+    <div
+      className={cn(
+        formOpen && 'grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,28rem)] lg:items-start',
+      )}
+    >
+      <div className={cn(formOpen && 'hidden lg:block lg:opacity-45 lg:pointer-events-none')}>
+        {list}
+      </div>
+      {formOpen && form ? (
+        <aside className="rounded-2xl border border-[#2a2a2a] bg-[#141414] p-4 sm:p-5 lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
+          <button
+            type="button"
+            onClick={() => closePanel()}
+            className="mb-3 inline-flex items-center gap-1 text-sm text-text-muted transition-colors hover:text-accent lg:hidden"
+          >
+            <ByndIcon name="chevronLeft" className="size-4" />
+            Back to Entry
+          </button>
+          {form}
+        </aside>
+      ) : null}
+    </div>
+  );
 
   const content = (
     <>

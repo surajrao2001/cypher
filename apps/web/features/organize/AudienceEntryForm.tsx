@@ -231,63 +231,55 @@ export function AudienceEntryForm({
   }
 
   return (
-    <div className="space-y-5">
-      <div>
-        <p className="kicker text-accent">{isEdit ? 'Edit' : 'Add'}</p>
-        <h2
-          ref={headingRef}
-          tabIndex={-1}
-          className="text-xl font-bold text-text-primary outline-none"
-        >
-          Audience pass
-        </h2>
-        <p className="mt-1 text-sm text-text-secondary">For people who come to watch.</p>
+    <div className="space-y-4">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h2
+            ref={headingRef}
+            tabIndex={-1}
+            className="font-display text-2xl uppercase tracking-[0.04em] text-text-primary outline-none"
+          >
+            Audience pass
+          </h2>
+          <p className="mt-1 text-sm text-text-secondary">For people who come to watch.</p>
+        </div>
+        <Button type="button" variant="ghost" size="sm" disabled={pending} onClick={onCancel} className="hidden lg:inline-flex">
+          Close
+        </Button>
       </div>
 
-      <PosterField
-        value={posterUrl}
-        onChange={setPosterUrl}
-        disabled={pending}
-        label="Poster"
-        hint="Optional · shows on Entry cards. Falls back to the event poster if empty."
-        createPanel
-      />
-
-      <fieldset className="space-y-3">
-        <legend className="text-sm font-semibold text-text-primary">Entry</legend>
-        <div className="flex flex-wrap gap-3" role="radiogroup" aria-labelledby={feeGroupId}>
-          <span id={feeGroupId} className="sr-only">
-            Entry fee
-          </span>
-          {(
-            [
-              { id: 'free', label: 'Free', value: false },
-              { id: 'paid', label: 'Paid', value: true },
-            ] as const
-          ).map((opt) => (
-            <label
-              key={opt.id}
-              className={cn(
-                'flex min-h-11 cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm',
-                paid === opt.value
-                  ? 'border-accent bg-accent/10 text-text-primary'
-                  : 'border-border bg-surface text-text-secondary',
-              )}
-            >
-              <input
-                type="radio"
-                name={`audience-fee-${feeGroupId}`}
-                checked={paid === opt.value}
+      <div className="grid gap-3 sm:grid-cols-2">
+        <fieldset className="space-y-2">
+          <legend className="text-sm font-semibold text-text-primary">Fee</legend>
+          <div className="flex flex-wrap gap-2" role="radiogroup" aria-labelledby={feeGroupId}>
+            <span id={feeGroupId} className="sr-only">
+              Entry fee
+            </span>
+            {(
+              [
+                { id: 'free', label: 'Free', value: false },
+                { id: 'paid', label: 'Paid', value: true },
+              ] as const
+            ).map((opt) => (
+              <button
+                key={opt.id}
+                type="button"
+                role="radio"
+                aria-checked={paid === opt.value}
                 disabled={pending}
-                onChange={() => setPaid(opt.value)}
-                className="h-4 w-4"
-              />
-              {opt.label}
-            </label>
-          ))}
-        </div>
-        {paid ? (
-          <FormField label="Price (₹)">
+                onClick={() => setPaid(opt.value)}
+                className={cn(
+                  'min-h-10 rounded-xl border px-3 py-2 text-sm font-semibold transition-colors',
+                  paid === opt.value
+                    ? 'border-accent bg-accent/15 text-text-primary'
+                    : 'border-[#2a2a2a] text-text-secondary hover:border-accent/40',
+                )}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+          {paid ? (
             <Input
               type="number"
               min={1}
@@ -295,106 +287,109 @@ export function AudienceEntryForm({
               value={priceRupees}
               onChange={(e) => setPriceRupees(e.target.value)}
               disabled={pending}
-              placeholder="200"
+              placeholder="Price ₹"
+              className="h-11 rounded-xl border-[#2a2a2a] bg-[#0f0f0f]"
             />
-          </FormField>
-        ) : null}
-      </fieldset>
+          ) : null}
+        </fieldset>
+
+        <FormField
+          label="Capacity"
+          hint={`${capacity || '—'} spots${occupied > 0 ? ` · ${String(occupied)} taken` : ''}`}
+        >
+          <Input
+            type="number"
+            min={Math.max(1, occupied)}
+            value={capacity}
+            onChange={(e) => setCapacity(e.target.value)}
+            disabled={pending}
+            className="h-11 rounded-xl border-[#2a2a2a] bg-[#0f0f0f]"
+          />
+        </FormField>
+      </div>
 
       {needsPayout && paid ? (
-        <div
-          role="alert"
-          className="space-y-3 rounded-md border border-accent/50 bg-accent/10 px-4 py-3"
-        >
-          <p className="text-sm font-semibold text-text-primary">Paid entry</p>
-          <p className="text-sm text-text-secondary">
-            Set up payouts before you can charge for registrations.
-          </p>
+        <div role="alert" className="space-y-2 rounded-xl border border-accent/50 bg-accent/10 px-3 py-3">
+          <p className="text-sm text-text-secondary">Set up payouts before charging.</p>
           <Button asChild size="sm">
             <Link href={routes.organizePayouts(orgSlug)}>Set up payouts</Link>
           </Button>
         </div>
       ) : null}
 
-      <FormField
-        label="Capacity"
-        hint={`${capacity || '—'} spots${occupied > 0 ? ` · ${String(occupied)} already taken` : ''}`}
-      >
-        <Input
-          type="number"
-          min={Math.max(1, occupied)}
-          value={capacity}
-          onChange={(e) => setCapacity(e.target.value)}
-          disabled={pending}
-        />
-      </FormField>
-
       {paid ? (
-        <div className="space-y-3 border-t border-border pt-4">
+        <div className="space-y-2">
           {!showEarlyBird ? (
-            <Button
+            <button
               type="button"
-              variant="ghost"
-              size="sm"
               disabled={pending}
               onClick={() => setShowEarlyBird(true)}
+              className="text-sm font-semibold text-accent hover:underline"
             >
-              + Add early-bird price
-            </Button>
+              + Early-bird price
+            </button>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2 rounded-xl border border-[#2a2a2a] p-3">
               <div className="flex items-center justify-between gap-2">
                 <p className="text-sm font-semibold text-text-primary">Early bird</p>
-                <Button
+                <button
                   type="button"
-                  variant="ghost"
-                  size="sm"
                   disabled={pending}
                   onClick={() => {
                     setShowEarlyBird(false);
                     setEarlyPrice('');
                     setEarlyEnds('');
                   }}
+                  className="text-xs text-text-muted hover:text-text-secondary"
                 >
                   Remove
-                </Button>
+                </button>
               </div>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <FormField label="Price (₹)">
-                  <Input
-                    type="number"
-                    min={0}
-                    value={earlyPrice}
-                    onChange={(e) => setEarlyPrice(e.target.value)}
-                    disabled={pending}
-                  />
-                </FormField>
-                <FormField label="Ends">
-                  <Input
-                    type="datetime-local"
-                    value={earlyEnds}
-                    max={toLocalInputValue(event.startTime)}
-                    onChange={(e) => setEarlyEnds(e.target.value)}
-                    disabled={pending}
-                  />
-                </FormField>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <Input
+                  type="number"
+                  min={0}
+                  value={earlyPrice}
+                  onChange={(e) => setEarlyPrice(e.target.value)}
+                  disabled={pending}
+                  placeholder="Price ₹"
+                  className="h-10 rounded-xl border-[#2a2a2a] bg-[#0f0f0f]"
+                />
+                <Input
+                  type="datetime-local"
+                  value={earlyEnds}
+                  max={toLocalInputValue(event.startTime)}
+                  onChange={(e) => setEarlyEnds(e.target.value)}
+                  disabled={pending}
+                  className="h-10 rounded-xl border-[#2a2a2a] bg-[#0f0f0f]"
+                />
               </div>
             </div>
           )}
         </div>
       ) : null}
 
+      <PosterField
+        value={posterUrl}
+        onChange={setPosterUrl}
+        disabled={pending}
+        label="Poster"
+        hint="Optional"
+        createPanel
+      />
+
       {error ? <InlineNotice tone="warn">{error}</InlineNotice> : null}
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2 pt-1">
         <Button
           type="button"
           disabled={pending || (paid && needsPayout && payoutReady === false)}
           onClick={() => void save()}
+          className="rounded-xl"
         >
           {pending ? 'Saving…' : 'Save audience pass'}
         </Button>
-        <Button type="button" variant="outline" disabled={pending} onClick={onCancel}>
+        <Button type="button" variant="outline" disabled={pending} onClick={onCancel} className="rounded-xl border-[#2a2a2a]">
           Cancel
         </Button>
       </div>

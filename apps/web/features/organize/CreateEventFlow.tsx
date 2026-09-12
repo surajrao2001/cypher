@@ -265,25 +265,25 @@ function CreateEventFlowInner() {
           </ul>
         </section>
       ) : (
-        <section className="w-full rounded-2xl border border-[#2a2a2a] bg-[#121212]/40 p-5 sm:p-8 md:p-10">
-          <div className="mb-8 space-y-3">
-            <h1 className="display-title text-[2.5rem] leading-[0.9] tracking-[0.04em] sm:text-5xl md:text-6xl">
+        <section className="w-full max-w-2xl rounded-2xl border border-[#2a2a2a] bg-[#121212]/40 p-4 sm:p-6">
+          <div className="mb-5 space-y-1.5">
+            <h1 className="display-title text-[2.25rem] leading-[0.9] tracking-[0.04em] sm:text-5xl">
               New {selected.label}
             </h1>
-            <p className="max-w-2xl text-[15px] leading-relaxed text-text-secondary">
+            <p className="text-sm text-text-secondary">
               Name, when, where. Put it up when you&apos;re ready — entry is optional.
             </p>
           </div>
 
-          <form className="space-y-6" onSubmit={(e) => void onSubmit(e)}>
-            <label className="block space-y-2 text-sm font-medium text-text-primary">
+          <form className="space-y-4" onSubmit={(e) => void onSubmit(e)}>
+            <label className="block space-y-1.5 text-sm font-medium text-text-primary">
               Name
               <Input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 required
                 minLength={2}
-                className="h-12 rounded-xl border-[#2a2a2a] bg-[#0f0f0f] text-base"
+                className="h-11 rounded-xl border-[#2a2a2a] bg-[#0f0f0f] text-base"
                 placeholder={
                   selected.eventType === 'battle'
                     ? 'Ground Zero'
@@ -294,24 +294,18 @@ function CreateEventFlowInner() {
               />
             </label>
 
-            <div className="grid items-end gap-3 sm:grid-cols-[minmax(0,1.4fr)_auto_minmax(0,1fr)]">
-              <label className="block space-y-2 text-sm font-medium text-text-primary">
+            <div className="grid items-end gap-3 sm:grid-cols-2">
+              <label className="block space-y-1.5 text-sm font-medium text-text-primary">
                 When
                 <Input
                   type="datetime-local"
                   value={startTime}
                   onChange={(e) => setStartTime(e.target.value)}
                   required
-                  className="h-12 rounded-xl border-[#2a2a2a] bg-[#0f0f0f] text-base"
+                  className="h-11 rounded-xl border-[#2a2a2a] bg-[#0f0f0f] text-base"
                 />
               </label>
-              <span
-                className="mb-3 hidden text-center text-lg text-text-muted sm:block"
-                aria-hidden
-              >
-                –
-              </span>
-              <label className="block space-y-2 text-sm font-medium text-text-primary">
+              <label className="block space-y-1.5 text-sm font-medium text-text-primary">
                 City
                 <Input
                   value={city}
@@ -319,18 +313,18 @@ function CreateEventFlowInner() {
                   required
                   minLength={2}
                   placeholder="Bengaluru"
-                  className="h-12 rounded-xl border-[#2a2a2a] bg-[#0f0f0f] text-base"
+                  className="h-11 rounded-xl border-[#2a2a2a] bg-[#0f0f0f] text-base"
                 />
               </label>
             </div>
 
-            <label className="block space-y-2 text-sm font-medium text-text-primary">
+            <label className="block space-y-1.5 text-sm font-medium text-text-primary">
               Where <span className="font-normal text-text-muted">(optional)</span>
               <Input
                 value={venue}
                 onChange={(e) => setVenue(e.target.value)}
                 placeholder="Cubbon Park / studio name"
-                className="h-12 rounded-xl border-[#2a2a2a] bg-[#0f0f0f] text-base"
+                className="h-11 rounded-xl border-[#2a2a2a] bg-[#0f0f0f] text-base"
               />
             </label>
 
@@ -339,36 +333,36 @@ function CreateEventFlowInner() {
               onChange={setPosterUrl}
               disabled={pending}
               label="Poster"
-              hint="A strong poster looks better on Discover. You can add this later."
+              hint="Optional — you can add this later."
               createPanel
             />
 
-            {selected.path === 'battle' || selected.path === 'workshop' ? (
-              <label className="block space-y-2 text-sm font-medium text-text-primary">
-                Description <span className="font-normal text-text-muted">(optional)</span>
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  rows={3}
-                  maxLength={5000}
-                  className="flex w-full rounded-xl border border-[#2a2a2a] bg-[#0f0f0f] px-3 py-3 font-body text-base text-text-primary placeholder:text-text-muted focus-visible:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
-                  placeholder={
-                    selected.path === 'workshop'
-                      ? 'What’s the class about? Who’s teaching?'
-                      : 'Formats, rules, vibe…'
-                  }
-                />
-              </label>
-            ) : null}
+            <label className="block space-y-1.5 text-sm font-medium text-text-primary">
+              Description <span className="font-normal text-text-muted">(optional)</span>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={2}
+                maxLength={5000}
+                className="flex w-full rounded-xl border border-[#2a2a2a] bg-[#0f0f0f] px-3 py-2.5 font-body text-base text-text-primary placeholder:text-text-muted focus-visible:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
+                placeholder={
+                  selected.path === 'workshop'
+                    ? 'What’s the class about? Who’s teaching?'
+                    : selected.path === 'battle'
+                      ? 'Formats, rules, vibe…'
+                      : 'Anything people should know'
+                }
+              />
+            </label>
 
             {formError ? <InlineNotice tone="warn">{formError}</InlineNotice> : null}
 
-            <div className="flex flex-wrap items-center gap-3 pt-2">
+            <div className="flex flex-wrap items-center gap-3 pt-1">
               <Button
                 type="submit"
                 size="lg"
                 disabled={pending}
-                className="h-12 rounded-lg px-8 text-sm tracking-[0.14em]"
+                className="h-11 rounded-lg px-8 text-sm tracking-[0.14em]"
               >
                 {pending ? 'Creating…' : 'Continue →'}
               </Button>
@@ -376,7 +370,7 @@ function CreateEventFlowInner() {
                 type="button"
                 variant="outline"
                 onClick={() => router.push(routes.organize)}
-                className="h-12 rounded-lg border-[#2a2a2a] px-6 text-sm tracking-[0.14em]"
+                className="h-11 rounded-lg border-[#2a2a2a] px-6 text-sm tracking-[0.14em]"
               >
                 Cancel
               </Button>
