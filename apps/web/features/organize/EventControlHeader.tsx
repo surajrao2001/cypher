@@ -123,162 +123,154 @@ export function EventControlHeader({
         ]}
       />
 
-      <div className="relative">
-        {/* Stage light — warm bleed behind poster + identity, not a brown card */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -left-8 -top-10 h-[22rem] w-[min(100%,42rem)] bg-[radial-gradient(ellipse_at_30%_40%,rgba(255,104,0,0.22)_0%,rgba(255,104,0,0.06)_42%,transparent_72%)]"
+      <div className="relative flex flex-col gap-6 sm:flex-row sm:items-start sm:gap-8 lg:gap-10 xl:gap-12">
+        <PosterThumb
+          src={event.posterUrl}
+          size="hero"
+          className="mx-auto shadow-[0_28px_56px_-18px_rgba(0,0,0,0.8)] sm:mx-0"
         />
 
-        <div className="relative flex flex-col gap-6 sm:flex-row sm:items-start sm:gap-8 lg:gap-10">
-          <PosterThumb
-            src={event.posterUrl}
-            size="hero"
-            className="mx-auto shadow-[0_24px_48px_-20px_rgba(0,0,0,0.75)] sm:mx-0"
-          />
-
-          <div className="min-w-0 flex-1 space-y-5 pt-1 sm:pt-2">
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
-              <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-text-secondary">
-                {eventTypeDisplayLabel(event.eventType)}
-              </span>
-              <span className="text-text-muted" aria-hidden>
-                ·
-              </span>
-              <span
-                className={cn(
-                  'inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em]',
-                  isLive
-                    ? 'bg-accent-2 text-bg'
-                    : isDraft
-                      ? 'bg-[#1e1e1e] text-text-secondary'
-                      : 'border border-white/20 text-text-secondary',
-                )}
-              >
-                {isLive ? 'Live' : statusLabel(event.status)}
-              </span>
-            </div>
-
-            <h1 className="display-title max-w-[18ch] text-[2.75rem] leading-[0.88] tracking-[0.03em] text-text-primary sm:text-5xl md:text-[3.5rem] lg:text-[4rem]">
-              {event.title}
-            </h1>
-
-            <div className="space-y-2 text-[14px] text-text-secondary sm:text-[15px]">
-              {when ? (
-                <p className="flex items-center gap-2.5">
-                  <ByndIcon name="calendar" className="size-3.5 shrink-0 text-text-muted" />
-                  <span>{when}</span>
-                </p>
-              ) : null}
-              {place ? (
-                <p className="flex items-center gap-2.5">
-                  <ByndIcon name="pin" className="size-3.5 shrink-0 text-text-muted" />
-                  <span>{place}</span>
-                </p>
-              ) : null}
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2.5 pt-1">
-              {!isDraft ? (
-                <Button
-                  asChild
-                  size="lg"
-                  className="h-11 rounded-xl px-5 text-xs font-semibold tracking-[0.14em]"
-                >
-                  <Link href={checkInHref}>
-                    <ByndIcon name="checkIn" />
-                    Check in
-                  </Link>
-                </Button>
-              ) : null}
-              {isLive ? (
-                <Button
-                  type="button"
-                  size="lg"
-                  variant="outline"
-                  onClick={() => void share()}
-                  className="h-11 rounded-xl border-[#2a2a2a] bg-[#141414]/60 px-4 text-xs tracking-[0.14em] hover:border-accent/35"
-                >
-                  <ByndIcon name="external" />
-                  Share
-                </Button>
-              ) : null}
-              <div className="relative">
-                <Button
-                  type="button"
-                  size="lg"
-                  variant="outline"
-                  aria-expanded={menuOpen}
-                  aria-haspopup="menu"
-                  aria-label="More actions"
-                  onClick={() => setMenuOpen((o) => !o)}
-                  className="h-11 rounded-xl border-[#2a2a2a] bg-[#141414]/60 px-4 text-xs tracking-[0.14em] hover:border-accent/35"
-                >
-                  ··· More
-                </Button>
-                {menuOpen ? (
-                  <div
-                    role="menu"
-                    className="absolute left-0 z-20 mt-2 min-w-[12rem] rounded-xl border border-border bg-surface py-1 shadow-lg sm:left-auto sm:right-0"
-                  >
-                    {onEditEvent ? (
-                      <button
-                        type="button"
-                        role="menuitem"
-                        className="block w-full px-3 py-2.5 text-left text-sm hover:bg-elevated"
-                        onClick={() => {
-                          setMenuOpen(false);
-                          onEditEvent();
-                        }}
-                      >
-                        Edit event
-                      </button>
-                    ) : null}
-                    {onPostUpdate ? (
-                      <button
-                        type="button"
-                        role="menuitem"
-                        className="block w-full px-3 py-2.5 text-left text-sm hover:bg-elevated"
-                        onClick={() => {
-                          setMenuOpen(false);
-                          onPostUpdate();
-                        }}
-                      >
-                        Post update
-                      </button>
-                    ) : null}
-                    {isLive ? (
-                      <Link
-                        role="menuitem"
-                        href={publicHref}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="block w-full px-3 py-2.5 text-left text-sm hover:bg-elevated"
-                        onClick={() => setMenuOpen(false)}
-                      >
-                        View event
-                      </Link>
-                    ) : null}
-                    {publishOk && onPublishToggle ? (
-                      <button
-                        type="button"
-                        role="menuitem"
-                        disabled={pending}
-                        className="block w-full px-3 py-2.5 text-left text-sm hover:bg-elevated disabled:opacity-50"
-                        onClick={() => {
-                          setMenuOpen(false);
-                          onPublishToggle();
-                        }}
-                      >
-                        {isLive ? 'Unpublish' : isDraft ? 'Put it up' : 'Publish'}
-                      </button>
-                    ) : null}
-                  </div>
-                ) : null}
-              </div>
-            </div>
-            {shareHint ? <p className="text-xs text-accent-2">{shareHint}</p> : null}
+        <div className="min-w-0 flex-1 space-y-5 pt-1 sm:space-y-6 sm:pt-3 lg:pt-4">
+          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
+            <span className="text-xs font-bold uppercase tracking-[0.18em] text-text-secondary sm:text-[13px]">
+              {eventTypeDisplayLabel(event.eventType)}
+            </span>
+            <span className="text-text-muted" aria-hidden>
+              ·
+            </span>
+            <span
+              className={cn(
+                'inline-flex rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.14em] sm:text-[11px]',
+                isLive
+                  ? 'bg-accent-2 text-bg'
+                  : isDraft
+                    ? 'bg-[#1e1e1e] text-text-secondary'
+                    : 'border border-white/20 text-text-secondary',
+              )}
+            >
+              {isLive ? 'Live' : statusLabel(event.status)}
+            </span>
           </div>
+
+          <h1 className="display-title max-w-[16ch] text-[3rem] leading-[0.88] tracking-[0.03em] text-text-primary sm:text-6xl md:text-7xl lg:text-[4.75rem] xl:text-[5.25rem]">
+            {event.title}
+          </h1>
+
+          <div className="space-y-2.5 text-[15px] text-text-secondary sm:text-base lg:text-[17px]">
+            {when ? (
+              <p className="flex items-center gap-2.5">
+                <ByndIcon name="calendar" className="size-4 shrink-0 text-text-muted" />
+                <span>{when}</span>
+              </p>
+            ) : null}
+            {place ? (
+              <p className="flex items-center gap-2.5">
+                <ByndIcon name="pin" className="size-4 shrink-0 text-text-muted" />
+                <span>{place}</span>
+              </p>
+            ) : null}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3 pt-2">
+            {!isDraft ? (
+              <Button
+                asChild
+                size="lg"
+                className="h-12 min-w-[9.5rem] rounded-xl px-7 text-sm font-semibold tracking-[0.12em] sm:h-[3.25rem] sm:min-w-[11rem] sm:px-8 sm:text-[15px]"
+              >
+                <Link href={checkInHref}>
+                  <ByndIcon name="checkIn" className="size-5" />
+                  Check in
+                </Link>
+              </Button>
+            ) : null}
+            {isLive ? (
+              <Button
+                type="button"
+                size="lg"
+                variant="outline"
+                onClick={() => void share()}
+                className="h-12 min-w-[7.5rem] rounded-xl border-[#2a2a2a] bg-[#141414]/70 px-6 text-sm tracking-[0.12em] hover:border-accent/35 sm:h-[3.25rem] sm:min-w-[8.5rem] sm:px-7 sm:text-[15px]"
+              >
+                <ByndIcon name="external" className="size-5" />
+                Share
+              </Button>
+            ) : null}
+            <div className="relative">
+              <Button
+                type="button"
+                size="lg"
+                variant="outline"
+                aria-expanded={menuOpen}
+                aria-haspopup="menu"
+                aria-label="More actions"
+                onClick={() => setMenuOpen((o) => !o)}
+                className="h-12 min-w-[7rem] rounded-xl border-[#2a2a2a] bg-[#141414]/70 px-6 text-sm tracking-[0.12em] hover:border-accent/35 sm:h-[3.25rem] sm:px-7 sm:text-[15px]"
+              >
+                ··· More
+              </Button>
+              {menuOpen ? (
+                <div
+                  role="menu"
+                  className="absolute left-0 z-20 mt-2 min-w-[12rem] rounded-xl border border-border bg-surface py-1 shadow-lg sm:left-auto sm:right-0"
+                >
+                  {onEditEvent ? (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className="block w-full px-3 py-2.5 text-left text-sm hover:bg-elevated"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        onEditEvent();
+                      }}
+                    >
+                      Edit event
+                    </button>
+                  ) : null}
+                  {onPostUpdate ? (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className="block w-full px-3 py-2.5 text-left text-sm hover:bg-elevated"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        onPostUpdate();
+                      }}
+                    >
+                      Post update
+                    </button>
+                  ) : null}
+                  {isLive ? (
+                    <Link
+                      role="menuitem"
+                      href={publicHref}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="block w-full px-3 py-2.5 text-left text-sm hover:bg-elevated"
+                      onClick={() => setMenuOpen(false)}
+                    >
+                      View event
+                    </Link>
+                  ) : null}
+                  {publishOk && onPublishToggle ? (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      disabled={pending}
+                      className="block w-full px-3 py-2.5 text-left text-sm hover:bg-elevated disabled:opacity-50"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        onPublishToggle();
+                      }}
+                    >
+                      {isLive ? 'Unpublish' : isDraft ? 'Put it up' : 'Publish'}
+                    </button>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+          </div>
+          {shareHint ? <p className="text-xs text-accent-2">{shareHint}</p> : null}
         </div>
       </div>
     </header>

@@ -276,6 +276,15 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
 
   return (
     <div className="relative overflow-hidden">
+      {/* Full-bleed stage wash — spans viewport, fades into content below */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-[min(42rem,70vh)] bg-[radial-gradient(ellipse_120%_70%_at_50%_-10%,rgba(255,104,0,0.28)_0%,rgba(255,104,0,0.12)_28%,rgba(255,104,0,0.04)_52%,transparent_72%)]"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-[min(22rem,38vh)] h-48 bg-gradient-to-b from-transparent via-bg/40 to-bg"
+      />
       {shell}
     </div>
   );

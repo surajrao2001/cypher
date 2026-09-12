@@ -355,22 +355,21 @@ export function EventHomePanel({
       ) : null}
 
       {metrics.length > 0 ? (
-        <div
-          className={cn(
-            'grid gap-3',
-            metrics.length === 1 && 'grid-cols-1 sm:max-w-xs',
-            metrics.length === 2 && 'grid-cols-2 sm:max-w-xl',
-            metrics.length === 3 && 'grid-cols-2 lg:grid-cols-3',
-            metrics.length >= 4 && 'grid-cols-2 lg:grid-cols-4',
-          )}
-        >
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[repeat(auto-fit,minmax(13.5rem,1fr))]">
           {metrics.map((m) => (
             <MetricCard key={m.id} {...m} />
           ))}
         </div>
       ) : null}
 
-      <div className="grid items-stretch gap-4 lg:grid-cols-[minmax(0,1.05fr)_minmax(17rem,0.55fr)] lg:gap-5">
+      <div
+        className={cn(
+          'grid items-stretch gap-4 lg:gap-5',
+          showMoney
+            ? 'lg:grid-cols-[minmax(0,1.05fr)_minmax(17rem,0.55fr)]'
+            : 'lg:grid-cols-[minmax(0,1fr)_minmax(18rem,0.65fr)]',
+        )}
+      >
         <div className="flex flex-col gap-2.5">
           <DestRow
             Icon={Users}
@@ -414,8 +413,8 @@ export function EventHomePanel({
       </div>
 
       {!past || latestUpdate ? (
-        <section className="space-y-3">
-          <div className="flex items-center justify-between gap-3">
+        <section className="rounded-2xl border border-[#252525] bg-gradient-to-b from-[#171717]/90 to-[#121212] p-4 sm:p-5">
+          <div className="mb-3.5 flex items-center justify-between gap-3">
             <h2 className="inline-flex items-center gap-2 text-[15px] font-semibold text-text-primary">
               <ByndIcon name="megaphone" className="size-4 text-accent" />
               Latest update
@@ -439,7 +438,7 @@ export function EventHomePanel({
             ) : null}
           </div>
           {latestUpdate ? (
-            <article className="flex gap-4 rounded-2xl border border-[#252525] bg-gradient-to-br from-[#161616] to-[#121212] p-4">
+            <article className="flex gap-4 rounded-xl border border-[#2a2a2a] bg-[#0e0e0e] p-3.5 sm:p-4">
               <div className="relative h-[4.5rem] w-[4.5rem] shrink-0 overflow-hidden rounded-xl bg-[#1a1a1a]">
                 {latestUpdate.posterUrl ? (
                   <img src={latestUpdate.posterUrl} alt="" className="h-full w-full object-cover" />
@@ -460,7 +459,7 @@ export function EventHomePanel({
               </div>
             </article>
           ) : (
-            <p className="text-sm text-text-muted">
+            <p className="rounded-xl border border-dashed border-[#2a2a2a] px-4 py-5 text-sm text-text-muted">
               No updates yet.
               {onPostUpdate ? (
                 <>
@@ -510,21 +509,23 @@ function MetricCard({
   detail,
 }: Metric) {
   return (
-    <div className="flex min-h-[7.75rem] flex-col rounded-2xl border border-[#252525] bg-gradient-to-b from-[#171717] to-[#121212] px-4 py-4 transition-[border-color] duration-150 hover:border-[#333]">
-      <Icon
-        className={cn('size-5 shrink-0', iconClass)}
-        strokeWidth={1.85}
-        absoluteStrokeWidth
-        aria-hidden
-      />
-      <div className="mt-auto space-y-1.5 pt-5">
-        <p className="font-display text-[2rem] leading-none tracking-[0.02em] text-text-primary sm:text-[2.15rem]">
+    <div className="flex min-h-[5.75rem] items-center gap-4 rounded-2xl border border-[#252525] bg-gradient-to-b from-[#171717] to-[#121212] px-4 py-4 transition-[border-color] duration-150 hover:border-[#333] sm:min-h-[6.25rem] sm:gap-5 sm:px-5">
+      <span
+        className={cn(
+          'flex size-11 shrink-0 items-center justify-center rounded-xl bg-white/[0.04] sm:size-12',
+          iconClass,
+        )}
+      >
+        <Icon className="size-5 sm:size-6" strokeWidth={1.85} absoluteStrokeWidth aria-hidden />
+      </span>
+      <div className="min-w-0 flex-1 space-y-1">
+        <p className="font-display text-[1.85rem] leading-none tracking-[0.02em] text-text-primary sm:text-[2.05rem]">
           {value}
         </p>
         <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-text-secondary">
           {label}
         </p>
-        <p className="text-[12px] leading-snug text-text-muted sm:text-[13px]">{detail}</p>
+        <p className="truncate text-[12px] leading-snug text-text-muted sm:text-[13px]">{detail}</p>
       </div>
     </div>
   );
