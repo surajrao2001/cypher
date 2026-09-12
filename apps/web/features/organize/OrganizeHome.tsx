@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { OrganizeGate } from '@/features/organize/OrganizeGate';
 import { ensurePersonalOrganizer } from '@/features/organize/ensure-personal-organizer';
+import { eventTypeDisplayLabel, yourEventsCardMetric } from '@/features/organize/event-type-copy';
 import { OrganizeEmpty, OrganizerWorkspace } from '@/features/organize/organizer-ui';
 import { PageLoading, SoftError } from '@/features/shell/AsyncState';
 import { cn } from '@/lib/utils';
@@ -22,11 +23,6 @@ type EventRow = {
   event: OrganizerEventDetailDto;
   org: OrganizerDto;
 };
-
-function eventTypeLabel(type: string): string {
-  if (type === 'cypher') return 'Jam';
-  return type.charAt(0).toUpperCase() + type.slice(1);
-}
 
 /** Match reference: `Sat, 18 Oct - 6:00 PM` */
 function formatCardWhen(iso: string): string {
@@ -73,7 +69,7 @@ function cardStatus(
 }
 
 function cardTags(event: OrganizerEventDetailDto): string[] {
-  const tags: string[] = [eventTypeLabel(event.eventType)];
+  const tags: string[] = [eventTypeDisplayLabel(event.eventType)];
   for (const style of event.styles ?? []) {
     if (style && !tags.includes(style)) tags.push(style);
     if (tags.length >= 2) break;
@@ -332,10 +328,7 @@ function OrganizeHomeInner() {
           ) : (
             <ul className="space-y-3.5">
               {filtered.map(({ event, org }) => {
-                const confirmed = (event.categories ?? []).reduce(
-                  (n, c) => n + c.confirmedCount,
-                  0,
-                );
+                const metric = yourEventsCardMetric(event);
                 const status = cardStatus(event, now);
                 const tags = cardTags(event);
                 const place = cardPlace(event);
@@ -412,22 +405,24 @@ function OrganizeHomeInner() {
                           </div>
                         ) : null}
 
-                        {/* Mobile registered count */}
+                        {/* Mobile metric */}
                         <p className="pt-1 text-[13px] text-text-secondary sm:hidden">
                           <span className="font-display text-xl tracking-[0.04em] text-text-primary">
-                            {confirmed}
+                            {metric.primary}
                           </span>{' '}
-                          registered
+                          {metric.secondary}
                         </p>
                       </div>
 
                       {/* Desktop count + chevron */}
                       <div className="hidden shrink-0 items-center gap-4 self-center sm:flex">
-                        <div className="text-right">
+                        <div className="max-w-[9rem] text-right">
                           <p className="font-display text-[2.35rem] leading-none tracking-[0.02em] text-text-primary">
-                            {confirmed}
+                            {metric.primary}
                           </p>
-                          <p className="mt-1 text-[13px] text-text-secondary">registered</p>
+                          <p className="mt-1 text-[13px] leading-snug text-text-secondary">
+                            {metric.secondary}
+                          </p>
                         </div>
                         <ByndIcon
                           name="chevronRight"

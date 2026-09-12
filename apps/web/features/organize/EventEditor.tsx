@@ -21,8 +21,6 @@ import { OrganizeGate } from '@/features/organize/OrganizeGate';
 import { EventMediaLinksEditor } from '@/features/organize/EventMediaLinksEditor';
 import { EVENT_TYPE_GROUPS, eventTypeHint } from '@/features/organize/event-taxonomy';
 import {
-  EVENT_EDIT_STEPS,
-  EventEditStepper,
   isEventEditStepId,
   type EventEditStepId,
 } from '@/features/organize/EventEditStepper';
@@ -180,13 +178,6 @@ function EventEditorInner({ slug, eventId }: { slug: string; eventId?: string })
     };
   }, [auth.api, eventId, slug, reloadKey]);
 
-  const stepIndex = EVENT_EDIT_STEPS.findIndex((s) => s.id === step);
-  const prevStep = stepIndex > 0 ? EVENT_EDIT_STEPS[stepIndex - 1]?.id : null;
-  const nextStep =
-    stepIndex >= 0 && stepIndex < EVENT_EDIT_STEPS.length - 1
-      ? EVENT_EDIT_STEPS[stepIndex + 1]?.id
-      : null;
-
   async function saveBasics() {
     if (!org) return;
     setPending(true);
@@ -323,7 +314,7 @@ function EventEditorInner({ slug, eventId }: { slug: string; eventId?: string })
           { label: isFresh ? 'New' : 'Edit' },
         ]}
       />
-      <h1 className="display-title text-4xl md:text-5xl">{isFresh ? 'Edit details' : 'Edit event'}</h1>
+      <h1 className="display-title text-4xl md:text-5xl">{isFresh ? 'New event' : 'Edit event'}</h1>
 
       {entryHref ? (
         <p className="text-sm text-text-secondary">
@@ -335,7 +326,7 @@ function EventEditorInner({ slug, eventId }: { slug: string; eventId?: string })
         </p>
       ) : null}
 
-      <div className="flex flex-col gap-3 rounded-lg border border-border bg-surface px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 rounded-2xl border border-[#2a2a2a] bg-[#141414] px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-sm font-semibold text-text-primary">
             {!event
@@ -369,7 +360,24 @@ function EventEditorInner({ slug, eventId }: { slug: string; eventId?: string })
         </Button>
       </div>
 
-      <EventEditStepper active={step} onChange={goToStep} />
+      {step === 'media' ? (
+        <div className="flex items-center justify-between gap-3">
+          <button
+            type="button"
+            onClick={() => goToStep('basics')}
+            className="inline-flex items-center gap-1 text-sm text-text-muted transition-colors hover:text-accent"
+          >
+            ← Back to details
+          </button>
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-text-muted">
+            Manage media
+          </p>
+        </div>
+      ) : (
+        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-text-muted">
+          Public details
+        </p>
+      )}
 
       {step === 'basics' ? (
         <section id="basics" className="scroll-mt-24 space-y-4">
@@ -473,20 +481,34 @@ function EventEditorInner({ slug, eventId }: { slug: string; eventId?: string })
               className="flex w-full rounded-md border border-border bg-elevated px-3 py-2 font-body text-sm text-text-primary focus-visible:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
             />
           </label>
+
+          {event ? (
+            <div className="rounded-2xl border border-[#2a2a2a] bg-[#141414] px-4 py-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-text-muted">
+                Media
+              </p>
+              <p className="mt-1 text-sm text-text-secondary">
+                {(event.mediaLinks ?? []).length} link
+                {(event.mediaLinks ?? []).length === 1 ? '' : 's'}
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                className="mt-3 rounded-xl"
+                onClick={() => goToStep('media')}
+              >
+                Manage media
+              </Button>
+            </div>
+          ) : null}
+
           <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
             <Button asChild variant="ghost">
               <Link href={viewHref}>{event ? 'Back to event' : 'Cancel'}</Link>
             </Button>
-            <div className="flex flex-wrap gap-2">
-              <Button type="button" disabled={pending} onClick={() => void saveBasics()}>
-                Save details
-              </Button>
-              {nextStep && event ? (
-                <Button type="button" variant="outline" onClick={() => goToStep(nextStep)}>
-                  Next
-                </Button>
-              ) : null}
-            </div>
+            <Button type="button" disabled={pending} onClick={() => void saveBasics()}>
+              Save details
+            </Button>
           </div>
         </section>
       ) : null}
@@ -499,7 +521,6 @@ function EventEditorInner({ slug, eventId }: { slug: string; eventId?: string })
             </p>
           ) : (
             <>
-              <h2 className="text-sm font-bold text-text-primary">Media</h2>
               <EventMediaLinksEditor
                 organizerId={org.id}
                 eventId={event.id}
@@ -510,15 +531,11 @@ function EventEditorInner({ slug, eventId }: { slug: string; eventId?: string })
                 onUpdated={(updated) => syncFromEvent(updated)}
               />
               <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-                {prevStep ? (
-                  <Button type="button" variant="outline" onClick={() => goToStep(prevStep)}>
-                    Prev
-                  </Button>
-                ) : (
-                  <span />
-                )}
+                <Button type="button" variant="outline" onClick={() => goToStep('basics')}>
+                  Back to details
+                </Button>
                 <Button asChild variant="ghost">
-                  <Link href={viewHref}>Done — view event</Link>
+                  <Link href={viewHref}>Done</Link>
                 </Button>
               </div>
             </>

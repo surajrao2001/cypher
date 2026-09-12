@@ -14,6 +14,7 @@ import { ByndIcon } from '@/components/icons/bynd8';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { OrganizeGate } from '@/features/organize/OrganizeGate';
+import { EventSectionNav } from '@/features/organize/EventSectionNav';
 import { OrganizeEmpty, OrganizerWorkspace } from '@/features/organize/organizer-ui';
 import { PageLoading, SoftError } from '@/features/shell/AsyncState';
 import { PageBreadcrumb } from '@/features/shell/PageBreadcrumb';
@@ -293,6 +294,7 @@ function EventPeoplePanel({ slug, eventId }: { slug: string; eventId: string }) 
             { label: 'People' },
           ]}
         />
+        <EventSectionNav slug={slug} eventId={eventId} event={event} active="people" />
         {body}
       </OrganizerWorkspace>
     </div>

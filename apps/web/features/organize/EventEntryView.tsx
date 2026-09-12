@@ -27,7 +27,12 @@ import {
   priceLabel,
   COMPETITION_FORMATS,
 } from '@/features/organize/entry-format';
+import {
+  entryCopyForType,
+  eventTypeGroup,
+} from '@/features/organize/event-type-copy';
 import { OrganizeGate } from '@/features/organize/OrganizeGate';
+import { EventSectionNav } from '@/features/organize/EventSectionNav';
 import {
   CapacityMeter,
   OrganizeEmpty,
@@ -139,7 +144,8 @@ export function EventEntryPanel({
 
   async function removeCategory(cat: EventCategoryPublicDto) {
     if (!org || !event) return;
-    const label = cat.entryType === 'viewer' ? 'audience pass' : 'competition';
+    const copy = entryCopyForType(event.eventType);
+    const label = cat.entryType === 'viewer' ? 'audience pass' : copy.competeTitle.toLowerCase();
     if (!window.confirm(`Remove “${cat.name}” ${label}?`)) return;
     setPendingDelete(cat.id);
     const tid = toastPending(toastCopy.saving);
@@ -224,6 +230,7 @@ export function EventEntryPanel({
 
   const list = (
     <EntryList
+      eventType={event.eventType}
       compete={compete}
       audienceCats={audienceCats}
       posterUrl={event.posterUrl}
@@ -264,12 +271,15 @@ export function EventEntryPanel({
   const content = (
     <>
       {showChrome ? (
-        <PageBreadcrumb
-          items={[
-            { label: event.title, href: manageHref },
-            { label: 'Entry' },
-          ]}
-        />
+        <>
+          <PageBreadcrumb
+            items={[
+              { label: event.title, href: manageHref },
+              { label: 'Entry' },
+            ]}
+          />
+          <EventSectionNav slug={slug} eventId={eventId} event={event} active="entry" />
+        </>
       ) : null}
       {body}
     </>
@@ -281,7 +291,7 @@ export function EventEntryPanel({
 
   return (
     <div className="relative before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-[28rem] before:bg-[radial-gradient(ellipse_at_top_right,rgba(255,104,0,0.28)_0%,rgba(255,104,0,0.08)_35%,transparent_70%)] before:content-['']">
-      <OrganizerWorkspace width="full" className="relative z-10">
+      <OrganizerWorkspace width="full" className="relative z-10 space-y-6">
         {content}
       </OrganizerWorkspace>
     </div>
@@ -289,6 +299,7 @@ export function EventEntryPanel({
 }
 
 function EntryList({
+  eventType,
   compete,
   audienceCats,
   posterUrl,
@@ -299,6 +310,7 @@ function EntryList({
   onEditAudience,
   onRemove,
 }: {
+  eventType: string;
   compete: EventCategoryPublicDto[];
   audienceCats: EventCategoryPublicDto[];
   posterUrl: string | null;
@@ -309,6 +321,13 @@ function EntryList({
   onEditAudience: (id: string, trigger: HTMLElement | null) => void;
   onRemove: (cat: EventCategoryPublicDto) => void;
 }) {
+  const copy = entryCopyForType(eventType);
+  const group = eventTypeGroup(eventType);
+  const anyEntry = compete.length + audienceCats.length > 0;
+  const entryOptional = group === 'jam' || group === 'session' || group === 'other';
+  const showAudienceSection = group === 'battle' || audienceCats.length > 0;
+  const showCompeteEmpty = group === 'battle' || group === 'workshop' || anyEntry;
+
   return (
     <div className="space-y-8">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -316,7 +335,11 @@ function EntryList({
           <h1 className="display-title text-[2.75rem] leading-[0.9] tracking-[0.04em] sm:text-6xl md:text-7xl">
             Entry
           </h1>
-          <p className="text-[15px] text-text-secondary sm:text-base">How can people get in?</p>
+          <p className="text-[15px] text-text-secondary sm:text-base">
+            {entryOptional && !anyEntry
+              ? 'Optional — add entry if you need capacity or payment.'
+              : 'How can people get in?'}
+          </p>
         </div>
         <Button
           type="button"
@@ -324,81 +347,113 @@ function EntryList({
           className="h-12 shrink-0 rounded-xl px-6 text-sm tracking-[0.12em]"
           onClick={(e) => onAddCompetition(e.currentTarget)}
         >
-          + Add competition
+          {copy.addCompete}
         </Button>
       </header>
 
-      <section className="space-y-3">
-        <h2 className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-          Competition{compete.length > 0 ? ` (${String(compete.length)})` : ''}
-        </h2>
-        {compete.length === 0 ? (
-          <OrganizeEmpty
-            title="No competition yet"
-            body="Add formats so people can compete."
-            className="py-4"
-          >
-            <Button
-              type="button"
-              variant="outline"
-              className="rounded-xl"
-              onClick={(e) => onAddCompetition(e.currentTarget)}
-            >
-              + Add competition
-            </Button>
-          </OrganizeEmpty>
-        ) : (
-          <ul className="space-y-3">
-            {compete.map((cat) => (
-              <EntryObject
-                key={cat.id}
-                cat={cat}
-                fallbackPosterUrl={posterUrl}
-                busy={pendingDelete === cat.id}
-                onEdit={(el) => onEditCompetition(cat.id, el)}
-                onRemove={() => onRemove(cat)}
-              />
-            ))}
-          </ul>
-        )}
-      </section>
-
-      <section className="space-y-3">
-        <h2 className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-          Audience
-        </h2>
-        {audienceCats.length === 0 ? (
-          <button
+      {entryOptional && !anyEntry ? (
+        <OrganizeEmpty
+          title="No registration needed"
+          body="Want to limit spots or charge entry?"
+          className="py-6"
+        >
+          <Button
             type="button"
-            onClick={(e) => onAddAudience(e.currentTarget)}
-            className="flex w-full items-center justify-center gap-2 rounded-2xl border border-[#2a2a2a] bg-transparent px-4 py-5 text-sm font-semibold text-text-primary transition-colors hover:border-accent/40"
+            variant="outline"
+            className="rounded-xl"
+            onClick={(e) => onAddCompetition(e.currentTarget)}
           >
-            <span className="text-accent">+</span> Add audience pass
-          </button>
-        ) : (
-          <>
-            <ul className="space-y-3">
-              {audienceCats.map((cat) => (
-                <EntryObject
-                  key={cat.id}
-                  cat={cat}
-                  fallbackPosterUrl={posterUrl}
-                  busy={pendingDelete === cat.id}
-                  onEdit={(el) => onEditAudience(cat.id, el)}
-                  onRemove={() => onRemove(cat)}
-                />
-              ))}
-            </ul>
+            {copy.addCompete}
+          </Button>
+        </OrganizeEmpty>
+      ) : (
+        <>
+          {(showCompeteEmpty || compete.length > 0) && (
+            <section className="space-y-3">
+              <h2 className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
+                {copy.competeTitle}
+                {compete.length > 0 ? ` (${String(compete.length)})` : ''}
+              </h2>
+              {compete.length === 0 ? (
+                <OrganizeEmpty
+                  title={copy.emptyCompeteTitle}
+                  body={copy.emptyCompeteBody}
+                  className="py-4"
+                >
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="rounded-xl"
+                    onClick={(e) => onAddCompetition(e.currentTarget)}
+                  >
+                    {copy.addCompete}
+                  </Button>
+                </OrganizeEmpty>
+              ) : (
+                <ul className="space-y-3">
+                  {compete.map((cat) => (
+                    <EntryObject
+                      key={cat.id}
+                      cat={cat}
+                      fallbackPosterUrl={posterUrl}
+                      busy={pendingDelete === cat.id}
+                      onEdit={(el) => onEditCompetition(cat.id, el)}
+                      onRemove={() => onRemove(cat)}
+                    />
+                  ))}
+                </ul>
+              )}
+            </section>
+          )}
+
+          {showAudienceSection ? (
+            <section className="space-y-3">
+              <h2 className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
+                {copy.audienceTitle}
+              </h2>
+              {audienceCats.length === 0 ? (
+                <button
+                  type="button"
+                  onClick={(e) => onAddAudience(e.currentTarget)}
+                  className="flex w-full items-center justify-center gap-2 rounded-2xl border border-[#2a2a2a] bg-transparent px-4 py-5 text-sm font-semibold text-text-primary transition-colors hover:border-accent/40"
+                >
+                  <span className="text-accent">+</span> {copy.addAudience.replace(/^\+\s*/, '')}
+                </button>
+              ) : (
+                <>
+                  <ul className="space-y-3">
+                    {audienceCats.map((cat) => (
+                      <EntryObject
+                        key={cat.id}
+                        cat={cat}
+                        fallbackPosterUrl={posterUrl}
+                        busy={pendingDelete === cat.id}
+                        onEdit={(el) => onEditAudience(cat.id, el)}
+                        onRemove={() => onRemove(cat)}
+                      />
+                    ))}
+                  </ul>
+                  <button
+                    type="button"
+                    onClick={(e) => onAddAudience(e.currentTarget)}
+                    className="flex w-full items-center justify-center gap-2 rounded-2xl border border-[#2a2a2a] bg-transparent px-4 py-4 text-sm font-semibold text-text-primary transition-colors hover:border-accent/40 sm:w-auto sm:px-6"
+                  >
+                    <span className="text-accent">+</span> {copy.addAudience.replace(/^\+\s*/, '')}
+                  </button>
+                </>
+              )}
+            </section>
+          ) : anyEntry ? (
             <button
               type="button"
               onClick={(e) => onAddAudience(e.currentTarget)}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl border border-[#2a2a2a] bg-transparent px-4 py-4 text-sm font-semibold text-text-primary transition-colors hover:border-accent/40 sm:w-auto sm:px-6"
+              className="flex w-full items-center justify-center gap-2 rounded-2xl border border-[#2a2a2a] bg-transparent px-4 py-4 text-sm font-semibold text-text-muted transition-colors hover:border-accent/40 hover:text-text-primary sm:w-auto sm:px-6"
             >
-              <span className="text-accent">+</span> Add audience pass
+              <span className="text-accent">+</span> {copy.addAudience.replace(/^\+\s*/, '')}
             </button>
-          </>
-        )}
-      </section>
+          ) : null}
+        </>
+      )}
     </div>
   );
 }

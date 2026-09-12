@@ -18,7 +18,6 @@ import { EventMoneyPanel } from '@/features/organize/EventMoneyPanel';
 import {
   canPublish,
   hasPaidEntry,
-  isFreeOnlyEvent,
   legacyTabToDest,
   type ControlDest,
 } from '@/features/organize/event-control';
@@ -43,9 +42,7 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
   const searchParams = useSearchParams();
   const initialDest = legacyTabToDest(searchParams.get('tab') ?? searchParams.get('section'));
   const [dest, setDest] = useState<ControlDest>(
-    initialDest === 'entry' || initialDest === 'people' || initialDest === 'page'
-      ? 'home'
-      : initialDest,
+    initialDest === 'entry' || initialDest === 'people' ? 'home' : initialDest,
   );
   const [org, setOrg] = useState<OrganizerDto | null>(null);
   const [event, setEvent] = useState<OrganizerEventDetailDto | null>(null);
@@ -62,8 +59,6 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
       router.replace(routes.organizeEventEntry(slug, eventId));
     } else if (initialDest === 'people') {
       router.replace(routes.organizeEventPeople(slug, eventId));
-    } else if (initialDest === 'page') {
-      router.replace(routes.organizeEventPage(slug, eventId));
     }
   }, [eventId, initialDest, router, slug]);
 
@@ -93,9 +88,7 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
     };
   }, [auth.api, eventId, slug, reloadKey]);
 
-  const paid = useMemo(() => (event ? hasPaidEntry(event) : false), [event]);
-  const freeOnly = useMemo(() => (event ? isFreeOnlyEvent(event) : true), [event]);
-  const showMoney = Boolean(event && (!freeOnly || paid));
+  const showMoney = useMemo(() => (event ? hasPaidEntry(event) : false), [event]);
 
   useEffect(() => {
     if (!org || !showMoney) {
@@ -150,10 +143,6 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
       router.push(routes.organizeEventPeople(slug, eventId));
       return;
     }
-    if (next === 'page') {
-      router.push(routes.organizeEventPage(slug, eventId));
-      return;
-    }
     const prev = dest;
     setDest(next);
     if (typeof window !== 'undefined') {
@@ -184,7 +173,7 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
 
   const entryHref = routes.organizeEventEntry(org.slug, event.id);
   const peopleHref = routes.organizeEventPeople(org.slug, event.id);
-  const pageHref = routes.organizeEventPage(org.slug, event.id);
+  const editHref = `${routes.organize}/${org.slug}/events/${event.id}/edit`;
 
   const shell = (
     <OrganizerWorkspace width="full" className="relative z-10 space-y-6">
@@ -196,9 +185,7 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
         onPostUpdate={() => setPostUpdateOpen(true)}
       />
 
-      {dest !== 'home' ? (
-        <EventControlNav active={dest} onChange={navigate} showMoney={showMoney} />
-      ) : null}
+      <EventControlNav active={dest} onChange={navigate} showMoney={showMoney} />
 
       <PostUpdateDialog
         organizerId={org.id}
@@ -206,7 +193,8 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
         open={postUpdateOpen}
         onOpenChange={setPostUpdateOpen}
         onPosted={() => {
-          router.push(pageHref);
+          setPostUpdateOpen(false);
+          setReloadKey((n) => n + 1);
         }}
       />
 
@@ -219,7 +207,7 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
           checkedInCount={checkedInCount}
           entryHref={entryHref}
           peopleHref={peopleHref}
-          pageHref={pageHref}
+          editHref={editHref}
           onNavigate={navigate}
           onPublished={(next) => {
             setEvent(next);

@@ -9,7 +9,6 @@ const ALL_ITEMS: Array<{ id: ControlDest; label: string; icon: ByndIconName }> =
   { id: 'people', label: 'People', icon: 'crew' },
   { id: 'entry', label: 'Entry', icon: 'tickets' },
   { id: 'money', label: 'Money', icon: 'wallet' },
-  { id: 'page', label: 'Event Page', icon: 'media' },
 ];
 
 export function EventControlNav({

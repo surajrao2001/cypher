@@ -1,10 +1,11 @@
-import { EventPageView } from '@/features/organize/EventPageView';
+import { redirect } from 'next/navigation';
 
-export default async function OrganizeEventPagePage({
+/** Legacy Event Page route — Edit Event is the public-details surface now. */
+export default async function OrganizeEventPageRedirect({
   params,
 }: {
   params: Promise<{ slug: string; eventId: string }>;
 }) {
   const { slug, eventId } = await params;
-  return <EventPageView slug={slug} eventId={eventId} />;
+  redirect(`/organize/${slug}/events/${eventId}/edit`);
 }

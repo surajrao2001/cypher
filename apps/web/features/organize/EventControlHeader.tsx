@@ -8,6 +8,7 @@ import { useState } from 'react';
 import { ByndIcon } from '@/components/icons/bynd8';
 import { Button } from '@/components/ui/button';
 import { canPublish, statusLabel } from '@/features/organize/event-control';
+import { eventTypeDisplayLabel } from '@/features/organize/event-type-copy';
 import { PageBreadcrumb } from '@/features/shell/PageBreadcrumb';
 import { cn } from '@/lib/utils';
 
@@ -35,11 +36,6 @@ function formatHomeWhen(iso: string): string {
   return `${weekday}, ${day} ${month} • ${time}`;
 }
 
-function eventTypeLabel(type: string): string {
-  if (type === 'cypher') return 'Jam';
-  return type.charAt(0).toUpperCase() + type.slice(1);
-}
-
 export function EventControlHeader({
   org,
   event,
@@ -63,6 +59,7 @@ export function EventControlHeader({
   const publishOk = canPublish(role);
   const checkInHref = routes.organizeEventCheckIn(org.slug, event.id);
   const publicHref = `${routes.events}/${event.slug}`;
+  const editHref = `${routes.organize}/${org.slug}/events/${event.id}/edit`;
   const place = [event.venue, event.city].filter(Boolean).join(', ');
   const when = formatHomeWhen(event.startTime);
 
@@ -134,8 +131,16 @@ export function EventControlHeader({
             {menuOpen ? (
               <div
                 role="menu"
-                className="absolute right-0 z-20 mt-2 min-w-[11rem] rounded-xl border border-border bg-surface py-1 shadow-lg"
+                className="absolute right-0 z-20 mt-2 min-w-[12rem] rounded-xl border border-border bg-surface py-1 shadow-lg"
               >
+                <Link
+                  role="menuitem"
+                  href={editHref}
+                  className="block w-full px-3 py-2.5 text-left text-sm hover:bg-elevated"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  Edit event
+                </Link>
                 {onPostUpdate ? (
                   <button
                     type="button"
@@ -153,10 +158,12 @@ export function EventControlHeader({
                   <Link
                     role="menuitem"
                     href={publicHref}
+                    target="_blank"
+                    rel="noreferrer"
                     className="block w-full px-3 py-2.5 text-left text-sm hover:bg-elevated"
                     onClick={() => setMenuOpen(false)}
                   >
-                    View live event
+                    View event
                   </Link>
                 ) : null}
                 {publishOk && onPublishToggle ? (
@@ -173,14 +180,6 @@ export function EventControlHeader({
                     {isLive ? 'Unpublish' : isDraft ? 'Put it up' : 'Publish'}
                   </button>
                 ) : null}
-                <Link
-                  role="menuitem"
-                  href={routes.organize}
-                  className="block w-full px-3 py-2.5 text-left text-sm hover:bg-elevated"
-                  onClick={() => setMenuOpen(false)}
-                >
-                  Your Events
-                </Link>
               </div>
             ) : null}
           </div>
@@ -204,7 +203,7 @@ export function EventControlHeader({
             {statusLabel(event.status).toUpperCase()}
           </span>
           <span className="inline-flex rounded-full border border-[#2a2a2a] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-text-secondary">
-            {eventTypeLabel(event.eventType)}
+            {eventTypeDisplayLabel(event.eventType)}
           </span>
         </div>
         <h1 className="display-title text-[2.75rem] leading-[0.9] tracking-[0.04em] sm:text-6xl md:text-7xl">

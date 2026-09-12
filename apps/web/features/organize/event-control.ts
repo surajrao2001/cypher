@@ -5,7 +5,7 @@ import type {
   OrganizerMemberRole,
 } from '@cypher/contracts';
 
-export type ControlDest = 'home' | 'people' | 'entry' | 'money' | 'page';
+export type ControlDest = 'home' | 'people' | 'entry' | 'money';
 
 export function statusLabel(status: EventStatus): string {
   switch (status) {
@@ -114,7 +114,7 @@ export function buildAttention(args: {
         id: 'basics',
         title: 'Event details',
         body: 'Add name, city, and start time before putting it up.',
-        dest: 'page',
+        href: 'edit',
       });
     }
   }
@@ -153,7 +153,7 @@ export function legacyTabToDest(tab: string | null): ControlDest {
       return 'money';
     case 'updates':
     case 'media':
-      return 'page';
+    case 'page':
     case 'overview':
     case 'home':
     default:

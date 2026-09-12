@@ -265,7 +265,7 @@ function CreateEventFlowInner() {
           </ul>
         </section>
       ) : (
-        <section className="w-full max-w-2xl rounded-2xl border border-[#2a2a2a] bg-[#121212]/40 p-4 sm:p-6">
+        <section className="w-full rounded-2xl border border-[#2a2a2a] bg-[#121212]/40 p-4 sm:p-6">
           <div className="mb-5 space-y-1.5">
             <h1 className="display-title text-[2.25rem] leading-[0.9] tracking-[0.04em] sm:text-5xl">
               New {selected.label}
