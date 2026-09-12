@@ -2,12 +2,13 @@ import type { ReactNode } from 'react';
 
 import { cn } from '@/lib/utils';
 
-type WorkspaceWidth = 'form' | 'default' | 'wide';
+type WorkspaceWidth = 'form' | 'default' | 'wide' | 'full';
 
 const WIDTH: Record<WorkspaceWidth, string> = {
   form: 'max-w-[40rem]',
   default: 'max-w-[72rem]',
   wide: 'max-w-[82rem]',
+  full: 'max-w-none',
 };
 
 /** Left-anchored organizer canvas — replaces narrow centered columns. */
