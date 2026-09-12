@@ -49,6 +49,7 @@ function eventRow(
         entryType: 'solo',
         minTeamSize: 1,
         maxTeamSize: 1,
+        posterUrl: null,
       },
     ],
     mediaLinks: [],

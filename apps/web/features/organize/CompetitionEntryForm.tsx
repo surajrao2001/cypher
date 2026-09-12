@@ -21,6 +21,7 @@ import {
   type CompetitionFormatId,
 } from '@/features/organize/entry-format';
 import { FormField } from '@/features/organize/FormField';
+import { PosterField } from '@/features/organize/PosterField';
 import { friendlyError, InlineNotice } from '@/features/shell/AsyncState';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
@@ -73,6 +74,7 @@ export function CompetitionEntryForm({
     const early = category ? earlyBirdTier(category).early : undefined;
     return early?.endsAt ? toLocalInputValue(early.endsAt) : '';
   });
+  const [posterUrl, setPosterUrl] = useState(category?.posterUrl ?? '');
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [needsPayout, setNeedsPayout] = useState(false);
@@ -149,6 +151,7 @@ export function CompetitionEntryForm({
           entryType: sizes.entryType,
           minTeamSize: sizes.minTeamSize,
           maxTeamSize: sizes.maxTeamSize,
+          posterUrl: posterUrl.trim() || null,
         });
       } else {
         next = await auth.api.addOrganizerEventCategory(organizerId, eventId, {
@@ -158,6 +161,7 @@ export function CompetitionEntryForm({
           entryType: sizes.entryType,
           minTeamSize: sizes.minTeamSize,
           maxTeamSize: sizes.maxTeamSize,
+          posterUrl: posterUrl.trim() || null,
         });
       }
 
@@ -247,6 +251,15 @@ export function CompetitionEntryForm({
           disabled={pending}
         />
       </FormField>
+
+      <PosterField
+        value={posterUrl}
+        onChange={setPosterUrl}
+        disabled={pending}
+        label="Poster"
+        hint="Optional · shows on Entry cards. Falls back to the event poster if empty."
+        createPanel
+      />
 
       <fieldset className="space-y-2">
         <legend className="text-sm font-semibold text-text-primary">Format</legend>

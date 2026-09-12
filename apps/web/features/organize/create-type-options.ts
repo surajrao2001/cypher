@@ -7,6 +7,7 @@ export const CREATE_TYPE_OPTIONS: Array<{
   hint: string;
   eventType: EventType;
   path: 'free' | 'battle' | 'workshop' | 'other';
+  image: string;
 }> = [
   {
     id: 'battle',
@@ -14,6 +15,7 @@ export const CREATE_TYPE_OPTIONS: Array<{
     hint: 'Competition formats, spots, and audience later.',
     eventType: 'battle',
     path: 'battle',
+    image: '/organize/create/battle.png',
   },
   {
     id: 'jam-cypher',
@@ -21,6 +23,7 @@ export const CREATE_TYPE_OPTIONS: Array<{
     hint: 'Open floor. Put it up fast — entry optional later.',
     eventType: 'cypher',
     path: 'free',
+    image: '/organize/create/jam.png',
   },
   {
     id: 'workshop',
@@ -28,6 +31,7 @@ export const CREATE_TYPE_OPTIONS: Array<{
     hint: 'Learning night. Free or paid entry later.',
     eventType: 'workshop',
     path: 'workshop',
+    image: '/organize/create/workshop.png',
   },
   {
     id: 'session',
@@ -35,6 +39,7 @@ export const CREATE_TYPE_OPTIONS: Array<{
     hint: 'Practice block with the crew.',
     eventType: 'session',
     path: 'free',
+    image: '/organize/create/session.png',
   },
   {
     id: 'other',
@@ -42,5 +47,6 @@ export const CREATE_TYPE_OPTIONS: Array<{
     hint: 'Doesn’t fit the list — still a night.',
     eventType: 'other',
     path: 'other',
+    image: '/organize/create/other.png',
   },
 ];

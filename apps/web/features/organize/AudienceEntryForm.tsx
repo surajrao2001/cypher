@@ -21,6 +21,7 @@ import {
   toLocalInputValue,
 } from '@/features/organize/entry-format';
 import { FormField } from '@/features/organize/FormField';
+import { PosterField } from '@/features/organize/PosterField';
 import { friendlyError, InlineNotice } from '@/features/shell/AsyncState';
 import { cn } from '@/lib/utils';
 
@@ -72,6 +73,7 @@ export function AudienceEntryForm({
     const early = category ? earlyBirdTier(category).early : undefined;
     return early?.endsAt ? toLocalInputValue(early.endsAt) : '';
   });
+  const [posterUrl, setPosterUrl] = useState(category?.posterUrl ?? '');
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [needsPayout, setNeedsPayout] = useState(false);
@@ -146,6 +148,7 @@ export function AudienceEntryForm({
           name: category.name || 'Audience pass',
           capacity: Number(capacity),
           priceMinor,
+          posterUrl: posterUrl.trim() || null,
         });
       } else {
         next = await auth.api.updateOrganizerEvent(organizerId, eventId, {
@@ -163,6 +166,12 @@ export function AudienceEntryForm({
           ? next.viewerCategories.find((c) => c.id === category.id)
           : next.viewerCategories.find((c) => c.name === 'Audience pass') ??
             next.viewerCategories[0]) ?? null;
+
+      if (saved && !isEdit && posterUrl.trim()) {
+        next = await auth.api.updateOrganizerEventCategory(organizerId, eventId, saved.id, {
+          posterUrl: posterUrl.trim() || null,
+        });
+      }
 
       if (paid && showEarlyBird && saved && earlyPrice.trim() && earlyEnds) {
         const cutoff = toIsoFromLocal(earlyEnds);
@@ -234,6 +243,15 @@ export function AudienceEntryForm({
         </h2>
         <p className="mt-1 text-sm text-text-secondary">For people who come to watch.</p>
       </div>
+
+      <PosterField
+        value={posterUrl}
+        onChange={setPosterUrl}
+        disabled={pending}
+        label="Poster"
+        hint="Optional · shows on Entry cards. Falls back to the event poster if empty."
+        createPanel
+      />
 
       <fieldset className="space-y-3">
         <legend className="text-sm font-semibold text-text-primary">Entry</legend>

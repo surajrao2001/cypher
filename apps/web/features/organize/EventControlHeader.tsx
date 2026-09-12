@@ -2,16 +2,43 @@
 
 import type { OrganizerDto, OrganizerEventDetailDto, OrganizerMemberRole } from '@cypher/contracts';
 import { routes } from '@cypher/contracts';
-import { formatEventDateRange } from '@cypher/utils';
 import Link from 'next/link';
 import { useState } from 'react';
 
 import { ByndIcon } from '@/components/icons/bynd8';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { canPublish, statusLabel } from '@/features/organize/event-control';
 import { PageBreadcrumb } from '@/features/shell/PageBreadcrumb';
 import { cn } from '@/lib/utils';
+
+function formatHomeWhen(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const weekday = new Intl.DateTimeFormat('en-GB', {
+    weekday: 'short',
+    timeZone: 'Asia/Kolkata',
+  }).format(d);
+  const day = new Intl.DateTimeFormat('en-GB', {
+    day: 'numeric',
+    timeZone: 'Asia/Kolkata',
+  }).format(d);
+  const month = new Intl.DateTimeFormat('en-GB', {
+    month: 'short',
+    timeZone: 'Asia/Kolkata',
+  }).format(d);
+  const time = new Intl.DateTimeFormat('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+    timeZone: 'Asia/Kolkata',
+  }).format(d);
+  return `${weekday}, ${day} ${month} • ${time}`;
+}
+
+function eventTypeLabel(type: string): string {
+  if (type === 'cypher') return 'Jam';
+  return type.charAt(0).toUpperCase() + type.slice(1);
+}
 
 export function EventControlHeader({
   org,
@@ -36,6 +63,8 @@ export function EventControlHeader({
   const publishOk = canPublish(role);
   const checkInHref = routes.organizeEventCheckIn(org.slug, event.id);
   const publicHref = `${routes.events}/${event.slug}`;
+  const place = [event.venue, event.city].filter(Boolean).join(', ');
+  const when = formatHomeWhen(event.startTime);
 
   async function share() {
     if (!isLive) return;
@@ -56,39 +85,31 @@ export function EventControlHeader({
   }
 
   return (
-    <header className={cn('space-y-4', className)}>
-      <PageBreadcrumb
-        items={[
-          { label: 'Your Events', href: routes.organize },
-          { label: event.title },
-        ]}
-      />
+    <header className={cn('space-y-5', className)}>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <PageBreadcrumb
+          className="mb-0"
+          items={[
+            { label: 'Your Events', href: routes.organize },
+            { label: event.title },
+          ]}
+        />
 
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div className="min-w-0 space-y-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge variant={isLive ? 'lime' : isDraft ? 'muted' : 'outline'}>
-              {statusLabel(event.status)}
-            </Badge>
-            <Badge variant="outline">{event.eventType}</Badge>
-            {shareHint ? <span className="text-xs text-accent-2">{shareHint}</span> : null}
-          </div>
-          <h1 className="display-title text-4xl md:text-6xl lg:text-7xl">{event.title}</h1>
-          <p className="text-sm text-text-secondary">
-            {formatEventDateRange(event.startTime, event.endTime)}
-            {event.city ? ` · ${event.city}` : ''}
-          </p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 sm:justify-end">
           {isLive ? (
-            <Button type="button" size="lg" variant="secondary" onClick={() => void share()}>
+            <Button
+              type="button"
+              size="lg"
+              variant="outline"
+              onClick={() => void share()}
+              className="h-11 rounded-xl border-[#2a2a2a] px-4 text-xs tracking-[0.14em]"
+            >
               <ByndIcon name="external" />
               Share
             </Button>
           ) : null}
           {!isDraft ? (
-            <Button asChild size="lg">
+            <Button asChild size="lg" className="h-11 rounded-xl px-5 text-xs tracking-[0.14em]">
               <Link href={checkInHref}>
                 <ByndIcon name="checkIn" />
                 Check in
@@ -98,19 +119,22 @@ export function EventControlHeader({
           <div className="relative">
             <Button
               type="button"
-              size="lg"
+              size="icon"
               variant="outline"
               aria-expanded={menuOpen}
               aria-haspopup="menu"
               aria-label="More actions"
               onClick={() => setMenuOpen((o) => !o)}
+              className="size-11 rounded-xl border-[#2a2a2a]"
             >
-              ···
+              <span className="text-lg leading-none tracking-widest" aria-hidden>
+                ···
+              </span>
             </Button>
             {menuOpen ? (
               <div
                 role="menu"
-                className="absolute right-0 z-20 mt-2 min-w-[11rem] rounded-sm border border-border bg-surface py-1 shadow-lg"
+                className="absolute right-0 z-20 mt-2 min-w-[11rem] rounded-xl border border-border bg-surface py-1 shadow-lg"
               >
                 {onPostUpdate ? (
                   <button
@@ -160,6 +184,45 @@ export function EventControlHeader({
               </div>
             ) : null}
           </div>
+        </div>
+      </div>
+
+      {shareHint ? <p className="text-xs text-accent-2">{shareHint}</p> : null}
+
+      <div className="relative overflow-hidden rounded-2xl border border-[#2a2a2a]">
+        {event.posterUrl ? (
+          <div
+            className="absolute inset-0 bg-cover bg-center opacity-35"
+            style={{ backgroundImage: `url(${event.posterUrl})` }}
+          />
+        ) : (
+          <div className="absolute inset-0 bg-[linear-gradient(135deg,#1c1207_0%,#121212_55%,#0a0a0a_100%)]" />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-r from-black via-black/85 to-black/40" />
+        <div className="relative z-10 space-y-4 px-5 py-7 sm:px-7 sm:py-9">
+          <div className="flex flex-wrap items-center gap-2">
+            <span
+              className={cn(
+                'inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em]',
+                isLive
+                  ? 'bg-accent-2 text-bg'
+                  : isDraft
+                    ? 'bg-[#1e1e1e] text-text-secondary'
+                    : 'border border-white/20 text-text-secondary',
+              )}
+            >
+              {statusLabel(event.status).toUpperCase()}
+            </span>
+            <span className="inline-flex rounded-full border border-white/25 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-white">
+              {eventTypeLabel(event.eventType)}
+            </span>
+          </div>
+          <h1 className="display-title text-[2.75rem] leading-[0.9] tracking-[0.04em] sm:text-6xl md:text-7xl">
+            {event.title}
+          </h1>
+          <p className="text-[15px] text-white/80 sm:text-base">
+            {[when, place].filter(Boolean).join(' • ')}
+          </p>
         </div>
       </div>
     </header>

@@ -387,6 +387,7 @@ model EventCategory {
   capacity       Int
   reservedCount  Int               @default(0) @map("reserved_count")
   confirmedCount Int               @default(0) @map("confirmed_count")
+  posterUrl      String?           @map("poster_url")
   createdAt      DateTime          @default(now()) @map("created_at")
   updatedAt      DateTime          @updatedAt @map("updated_at")
 

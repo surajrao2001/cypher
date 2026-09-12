@@ -208,7 +208,7 @@ function OrganizeHomeInner() {
           size="lg"
           disabled={creating}
           onClick={() => void onCreate()}
-          className="h-12 shrink-0 rounded-xl px-7 text-sm tracking-[0.12em]"
+          className="h-14 shrink-0 rounded-xl px-9 text-base tracking-[0.12em]"
         >
           {creating ? 'Starting…' : '+ Create'}
         </Button>
@@ -276,7 +276,7 @@ function OrganizeHomeInner() {
                 type="button"
                 onClick={() => setTab(id)}
                 className={cn(
-                  'border-b-2 px-0.5 pb-3 text-[15px] font-semibold transition-colors',
+                  'border-b-2 px-0.5 pb-3 text-lg font-semibold transition-colors',
                   tab === id
                     ? 'border-accent text-text-primary'
                     : 'border-transparent text-text-muted hover:text-text-secondary',
@@ -300,7 +300,7 @@ function OrganizeHomeInner() {
                 type="button"
                 onClick={() => setTab(id)}
                 className={cn(
-                  'min-h-10 rounded-full border px-4 text-sm font-semibold transition-colors',
+                  'min-h-11 rounded-full border px-5 text-base font-semibold transition-colors',
                   tab === id
                     ? 'border-accent bg-transparent text-text-primary'
                     : 'border-border/80 text-text-muted',

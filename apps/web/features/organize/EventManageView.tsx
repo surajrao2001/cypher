@@ -6,18 +6,16 @@ import type {
   OrganizerEventDetailDto,
   OrganizerEventRegistrationsResponse,
 } from '@cypher/contracts';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useMemo, useState } from 'react';
 
 import { toastCopy, toastPending, toastReject, toastResolve } from '@/components/ui/toaster';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { EventControlHeader } from '@/features/organize/EventControlHeader';
 import { EventControlNav } from '@/features/organize/EventControlNav';
-import { EventEntryPanel } from '@/features/organize/EventEntryView';
 import { EventHomePanel } from '@/features/organize/EventHomePanel';
 import { EventMoneyPanel } from '@/features/organize/EventMoneyPanel';
 import { EventPagePanel } from '@/features/organize/EventPagePanel';
-import { EventPeoplePanel } from '@/features/organize/EventPeoplePanel';
 import {
   canPublish,
   hasPaidEntry,
@@ -42,9 +40,12 @@ export function EventManageView({ slug, eventId }: { slug: string; eventId: stri
 
 function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string }) {
   const auth = useAuth();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const initialDest = legacyTabToDest(searchParams.get('tab') ?? searchParams.get('section'));
-  const [dest, setDest] = useState<ControlDest>(initialDest);
+  const [dest, setDest] = useState<ControlDest>(
+    initialDest === 'entry' || initialDest === 'people' ? 'home' : initialDest,
+  );
   const [org, setOrg] = useState<OrganizerDto | null>(null);
   const [event, setEvent] = useState<OrganizerEventDetailDto | null>(null);
   const [regs, setRegs] = useState<OrganizerEventRegistrationsResponse | null>(null);
@@ -54,6 +55,14 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
   const [loadError, setLoadError] = useState<unknown>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [postUpdateOpen, setPostUpdateOpen] = useState(false);
+
+  useEffect(() => {
+    if (initialDest === 'entry') {
+      router.replace(routes.organizeEventEntry(slug, eventId));
+    } else if (initialDest === 'people') {
+      router.replace(routes.organizeEventPeople(slug, eventId));
+    }
+  }, [eventId, initialDest, router, slug]);
 
   useEffect(() => {
     let cancelled = false;
@@ -130,6 +139,14 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
   }
 
   function navigate(next: ControlDest) {
+    if (next === 'entry') {
+      router.push(routes.organizeEventEntry(slug, eventId));
+      return;
+    }
+    if (next === 'people') {
+      router.push(routes.organizeEventPeople(slug, eventId));
+      return;
+    }
     const prev = dest;
     setDest(next);
     if (typeof window !== 'undefined') {
@@ -137,7 +154,7 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
       url.searchParams.set('tab', next === 'home' ? 'overview' : next);
       window.history.replaceState(null, '', `${url.pathname}${url.search}`);
     }
-    if (prev === 'entry' || next === 'home' || next === 'people') {
+    if (prev === 'home' || next === 'home') {
       setReloadKey((n) => n + 1);
     }
   }
@@ -159,9 +176,10 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
   }
 
   const entryHref = routes.organizeEventEntry(org.slug, event.id);
+  const peopleHref = routes.organizeEventPeople(org.slug, event.id);
 
   return (
-    <OrganizerWorkspace width="wide" className="space-y-6">
+    <OrganizerWorkspace width="full" className="space-y-6">
       <EventControlHeader
         org={org}
         event={event}
@@ -170,7 +188,9 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
         onPostUpdate={() => setPostUpdateOpen(true)}
       />
 
-      <EventControlNav active={dest} onChange={navigate} showMoney={showMoney} />
+      {dest !== 'home' ? (
+        <EventControlNav active={dest} onChange={navigate} showMoney={showMoney} />
+      ) : null}
 
       <PostUpdateDialog
         organizerId={org.id}
@@ -190,6 +210,8 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
           regs={regs}
           payoutReady={payoutReady}
           checkedInCount={checkedInCount}
+          entryHref={entryHref}
+          peopleHref={peopleHref}
           onNavigate={navigate}
           onPublished={(next) => {
             setEvent(next);
@@ -197,18 +219,6 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
           }}
         />
       ) : null}
-
-      {dest === 'people' ? (
-        <EventPeoplePanel
-          organizerId={org.id}
-          eventId={eventId}
-          event={event}
-          entryHref={entryHref}
-          onOpenEntry={() => navigate('entry')}
-        />
-      ) : null}
-
-      {dest === 'entry' ? <EventEntryPanel slug={slug} eventId={eventId} /> : null}
 
       {dest === 'money' ? <EventMoneyPanel org={org} event={event} regs={regs} /> : null}
 
