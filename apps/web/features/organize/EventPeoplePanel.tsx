@@ -5,14 +5,13 @@ import type {
   OrganizerEventRegistrationsResponse,
   OrganizerRegistrationItemDto,
 } from '@cypher/contracts';
-import { formatMinorUnits } from '@cypher/utils';
 import { useEffect, useMemo, useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/features/auth/AuthProvider';
-import { TabEmptyState } from '@/features/organize/TabEmptyState';
+import { OrganizeEmpty } from '@/features/organize/organizer-ui';
 import { PageLoading, SoftError } from '@/features/shell/AsyncState';
 import { cn } from '@/lib/utils';
 
@@ -33,7 +32,7 @@ export function EventPeoplePanel({
 }) {
   const { api } = useAuth();
   const [data, setData] = useState<OrganizerEventRegistrationsResponse | null>(null);
-  const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set());
+  const [checkedAt, setCheckedAt] = useState<Map<string, string>>(new Map());
   const [error, setError] = useState<unknown>(null);
   const [loading, setLoading] = useState(true);
   const [reloadKey, setReloadKey] = useState(0);
@@ -50,7 +49,11 @@ export function EventPeoplePanel({
       .then(([regs, checkIns]) => {
         if (cancelled) return;
         setData(regs);
-        setCheckedIds(new Set((checkIns?.items ?? []).map((c) => c.registrationId)));
+        const map = new Map<string, string>();
+        for (const c of checkIns?.items ?? []) {
+          map.set(c.registrationId, c.checkedInAt);
+        }
+        setCheckedAt(map);
         setError(null);
       })
       .catch((err: unknown) => {
@@ -77,7 +80,7 @@ export function EventPeoplePanel({
       const isAudience = viewerIds.has(row.categoryId);
       if (filter === 'competitors' && isAudience) return false;
       if (filter === 'audience' && !isAudience) return false;
-      if (filter === 'checked_in' && !checkedIds.has(row.id)) return false;
+      if (filter === 'checked_in' && !checkedAt.has(row.id)) return false;
       if (!q) return true;
       const hay = [
         row.entryName ?? '',
@@ -89,7 +92,23 @@ export function EventPeoplePanel({
         .toLowerCase();
       return hay.includes(q);
     });
-  }, [checkedIds, data, filter, query, viewerIds]);
+  }, [checkedAt, data, filter, query, viewerIds]);
+
+  const counts = useMemo(() => {
+    if (!data) return { all: 0, competitors: 0, audience: 0, checked_in: 0 };
+    let competitors = 0;
+    let audience = 0;
+    for (const row of data.items) {
+      if (viewerIds.has(row.categoryId)) audience += 1;
+      else competitors += 1;
+    }
+    return {
+      all: data.items.length,
+      competitors,
+      audience,
+      checked_in: checkedAt.size,
+    };
+  }, [checkedAt, data, viewerIds]);
 
   if (loading) return <PageLoading variant="list" label="Loading people" />;
   if (error) {
@@ -105,37 +124,38 @@ export function EventPeoplePanel({
   if (!data) return null;
 
   const confirmed = data.totals.confirmed;
-  const filters: Array<{ id: PeopleFilter; label: string }> = [
-    { id: 'all', label: 'All' },
-    { id: 'competitors', label: 'Competitors' },
-    { id: 'audience', label: 'Audience' },
-    { id: 'checked_in', label: 'Checked in' },
+  const filters: Array<{ id: PeopleFilter; label: string; count: number }> = [
+    { id: 'all', label: 'All', count: counts.all },
+    { id: 'competitors', label: 'Competitors', count: counts.competitors },
+    { id: 'audience', label: 'Audience', count: counts.audience },
+    { id: 'checked_in', label: 'Checked in', count: counts.checked_in },
   ];
 
   if (data.categories.length === 0) {
     return (
-      <TabEmptyState
-        icon="tickets"
-        kicker="Entry"
+      <OrganizeEmpty
         title="No Entry yet"
         body="Add a competition or audience pass to start taking registrations."
       >
         <Button type="button" variant="outline" size="sm" onClick={onOpenEntry}>
           Add Entry
         </Button>
-      </TabEmptyState>
+      </OrganizeEmpty>
     );
   }
 
   return (
     <section className="space-y-5">
       <div>
-        <p className="kicker text-accent">People</p>
-        <h2 className="font-display text-3xl uppercase tracking-[0.04em]">People</h2>
+        <h2 className="display-title text-4xl md:text-5xl">People</h2>
         <p className="mt-1 text-sm text-text-secondary">{confirmed} registrations</p>
       </div>
 
-      <div className="flex flex-wrap gap-2" role="tablist" aria-label="People filters">
+      <div
+        className="flex flex-wrap gap-x-5 gap-y-1 border-b border-border/70"
+        role="tablist"
+        aria-label="People filters"
+      >
         {filters.map((f) => (
           <button
             key={f.id}
@@ -144,13 +164,13 @@ export function EventPeoplePanel({
             aria-selected={filter === f.id}
             onClick={() => setFilter(f.id)}
             className={cn(
-              'min-h-11 rounded-md border px-3 py-2 text-sm font-semibold',
+              'min-h-11 border-b-2 px-0.5 py-2.5 text-sm font-semibold transition-colors',
               filter === f.id
-                ? 'border-accent bg-accent/15 text-text-primary'
-                : 'border-border text-text-muted',
+                ? 'border-accent text-text-primary'
+                : 'border-transparent text-text-muted hover:text-text-secondary',
             )}
           >
-            {f.label}
+            {f.label} <span className="text-text-muted">{f.count}</span>
           </button>
         ))}
       </div>
@@ -165,9 +185,7 @@ export function EventPeoplePanel({
       </label>
 
       {filtered.length === 0 ? (
-        <TabEmptyState
-          icon="crew"
-          kicker="People"
+        <OrganizeEmpty
           title="Nobody matches"
           body="Try another filter or clear search."
           className="py-8"
@@ -183,29 +201,54 @@ export function EventPeoplePanel({
           >
             Clear
           </Button>
-        </TabEmptyState>
+        </OrganizeEmpty>
       ) : (
-        <ul className="divide-y divide-border border-y border-border">
-          {filtered.map((row) => (
-            <li key={row.id} className="flex flex-col gap-1 py-3 sm:flex-row sm:justify-between">
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <p className="font-semibold text-text-primary">
-                    {row.participants[0]?.displayName ?? row.entryName ?? row.registrationCode}
+        <>
+          <div
+            className="hidden grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_7rem_7rem] gap-3 border-b border-border/50 pb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-text-muted md:grid"
+            aria-hidden
+          >
+            <span>Name</span>
+            <span>Entry</span>
+            <span>Status</span>
+            <span>Checked in</span>
+          </div>
+          <ul className="divide-y divide-border/70">
+            {filtered.map((row) => {
+              const name =
+                row.participants[0]?.displayName ?? row.entryName ?? row.registrationCode;
+              const status = row.registrationStatus.replaceAll('_', ' ');
+              const checked = checkedAt.get(row.id);
+              return (
+                <li
+                  key={row.id}
+                  className="grid gap-1 py-3 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_7rem_7rem] md:items-center md:gap-3"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate font-semibold text-text-primary">{name}</p>
+                    <p className="mt-0.5 text-sm text-text-secondary md:hidden">{row.categoryName}</p>
+                  </div>
+                  <p className="hidden truncate text-sm text-text-secondary md:block">
+                    {row.categoryName}
                   </p>
-                  <Badge variant="outline">
-                    {row.registrationStatus.replaceAll('_', ' ')}
-                  </Badge>
-                  {checkedIds.has(row.id) ? <Badge variant="lime">Checked in</Badge> : null}
-                </div>
-                <p className="mt-1 text-sm text-text-secondary">{row.categoryName}</p>
-              </div>
-              <p className="shrink-0 text-sm text-text-secondary">
-                {row.totalAmountMinor === 0 ? 'Free' : formatMinorUnits(row.totalAmountMinor)}
-              </p>
-            </li>
-          ))}
-        </ul>
+                  <div className="flex flex-wrap items-center gap-2 md:block">
+                    <Badge variant="outline" className="capitalize">
+                      {status}
+                    </Badge>
+                    {checked ? (
+                      <Badge variant="lime" className="md:hidden">
+                        Checked in
+                      </Badge>
+                    ) : null}
+                  </div>
+                  <p className="text-sm text-text-secondary">
+                    {checked ? formatCheckInTime(checked) : '—'}
+                  </p>
+                </li>
+              );
+            })}
+          </ul>
+        </>
       )}
 
       <p className="text-xs text-text-muted">
@@ -215,4 +258,10 @@ export function EventPeoplePanel({
       </p>
     </section>
   );
+}
+
+function formatCheckInTime(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return 'Yes';
+  return d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
 }

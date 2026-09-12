@@ -2,7 +2,7 @@
 
 import { routes } from '@cypher/contracts';
 import type { OrganizerDto, OrganizerEventDetailDto } from '@cypher/contracts';
-import { eventEffectiveEndIso, formatEventDate, formatMinorUnits } from '@cypher/utils';
+import { eventEffectiveEndIso, formatEventDate } from '@cypher/utils';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
@@ -12,7 +12,12 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { OrganizeGate } from '@/features/organize/OrganizeGate';
 import { ensurePersonalOrganizer } from '@/features/organize/ensure-personal-organizer';
-import { EmptyState } from '@/features/shell/EmptyState';
+import {
+  ObjectSurface,
+  OrganizeEmpty,
+  OrganizerWorkspace,
+  PosterThumb,
+} from '@/features/organize/organizer-ui';
 import { PageLoading, SoftError } from '@/features/shell/AsyncState';
 import { cn } from '@/lib/utils';
 
@@ -22,6 +27,11 @@ type EventRow = {
   event: OrganizerEventDetailDto;
   org: OrganizerDto;
 };
+
+function eventTypeLabel(type: string): string {
+  if (type === 'cypher') return 'Jam';
+  return type.charAt(0).toUpperCase() + type.slice(1);
+}
 
 export function OrganizeHome() {
   return (
@@ -127,12 +137,12 @@ function OrganizeHomeInner() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6 px-4 py-8 md:px-8">
+    <OrganizerWorkspace width="wide">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="space-y-2">
           <h1 className="display-title text-5xl md:text-6xl">Your Events</h1>
-          <p className="max-w-md text-sm text-text-secondary">
-            Create an event, put it up, and manage people from here.
+          <p className="max-w-lg text-sm text-text-secondary">
+            Create, publish and manage what you&apos;re putting up.
           </p>
         </div>
         <Button type="button" size="lg" disabled={creating} onClick={() => void onCreate()}>
@@ -148,7 +158,7 @@ function OrganizeHomeInner() {
           <select
             value={hostFilter}
             onChange={(e) => setHostFilter(e.target.value === 'all' ? 'all' : e.target.value)}
-            className="h-9 rounded-md border border-border bg-elevated px-3 text-sm text-text-primary"
+            className="h-9 rounded-sm border border-border/80 bg-elevated px-3 text-sm text-text-primary"
           >
             <option value="all">All hosts</option>
             {orgs.map((org) => (
@@ -186,8 +196,8 @@ function OrganizeHomeInner() {
       ) : rows === null || orgs === null ? (
         <PageLoading variant="cards" label="Loading your events" />
       ) : (
-        <div className="space-y-4">
-          <div className="flex gap-5 border-b border-border">
+        <div className="space-y-5">
+          <div className="flex gap-5 border-b border-border/70">
             {(
               [
                 ['all', 'All'],
@@ -213,9 +223,8 @@ function OrganizeHomeInner() {
           </div>
 
           {filtered.length === 0 ? (
-            <EmptyState
-              kicker={rows.length === 0 ? 'First night' : 'This tab'}
-              title={rows.length === 0 ? 'Nothing here yet' : 'Nothing in this tab'}
+            <OrganizeEmpty
+              title={rows.length === 0 ? 'No events yet' : 'Nothing in this tab'}
               body={
                 rows.length === 0
                   ? 'Got something happening?'
@@ -223,9 +232,9 @@ function OrganizeHomeInner() {
               }
             >
               <Button type="button" disabled={creating} onClick={() => void onCreate()}>
-                {rows.length === 0 ? '+ Create' : '+ Create'}
+                + Create
               </Button>
-            </EmptyState>
+            </OrganizeEmpty>
           ) : (
             <ul className="space-y-3">
               {filtered.map(({ event, org }) => {
@@ -233,61 +242,65 @@ function OrganizeHomeInner() {
                   (n, c) => n + c.confirmedCount,
                   0,
                 );
-                const collected = (event.categories ?? []).reduce(
-                  (n, c) => n + c.confirmedCount * (c.currentPriceMinor ?? c.priceMinor ?? 0),
-                  0,
-                );
+                const isDraft = event.status === 'draft';
+                const isLive = event.status === 'published';
                 return (
                   <li key={event.id}>
-                    <Link
-                      href={`${routes.organize}/${org.slug}/events/${event.id}`}
-                      className="grid grid-cols-[4.5rem_1fr] items-center gap-4 rounded-lg border border-border bg-surface p-3 transition-colors hover:border-accent/40 hover:bg-elevated/40 sm:grid-cols-[5.5rem_1fr_auto]"
-                    >
-                      <div
-                        className="aspect-[3/4] w-full overflow-hidden rounded-md bg-[linear-gradient(135deg,#1c1207,#141414)]"
-                        style={
-                          event.posterUrl
-                            ? {
-                                backgroundImage: `url(${event.posterUrl})`,
-                                backgroundSize: 'cover',
-                                backgroundPosition: 'center',
-                              }
-                            : undefined
-                        }
-                      />
-                      <div className="min-w-0 space-y-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <p className="font-display text-xl tracking-[0.04em] text-text-primary sm:text-2xl">
+                    <ObjectSurface interactive className="overflow-hidden">
+                      <Link
+                        href={`${routes.organize}/${org.slug}/events/${event.id}`}
+                        className="group grid grid-cols-[auto_1fr] gap-4 p-3 sm:gap-5 sm:p-4 md:grid-cols-[auto_1fr_auto] md:items-center"
+                      >
+                        <PosterThumb src={event.posterUrl} size="md" />
+                        <div className="min-w-0 space-y-1.5 self-center">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Badge variant={isLive ? 'lime' : isDraft ? 'muted' : 'outline'}>
+                              {isLive ? 'Live' : event.status === 'draft' ? 'Draft' : event.status}
+                            </Badge>
+                            <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-text-muted">
+                              {eventTypeLabel(event.eventType)}
+                            </span>
+                          </div>
+                          <p className="font-display text-2xl tracking-[0.04em] text-text-primary sm:text-3xl md:text-4xl">
                             {event.title}
                           </p>
-                          <Badge
-                            variant={
-                              event.status === 'published'
-                                ? 'lime'
-                                : event.status === 'draft'
-                                  ? 'muted'
-                                  : 'outline'
-                            }
-                          >
-                            {event.status === 'published' ? 'Live' : event.status}
-                          </Badge>
+                          <p className="text-sm text-text-secondary">
+                            {formatEventDate(event.startTime)}
+                            {event.city ? ` · ${event.city}` : ''}
+                            {orgs.length > 1 ? (
+                              <span className="text-text-muted"> · {org.orgName}</span>
+                            ) : null}
+                          </p>
+                          <p className="text-xs uppercase tracking-[0.12em] text-text-muted md:hidden">
+                            {isDraft
+                              ? confirmed > 0
+                                ? `${String(confirmed)} registered`
+                                : 'Draft · not up yet'
+                              : `${String(confirmed)} registered`}
+                          </p>
                         </div>
-                        <p className="text-sm text-text-secondary">
-                          {formatEventDate(event.startTime)}
-                          {event.city ? ` · ${event.city}` : ''}
-                          {orgs.length > 1 ? (
-                            <span className="text-text-muted"> · {org.orgName}</span>
-                          ) : null}
-                        </p>
-                        <p className="text-xs uppercase tracking-[0.12em] text-text-muted">
-                          {confirmed} registered
-                          {collected > 0 ? ` · ${formatMinorUnits(collected)} collected` : ''}
-                        </p>
-                      </div>
-                      <span className="hidden text-[13px] font-semibold text-accent sm:inline">
-                        Open →
-                      </span>
-                    </Link>
+                        <div className="hidden items-center gap-3 md:flex">
+                          <p className="text-right text-xs font-semibold uppercase tracking-[0.14em] text-text-muted">
+                            {isDraft && confirmed === 0 ? (
+                              <span>Draft</span>
+                            ) : (
+                              <>
+                                <span className="block font-display text-2xl tracking-[0.04em] text-text-primary">
+                                  {confirmed}
+                                </span>
+                                registered
+                              </>
+                            )}
+                          </p>
+                          <span
+                            className="text-accent opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100 motion-reduce:opacity-70"
+                            aria-hidden
+                          >
+                            →
+                          </span>
+                        </div>
+                      </Link>
+                    </ObjectSurface>
                   </li>
                 );
               })}
@@ -295,6 +308,6 @@ function OrganizeHomeInner() {
           )}
         </div>
       )}
-    </div>
+    </OrganizerWorkspace>
   );
 }

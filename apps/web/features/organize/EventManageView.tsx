@@ -26,6 +26,7 @@ import {
   type ControlDest,
 } from '@/features/organize/event-control';
 import { OrganizeGate } from '@/features/organize/OrganizeGate';
+import { OrganizerWorkspace } from '@/features/organize/organizer-ui';
 import { PostUpdateDialog } from '@/features/organize/EventUpdatesPanel';
 import { PageLoading, SoftError } from '@/features/shell/AsyncState';
 
@@ -160,7 +161,7 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
   const entryHref = routes.organizeEventEntry(org.slug, event.id);
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6 px-4 py-8 pb-24 md:px-8">
+    <OrganizerWorkspace width="wide" className="space-y-6">
       <EventControlHeader
         org={org}
         event={event}
@@ -214,6 +215,6 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
       {dest === 'page' ? (
         <EventPagePanel org={org} event={event} onEventChange={setEvent} />
       ) : null}
-    </div>
+    </OrganizerWorkspace>
   );
 }

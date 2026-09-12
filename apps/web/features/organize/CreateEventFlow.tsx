@@ -12,6 +12,7 @@ import { useAuth } from '@/features/auth/AuthProvider';
 import { CREATE_TYPE_OPTIONS } from '@/features/organize/create-type-options';
 import { resolveHostOrganizer } from '@/features/organize/ensure-personal-organizer';
 import { OrganizeGate } from '@/features/organize/OrganizeGate';
+import { CountLabel, OrganizerWorkspace } from '@/features/organize/organizer-ui';
 import { PosterField } from '@/features/organize/PosterField';
 import { PageBreadcrumb } from '@/features/shell/PageBreadcrumb';
 import { PageLoading, SoftError, friendlyError, InlineNotice } from '@/features/shell/AsyncState';
@@ -39,6 +40,13 @@ function defaultStartLocal(): string {
   d.setHours(18, 0, 0, 0);
   return toLocalInputValue(d.toISOString());
 }
+
+const PRIMARY_TYPES = CREATE_TYPE_OPTIONS.filter(
+  (o) => o.id === 'battle' || o.id === 'jam-cypher',
+);
+const SECONDARY_TYPES = CREATE_TYPE_OPTIONS.filter(
+  (o) => o.id !== 'battle' && o.id !== 'jam-cypher',
+);
 
 export function CreateEventFlow() {
   return (
@@ -141,9 +149,9 @@ function CreateEventFlowInner() {
 
   if (error && !host) {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-16">
+      <OrganizerWorkspace width="form">
         <SoftError title="Couldn’t start" error={error} onRetry={() => window.location.reload()} />
-      </div>
+      </OrganizerWorkspace>
     );
   }
 
@@ -152,7 +160,7 @@ function CreateEventFlowInner() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6 px-4 py-8 md:px-8">
+    <OrganizerWorkspace width={step === 'type' ? 'default' : 'form'}>
       <PageBreadcrumb
         items={[
           { label: 'Organize', href: routes.organize },
@@ -177,7 +185,7 @@ function CreateEventFlowInner() {
                 router.replace(`${routes.organize}/create?${params.toString()}`, { scroll: false });
               }
             }}
-            className="h-9 rounded-md border border-border bg-elevated px-3 text-sm text-text-primary"
+            className="h-9 rounded-sm border border-border/80 bg-elevated px-3 text-sm text-text-primary"
           >
             {orgs.map((org) => (
               <option key={org.id} value={org.slug}>
@@ -191,36 +199,64 @@ function CreateEventFlowInner() {
       {bootError ? <InlineNotice tone="warn">{bootError}</InlineNotice> : null}
 
       {step === 'type' || !selected ? (
-        <section className="space-y-5">
+        <section className="space-y-6">
           <div className="space-y-2">
             <p className="kicker text-accent">Create</p>
             <h1 className="display-title text-4xl md:text-5xl">What&apos;s happening?</h1>
             <p className="text-sm text-text-secondary">
-              Pick the shape of the night. You can add entry and details after it exists.
+              Choose what you&apos;re putting up.
             </p>
           </div>
-          <ul className="grid gap-3 sm:grid-cols-2">
-            {CREATE_TYPE_OPTIONS.map((option) => (
+
+          <ul className="grid gap-3 md:grid-cols-2">
+            {PRIMARY_TYPES.map((option, i) => (
               <li key={option.id}>
                 <button
                   type="button"
                   onClick={() => pickType(option)}
                   className={cn(
-                    'flex h-full w-full flex-col items-start gap-2 rounded-xl border border-border bg-surface px-4 py-5 text-left transition-colors',
-                    'hover:border-accent/50 hover:bg-elevated/40',
+                    'group flex h-full min-h-[9.5rem] w-full flex-col items-start justify-between gap-4 rounded-sm border border-border/80 bg-surface/80 px-5 py-5 text-left transition-[border-color,background-color,transform] duration-200',
+                    'hover:border-accent/50 hover:bg-elevated/40 active:scale-[0.99] motion-reduce:active:scale-100',
                   )}
                 >
-                  <span className="font-display text-2xl uppercase tracking-[0.04em] text-text-primary">
+                  <CountLabel index={i + 1} label={option.label} />
+                  <div className="space-y-1.5">
+                    <span className="font-display text-3xl uppercase tracking-[0.04em] text-text-primary md:text-4xl">
+                      {option.label}
+                    </span>
+                    <span className="block text-sm text-text-secondary">{option.hint}</span>
+                  </div>
+                  <span className="text-accent opacity-70 transition-opacity group-hover:opacity-100" aria-hidden>
+                    →
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+
+          <ul className="grid gap-3 sm:grid-cols-3">
+            {SECONDARY_TYPES.map((option, i) => (
+              <li key={option.id}>
+                <button
+                  type="button"
+                  onClick={() => pickType(option)}
+                  className={cn(
+                    'group flex h-full min-h-[5.5rem] w-full flex-col items-start justify-between gap-2 rounded-sm border border-border/60 bg-transparent px-4 py-4 text-left transition-[border-color,background-color] duration-200',
+                    'hover:border-accent/40 hover:bg-elevated/30',
+                  )}
+                >
+                  <CountLabel index={i + 3} label={option.label} />
+                  <span className="font-display text-xl uppercase tracking-[0.04em] text-text-primary">
                     {option.label}
                   </span>
-                  <span className="text-sm text-text-secondary">{option.hint}</span>
+                  <span className="text-xs text-text-muted">{option.hint}</span>
                 </button>
               </li>
             ))}
           </ul>
         </section>
       ) : (
-        <section className="space-y-5">
+        <section className="space-y-6">
           <div className="space-y-2">
             <button
               type="button"
@@ -229,20 +265,14 @@ function CreateEventFlowInner() {
             >
               ← What&apos;s happening?
             </button>
+            <p className="kicker text-text-muted">{selected.label}</p>
             <h1 className="display-title text-4xl md:text-5xl">New {selected.label}</h1>
             <p className="text-sm text-text-secondary">
-              {selected.path === 'battle'
-                ? 'Name the battle and when it lands. Add competition entry after you create it.'
-                : selected.path === 'workshop'
-                  ? 'Name, when, where. Add paid or free entry later if you need it.'
-                  : 'Name, when, where. Put it up when you’re ready — entry is optional.'}
+              Just the basics. You can add Entry later.
             </p>
           </div>
 
-          <form
-            className="space-y-4 rounded-xl border border-border bg-surface p-5 md:p-6"
-            onSubmit={(e) => void onSubmit(e)}
-          >
+          <form className="space-y-6" onSubmit={(e) => void onSubmit(e)}>
             <label className="block space-y-2 text-sm text-text-secondary">
               Name
               <Input
@@ -260,7 +290,7 @@ function CreateEventFlowInner() {
               />
             </label>
 
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-5 sm:grid-cols-2">
               <label className="block space-y-2 text-sm text-text-secondary">
                 When
                 <Input
@@ -296,8 +326,9 @@ function CreateEventFlowInner() {
               onChange={setPosterUrl}
               disabled={pending}
               label="Poster"
-              hint="Optional — looks better on Discover."
+              hint="Optional · helps on Discover"
               compact
+              shaped
             />
 
             {selected.path === 'battle' || selected.path === 'workshop' ? (
@@ -308,7 +339,7 @@ function CreateEventFlowInner() {
                   onChange={(e) => setDescription(e.target.value)}
                   rows={3}
                   maxLength={5000}
-                  className="flex w-full rounded-md border border-border bg-elevated px-3 py-2 font-body text-sm text-text-primary placeholder:text-text-muted focus-visible:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
+                  className="flex w-full rounded-sm border border-border/80 bg-elevated px-3 py-2 font-body text-sm text-text-primary placeholder:text-text-muted focus-visible:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
                   placeholder={
                     selected.path === 'workshop'
                       ? 'What’s the class about? Who’s teaching?'
@@ -320,9 +351,9 @@ function CreateEventFlowInner() {
 
             {formError ? <InlineNotice tone="warn">{formError}</InlineNotice> : null}
 
-            <div className="flex flex-wrap gap-3 border-t border-border pt-4">
+            <div className="flex flex-wrap items-center gap-3 pt-2">
               <Button type="submit" size="lg" disabled={pending}>
-                {pending ? 'Creating…' : 'Continue'}
+                {pending ? 'Creating…' : 'Continue →'}
               </Button>
               <Button type="button" variant="ghost" onClick={() => router.push(routes.organize)}>
                 Cancel
@@ -331,6 +362,6 @@ function CreateEventFlowInner() {
           </form>
         </section>
       )}
-    </div>
+    </OrganizerWorkspace>
   );
 }

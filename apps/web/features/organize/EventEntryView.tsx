@@ -10,6 +10,12 @@ import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
+import {
+  Dropdown,
+  DropdownContent,
+  DropdownItem,
+  DropdownTrigger,
+} from '@/components/ui/dropdown';
 import { toastCopy, toastPending, toastReject, toastResolve } from '@/components/ui/toaster';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { AudienceEntryForm } from '@/features/organize/AudienceEntryForm';
@@ -18,11 +24,21 @@ import {
   capacityUnitLabel,
   earlyBirdTier,
   fillLabel,
+  formatFromCategory,
   priceLabel,
+  COMPETITION_FORMATS,
 } from '@/features/organize/entry-format';
 import { OrganizeGate } from '@/features/organize/OrganizeGate';
+import {
+  CapacityMeter,
+  ObjectSurface,
+  OrganizeEmpty,
+  OrganizerWorkspace,
+} from '@/features/organize/organizer-ui';
 import { PageBreadcrumb } from '@/features/shell/PageBreadcrumb';
 import { PageLoading, SoftError, friendlyError } from '@/features/shell/AsyncState';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 
 type Panel =
   | { kind: 'list' }
@@ -220,7 +236,7 @@ export function EventEntryPanel({
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6 px-4 py-8 pb-24 md:px-8">
+    <OrganizerWorkspace width="default">
       <PageBreadcrumb
         items={[
           { label: 'Organize', href: routes.organize },
@@ -237,7 +253,7 @@ export function EventEntryPanel({
           </Button>
         </div>
       ) : null}
-    </div>
+    </OrganizerWorkspace>
   );
 }
 
@@ -262,22 +278,41 @@ function EntryList({
 }) {
   return (
     <div className="space-y-8">
-      <header className="space-y-1">
-        <p className="kicker text-accent">Entry</p>
-        <h1 className="display-title text-4xl md:text-5xl">Entry</h1>
-        <p className="max-w-lg text-sm text-text-secondary">How can people get in?</p>
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="space-y-1">
+          <h1 className="display-title text-4xl md:text-5xl">Entry</h1>
+          <p className="text-sm text-text-secondary">How can people get in?</p>
+        </div>
+        <Button
+          type="button"
+          onClick={(e) => onAddCompetition(e.currentTarget)}
+        >
+          + Add competition
+        </Button>
       </header>
 
       <section className="space-y-3">
         <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-text-muted">
-          Competition
+          Competition{compete.length > 0 ? ` · ${String(compete.length)}` : ''}
         </h2>
         {compete.length === 0 ? (
-          <p className="text-sm text-text-muted">No competition yet.</p>
+          <OrganizeEmpty
+            title="No competition yet"
+            body="Add formats so people can compete."
+            className="py-4"
+          >
+            <Button
+              type="button"
+              variant="outline"
+              onClick={(e) => onAddCompetition(e.currentTarget)}
+            >
+              + Add competition
+            </Button>
+          </OrganizeEmpty>
         ) : (
-          <ul className="space-y-2">
+          <ul className="space-y-3">
             {compete.map((cat) => (
-              <EntryRow
+              <EntryObject
                 key={cat.id}
                 cat={cat}
                 busy={pendingDelete === cat.id}
@@ -287,14 +322,6 @@ function EntryList({
             ))}
           </ul>
         )}
-        <Button
-          type="button"
-          variant="outline"
-          className="w-full sm:w-auto"
-          onClick={(e) => onAddCompetition(e.currentTarget)}
-        >
-          + Add competition
-        </Button>
       </section>
 
       <section className="space-y-3">
@@ -302,11 +329,23 @@ function EntryList({
           Audience
         </h2>
         {audienceCats.length === 0 ? (
-          <p className="text-sm text-text-muted">No audience pass yet.</p>
+          <OrganizeEmpty
+            title="No audience pass"
+            body="Add one if people can come to watch."
+            className="py-4"
+          >
+            <Button
+              type="button"
+              variant="outline"
+              onClick={(e) => onAddAudience(e.currentTarget)}
+            >
+              + Add audience pass
+            </Button>
+          </OrganizeEmpty>
         ) : (
-          <ul className="space-y-2">
+          <ul className="space-y-3">
             {audienceCats.map((cat) => (
-              <EntryRow
+              <EntryObject
                 key={cat.id}
                 cat={cat}
                 busy={pendingDelete === cat.id}
@@ -316,20 +355,22 @@ function EntryList({
             ))}
           </ul>
         )}
-        <Button
-          type="button"
-          variant="outline"
-          className="w-full sm:w-auto"
-          onClick={(e) => onAddAudience(e.currentTarget)}
-        >
-          + Add audience pass
-        </Button>
+        {audienceCats.length > 0 ? (
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full sm:w-auto"
+            onClick={(e) => onAddAudience(e.currentTarget)}
+          >
+            + Add audience pass
+          </Button>
+        ) : null}
       </section>
     </div>
   );
 }
 
-function EntryRow({
+function EntryObject({
   cat,
   busy,
   onEdit,
@@ -345,42 +386,73 @@ function EntryRow({
   const early = earlyBirdTier(cat).early;
   const unit = capacityUnitLabel(cat);
   const sell = cat.currentPriceMinor ?? cat.priceMinor;
+  const formatId = formatFromCategory(cat);
+  const formatLabel =
+    cat.entryType === 'viewer'
+      ? null
+      : COMPETITION_FORMATS.find((f) => f.id === formatId)?.label ??
+        (formatId === 'custom' ? 'Custom' : null);
+  const isPaid = sell > 0;
 
   return (
-    <li className="flex flex-col gap-3 border-b border-border py-3 last:border-0 sm:flex-row sm:items-center sm:justify-between">
-      <div className="min-w-0 space-y-0.5">
-        <p className="font-display text-lg uppercase tracking-[0.04em] text-text-primary">
-          {cat.name}
-        </p>
-        <p className="text-sm text-text-secondary">
-          {priceLabel(sell)}
-          {early ? ` · early ${priceLabel(early.priceMinor)}` : ''}
-          {' · '}
-          {fillLabel(cat.confirmedCount, cat.capacity)}
-          <span className="text-text-muted"> ({unit})</span>
-        </p>
-      </div>
-      <div className="flex flex-wrap gap-2">
-        <Button
-          type="button"
-          size="sm"
-          variant="secondary"
-          disabled={busy}
-          onClick={(e) => onEdit(e.currentTarget)}
-        >
-          Edit
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          variant="ghost"
-          disabled={busy || !canRemove}
-          title={!canRemove ? 'Has registrations' : undefined}
-          onClick={onRemove}
-        >
-          Remove
-        </Button>
-      </div>
+    <li>
+      <ObjectSurface className="p-4 sm:p-5">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0 flex-1 space-y-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="font-display text-xl uppercase tracking-[0.04em] text-text-primary sm:text-2xl">
+                {cat.name}
+              </p>
+              {formatLabel ? <Badge variant="outline">{formatLabel}</Badge> : null}
+              <Badge variant={isPaid ? 'outline' : 'muted'}>{isPaid ? 'Paid' : 'Free'}</Badge>
+            </div>
+            <p className="text-sm text-text-secondary">
+              {priceLabel(sell)}
+              {early ? ` · early ${priceLabel(early.priceMinor)}` : ''}
+              {' · '}
+              {fillLabel(cat.confirmedCount, cat.capacity)}
+              <span className="text-text-muted"> ({unit})</span>
+            </p>
+            <CapacityMeter filled={cat.confirmedCount} capacity={cat.capacity} className="max-w-md" />
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              disabled={busy}
+              onClick={(e) => onEdit(e.currentTarget)}
+            >
+              Edit
+            </Button>
+            <Dropdown>
+              <DropdownTrigger asChild>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  disabled={busy}
+                  aria-label="More actions"
+                >
+                  ···
+                </Button>
+              </DropdownTrigger>
+              <DropdownContent align="end">
+                <DropdownItem
+                  disabled={!canRemove}
+                  className={cn(!canRemove && 'opacity-40')}
+                  onSelect={() => {
+                    if (canRemove) onRemove();
+                  }}
+                >
+                  {canRemove ? 'Remove' : 'Has registrations'}
+                </DropdownItem>
+              </DropdownContent>
+            </Dropdown>
+          </div>
+        </div>
+      </ObjectSurface>
     </li>
   );
 }
+

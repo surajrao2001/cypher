@@ -185,7 +185,7 @@ function SidebarBody({ onNavigate }: { onNavigate?: () => void }) {
 
 export function AppSidebar() {
   return (
-    <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 border-r border-border bg-surface lg:flex lg:flex-col">
+    <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 border-r border-border/70 bg-surface lg:flex lg:flex-col">
       <SidebarBody />
     </aside>
   );

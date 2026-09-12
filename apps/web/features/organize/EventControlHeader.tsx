@@ -64,14 +64,8 @@ export function EventControlHeader({
         ]}
       />
 
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div className="min-w-0 space-y-2">
-          <p className="kicker text-accent">{org.orgName}</p>
-          <h1 className="display-title text-4xl md:text-6xl">{event.title}</h1>
-          <p className="text-sm uppercase tracking-[0.12em] text-text-secondary">
-            {formatEventDateRange(event.startTime, event.endTime)}
-            {event.city ? ` · ${event.city}` : ''}
-          </p>
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div className="min-w-0 space-y-3">
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant={isLive ? 'lime' : isDraft ? 'muted' : 'outline'}>
               {statusLabel(event.status)}
@@ -79,21 +73,26 @@ export function EventControlHeader({
             <Badge variant="outline">{event.eventType}</Badge>
             {shareHint ? <span className="text-xs text-accent-2">{shareHint}</span> : null}
           </div>
+          <h1 className="display-title text-4xl md:text-6xl lg:text-7xl">{event.title}</h1>
+          <p className="text-sm text-text-secondary">
+            {formatEventDateRange(event.startTime, event.endTime)}
+            {event.city ? ` · ${event.city}` : ''}
+          </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          {isLive ? (
+            <Button type="button" size="lg" variant="secondary" onClick={() => void share()}>
+              <ByndIcon name="external" />
+              Share
+            </Button>
+          ) : null}
           {!isDraft ? (
             <Button asChild size="lg">
               <Link href={checkInHref}>
                 <ByndIcon name="checkIn" />
                 Check in
               </Link>
-            </Button>
-          ) : null}
-          {isLive ? (
-            <Button type="button" size="lg" variant="secondary" onClick={() => void share()}>
-              <ByndIcon name="external" />
-              Share
             </Button>
           ) : null}
           <div className="relative">
@@ -103,14 +102,15 @@ export function EventControlHeader({
               variant="outline"
               aria-expanded={menuOpen}
               aria-haspopup="menu"
+              aria-label="More actions"
               onClick={() => setMenuOpen((o) => !o)}
             >
-              More
+              ···
             </Button>
             {menuOpen ? (
               <div
                 role="menu"
-                className="absolute right-0 z-20 mt-2 min-w-[11rem] rounded-md border border-border bg-surface py-1 shadow-lg"
+                className="absolute right-0 z-20 mt-2 min-w-[11rem] rounded-sm border border-border bg-surface py-1 shadow-lg"
               >
                 {onPostUpdate ? (
                   <button

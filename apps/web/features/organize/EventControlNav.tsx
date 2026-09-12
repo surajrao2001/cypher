@@ -24,12 +24,11 @@ export function EventControlNav({
   const items = showMoney ? ALL_ITEMS : ALL_ITEMS.filter((i) => i.id !== 'money');
 
   return (
-    <nav aria-label="Event" className="border-b border-border pb-1">
-      {/* Mobile: native select avoids overflow */}
+    <nav aria-label="Event" className="border-b border-border/70">
       <label className="block sm:hidden">
         <span className="sr-only">Section</span>
         <select
-          className="flex min-h-11 w-full rounded-md border border-border bg-elevated px-3 text-sm font-semibold text-text-primary"
+          className="flex min-h-11 w-full rounded-sm border border-border/80 bg-elevated px-3 text-sm font-semibold text-text-primary"
           value={active}
           onChange={(e) => onChange(e.target.value as ControlDest)}
         >
@@ -41,24 +40,24 @@ export function EventControlNav({
         </select>
       </label>
 
-      {/* Desktop / tablet: wrapping pills */}
-      <ul className="hidden flex-wrap gap-2 sm:flex">
+      <ul className="hidden gap-6 sm:flex" role="tablist">
         {items.map((item) => {
           const isActive = item.id === active;
           return (
             <li key={item.id}>
               <button
                 type="button"
+                role="tab"
                 onClick={() => onChange(item.id)}
                 aria-current={isActive ? 'page' : undefined}
                 className={cn(
-                  'inline-flex min-h-11 items-center gap-1.5 rounded-md border px-3 py-2 text-sm font-semibold transition-colors',
+                  'inline-flex min-h-11 items-center gap-1.5 border-b-2 px-0.5 py-2.5 text-sm font-semibold transition-colors',
                   isActive
-                    ? 'border-accent bg-accent/15 text-text-primary'
-                    : 'border-border bg-surface text-text-muted hover:border-accent/40 hover:text-text-secondary',
+                    ? 'border-accent text-text-primary'
+                    : 'border-transparent text-text-muted hover:text-text-secondary',
                 )}
               >
-                <ByndIcon name={item.icon} className="size-3.5" />
+                <ByndIcon name={item.icon} className="size-3.5 opacity-70" />
                 {item.label}
               </button>
             </li>
