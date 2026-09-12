@@ -9,19 +9,12 @@ import type {
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useMemo, useState } from 'react';
 
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import { toastCopy, toastPending, toastReject, toastResolve } from '@/components/ui/toaster';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { EditEventDrawer } from '@/features/organize/EditEventDrawer';
 import { EventControlHeader } from '@/features/organize/EventControlHeader';
 import { EventControlNav } from '@/features/organize/EventControlNav';
 import { EventHomePanel } from '@/features/organize/EventHomePanel';
-import { EventMoneyPanel } from '@/features/organize/EventMoneyPanel';
 import {
   canPublish,
   hasPaidEntry,
@@ -30,7 +23,7 @@ import {
 } from '@/features/organize/event-control';
 import { OrganizeGate } from '@/features/organize/OrganizeGate';
 import { OrganizerWorkspace } from '@/features/organize/organizer-ui';
-import { EventUpdatesPanel, PostUpdateDialog } from '@/features/organize/EventUpdatesPanel';
+import { PostUpdateDialog } from '@/features/organize/EventUpdatesPanel';
 import { PageLoading, SoftError } from '@/features/shell/AsyncState';
 
 export function EventManageView({ slug, eventId }: { slug: string; eventId: string }) {
@@ -49,7 +42,9 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
   const searchParams = useSearchParams();
   const initialDest = legacyTabToDest(searchParams.get('tab') ?? searchParams.get('section'));
   const [dest, setDest] = useState<ControlDest>(
-    initialDest === 'entry' || initialDest === 'people' ? 'home' : initialDest,
+    initialDest === 'entry' || initialDest === 'people' || initialDest === 'money'
+      ? 'home'
+      : initialDest,
   );
   const [org, setOrg] = useState<OrganizerDto | null>(null);
   const [event, setEvent] = useState<OrganizerEventDetailDto | null>(null);
@@ -61,7 +56,6 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
   const [reloadKey, setReloadKey] = useState(0);
   const [postUpdateOpen, setPostUpdateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
-  const [updatesOpen, setUpdatesOpen] = useState(false);
   const [updatesRefreshKey, setUpdatesRefreshKey] = useState(0);
 
   useEffect(() => {
@@ -69,6 +63,8 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
       router.replace(routes.organizeEventEntry(slug, eventId));
     } else if (initialDest === 'people') {
       router.replace(routes.organizeEventPeople(slug, eventId));
+    } else if (initialDest === 'money') {
+      router.replace(routes.organizeEventMoney(slug, eventId));
     }
   }, [eventId, initialDest, router, slug]);
 
@@ -153,6 +149,10 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
       router.push(routes.organizeEventPeople(slug, eventId));
       return;
     }
+    if (next === 'money') {
+      router.push(routes.organizeEventMoney(slug, eventId));
+      return;
+    }
     const prev = dest;
     setDest(next);
     if (typeof window !== 'undefined') {
@@ -210,29 +210,6 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
         }}
       />
 
-      <Dialog open={updatesOpen} onOpenChange={setUpdatesOpen}>
-        <DialogContent className="max-h-[85vh] max-w-lg overflow-y-auto border-[#2a2a2a] bg-[#141414]">
-          <DialogHeader>
-            <DialogTitle>Updates</DialogTitle>
-          </DialogHeader>
-          <EventUpdatesPanel
-            organizerId={org.id}
-            eventId={event.id}
-            refreshKey={updatesRefreshKey}
-          />
-          <button
-            type="button"
-            onClick={() => {
-              setUpdatesOpen(false);
-              setPostUpdateOpen(true);
-            }}
-            className="mt-2 text-sm font-semibold text-accent hover:underline"
-          >
-            Post update
-          </button>
-        </DialogContent>
-      </Dialog>
-
       <EditEventDrawer
         open={editOpen}
         onOpenChange={setEditOpen}
@@ -257,7 +234,9 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
           onNavigate={navigate}
           onEditEvent={() => setEditOpen(true)}
           onPostUpdate={() => setPostUpdateOpen(true)}
-          onViewAllUpdates={() => setUpdatesOpen(true)}
+          onViewAllUpdates={() =>
+            router.push(routes.organizeEventUpdates(slug, eventId))
+          }
           updatesRefreshKey={updatesRefreshKey}
           onPublished={(next) => {
             setEvent(next);
@@ -265,8 +244,6 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
           }}
         />
       ) : null}
-
-      {dest === 'money' ? <EventMoneyPanel org={org} event={event} regs={regs} /> : null}
     </OrganizerWorkspace>
   );
 

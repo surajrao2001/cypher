@@ -576,10 +576,14 @@ export const routes = {
     `/organize/${slug}/events/${eventId}/entry` as const,
   organizeEventPeople: (slug: string, eventId: string) =>
     `/organize/${slug}/events/${eventId}/people` as const,
+  organizeEventMoney: (slug: string, eventId: string) =>
+    `/organize/${slug}/events/${eventId}/money` as const,
   organizeEventPage: (slug: string, eventId: string) =>
     `/organize/${slug}/events/${eventId}/page` as const,
   organizeEventUpdates: (slug: string, eventId: string) =>
     `/organize/${slug}/events/${eventId}/updates` as const,
+  organizeEventUpdate: (slug: string, eventId: string, updateId: string) =>
+    `/organize/${slug}/events/${eventId}/updates/${updateId}` as const,
 } as const;
 
 export type CheckInChannel = 'SCAN' | 'MANUAL' | 'CODE';
