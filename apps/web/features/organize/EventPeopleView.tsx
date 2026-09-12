@@ -224,9 +224,9 @@ function EventPeoplePanel({ slug, eventId }: { slug: string; eventId: string }) 
             </Button>
           </OrganizeEmpty>
         ) : (
-          <div className="overflow-x-auto">
+          <div>
             <div
-              className="hidden min-w-[40rem] grid-cols-[minmax(0,1.3fr)_minmax(0,1.1fr)_8.5rem_10rem] gap-4 border-b border-[#2a2a2a] pb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted md:grid"
+              className="hidden grid-cols-[minmax(0,1.3fr)_minmax(0,1.1fr)_8.5rem_10rem] gap-4 border-b border-[#2a2a2a] pb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted md:grid"
               aria-hidden
             >
               <span>Name</span>
@@ -234,22 +234,44 @@ function EventPeoplePanel({ slug, eventId }: { slug: string; eventId: string }) 
               <span>Status</span>
               <span>Checked in</span>
             </div>
-            <ul className="min-w-[40rem] divide-y divide-[#2a2a2a]">
+            <ul className="divide-y divide-[#2a2a2a]">
               {filtered.map((row) => {
                 const name =
                   row.participants[0]?.displayName ?? row.entryName ?? row.registrationCode;
                 const checked = checkedAt.get(row.id);
+                const checkLabel = checked ? `✓ ${formatCheckInTime(checked)}` : '—';
                 return (
-                  <li
-                    key={row.id}
-                    className="grid grid-cols-[minmax(0,1.3fr)_minmax(0,1.1fr)_8.5rem_10rem] items-center gap-4 py-4"
-                  >
-                    <p className="truncate font-semibold text-text-primary">{name}</p>
-                    <p className="truncate text-sm text-text-secondary">{row.categoryName}</p>
-                    <StatusCell status={row.registrationStatus} />
-                    <p className={cn('text-sm', checked ? 'text-[#9BE15D]' : 'text-text-muted')}>
-                      {checked ? `✓ ${formatCheckInTime(checked)}` : '—'}
-                    </p>
+                  <li key={row.id} className="py-4">
+                    {/* Phone: compact row — name/entry left, status/check-in right */}
+                    <div className="flex items-start justify-between gap-3 md:hidden">
+                      <div className="min-w-0">
+                        <p className="truncate font-semibold text-text-primary">{name}</p>
+                        <p className="mt-0.5 truncate text-sm text-text-secondary">
+                          {row.categoryName}
+                        </p>
+                      </div>
+                      <div className="shrink-0 space-y-1 text-right">
+                        <StatusCell status={row.registrationStatus} className="justify-end" />
+                        <p
+                          className={cn(
+                            'text-sm',
+                            checked ? 'text-[#9BE15D]' : 'text-text-muted',
+                          )}
+                        >
+                          {checkLabel}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Desktop: full table row */}
+                    <div className="hidden grid-cols-[minmax(0,1.3fr)_minmax(0,1.1fr)_8.5rem_10rem] items-center gap-4 md:grid">
+                      <p className="truncate font-semibold text-text-primary">{name}</p>
+                      <p className="truncate text-sm text-text-secondary">{row.categoryName}</p>
+                      <StatusCell status={row.registrationStatus} />
+                      <p className={cn('text-sm', checked ? 'text-[#9BE15D]' : 'text-text-muted')}>
+                        {checkLabel}
+                      </p>
+                    </div>
                   </li>
                 );
               })}
@@ -278,7 +300,7 @@ function EventPeoplePanel({ slug, eventId }: { slug: string; eventId: string }) 
   );
 }
 
-function StatusCell({ status }: { status: string }) {
+function StatusCell({ status, className }: { status: string; className?: string }) {
   const label = status.replaceAll('_', ' ');
   const tone =
     status === 'confirmed'
@@ -287,7 +309,12 @@ function StatusCell({ status }: { status: string }) {
         ? 'bg-accent'
         : 'bg-text-muted';
   return (
-    <span className="inline-flex items-center gap-2 text-sm capitalize text-text-secondary">
+    <span
+      className={cn(
+        'inline-flex items-center gap-2 text-sm capitalize text-text-secondary',
+        className,
+      )}
+    >
       <span className={cn('size-1.5 shrink-0 rounded-full', tone)} aria-hidden />
       {label}
     </span>

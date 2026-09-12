@@ -85,7 +85,7 @@ export function EventControlHeader({
   }
 
   return (
-    <header className={cn('space-y-5', className)}>
+    <header className={cn('relative space-y-5', className)}>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <PageBreadcrumb
           className="mb-0"
@@ -189,41 +189,30 @@ export function EventControlHeader({
 
       {shareHint ? <p className="text-xs text-accent-2">{shareHint}</p> : null}
 
-      <div className="relative overflow-hidden rounded-2xl border border-[#2a2a2a]">
-        {event.posterUrl ? (
-          <div
-            className="absolute inset-0 bg-cover bg-center opacity-35"
-            style={{ backgroundImage: `url(${event.posterUrl})` }}
-          />
-        ) : (
-          <div className="absolute inset-0 bg-[linear-gradient(135deg,#1c1207_0%,#121212_55%,#0a0a0a_100%)]" />
-        )}
-        <div className="absolute inset-0 bg-gradient-to-r from-black via-black/85 to-black/40" />
-        <div className="relative z-10 space-y-4 px-5 py-7 sm:px-7 sm:py-9">
-          <div className="flex flex-wrap items-center gap-2">
-            <span
-              className={cn(
-                'inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em]',
-                isLive
-                  ? 'bg-accent-2 text-bg'
-                  : isDraft
-                    ? 'bg-[#1e1e1e] text-text-secondary'
-                    : 'border border-white/20 text-text-secondary',
-              )}
-            >
-              {statusLabel(event.status).toUpperCase()}
-            </span>
-            <span className="inline-flex rounded-full border border-white/25 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-white">
-              {eventTypeLabel(event.eventType)}
-            </span>
-          </div>
-          <h1 className="display-title text-[2.75rem] leading-[0.9] tracking-[0.04em] sm:text-6xl md:text-7xl">
-            {event.title}
-          </h1>
-          <p className="text-[15px] text-white/80 sm:text-base">
-            {[when, place].filter(Boolean).join(' • ')}
-          </p>
+      <div className="space-y-4 pt-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <span
+            className={cn(
+              'inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em]',
+              isLive
+                ? 'bg-accent-2 text-bg'
+                : isDraft
+                  ? 'bg-[#1e1e1e] text-text-secondary'
+                  : 'border border-white/20 text-text-secondary',
+            )}
+          >
+            {statusLabel(event.status).toUpperCase()}
+          </span>
+          <span className="inline-flex rounded-full border border-[#2a2a2a] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-text-secondary">
+            {eventTypeLabel(event.eventType)}
+          </span>
         </div>
+        <h1 className="display-title text-[2.75rem] leading-[0.9] tracking-[0.04em] sm:text-6xl md:text-7xl">
+          {event.title}
+        </h1>
+        <p className="text-[15px] text-text-secondary sm:text-base">
+          {[when, place].filter(Boolean).join(' • ')}
+        </p>
       </div>
     </header>
   );

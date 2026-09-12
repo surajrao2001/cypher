@@ -15,7 +15,6 @@ import { EventControlHeader } from '@/features/organize/EventControlHeader';
 import { EventControlNav } from '@/features/organize/EventControlNav';
 import { EventHomePanel } from '@/features/organize/EventHomePanel';
 import { EventMoneyPanel } from '@/features/organize/EventMoneyPanel';
-import { EventPagePanel } from '@/features/organize/EventPagePanel';
 import {
   canPublish,
   hasPaidEntry,
@@ -44,7 +43,9 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
   const searchParams = useSearchParams();
   const initialDest = legacyTabToDest(searchParams.get('tab') ?? searchParams.get('section'));
   const [dest, setDest] = useState<ControlDest>(
-    initialDest === 'entry' || initialDest === 'people' ? 'home' : initialDest,
+    initialDest === 'entry' || initialDest === 'people' || initialDest === 'page'
+      ? 'home'
+      : initialDest,
   );
   const [org, setOrg] = useState<OrganizerDto | null>(null);
   const [event, setEvent] = useState<OrganizerEventDetailDto | null>(null);
@@ -61,6 +62,8 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
       router.replace(routes.organizeEventEntry(slug, eventId));
     } else if (initialDest === 'people') {
       router.replace(routes.organizeEventPeople(slug, eventId));
+    } else if (initialDest === 'page') {
+      router.replace(routes.organizeEventPage(slug, eventId));
     }
   }, [eventId, initialDest, router, slug]);
 
@@ -147,6 +150,10 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
       router.push(routes.organizeEventPeople(slug, eventId));
       return;
     }
+    if (next === 'page') {
+      router.push(routes.organizeEventPage(slug, eventId));
+      return;
+    }
     const prev = dest;
     setDest(next);
     if (typeof window !== 'undefined') {
@@ -177,9 +184,10 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
 
   const entryHref = routes.organizeEventEntry(org.slug, event.id);
   const peopleHref = routes.organizeEventPeople(org.slug, event.id);
+  const pageHref = routes.organizeEventPage(org.slug, event.id);
 
-  return (
-    <OrganizerWorkspace width="full" className="space-y-6">
+  const shell = (
+    <OrganizerWorkspace width="full" className="relative z-10 space-y-6">
       <EventControlHeader
         org={org}
         event={event}
@@ -198,8 +206,7 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
         open={postUpdateOpen}
         onOpenChange={setPostUpdateOpen}
         onPosted={() => {
-          setDest('page');
-          setReloadKey((n) => n + 1);
+          router.push(pageHref);
         }}
       />
 
@@ -212,6 +219,7 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
           checkedInCount={checkedInCount}
           entryHref={entryHref}
           peopleHref={peopleHref}
+          pageHref={pageHref}
           onNavigate={navigate}
           onPublished={(next) => {
             setEvent(next);
@@ -221,10 +229,23 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
       ) : null}
 
       {dest === 'money' ? <EventMoneyPanel org={org} event={event} regs={regs} /> : null}
-
-      {dest === 'page' ? (
-        <EventPagePanel org={org} event={event} onEventChange={setEvent} />
-      ) : null}
     </OrganizerWorkspace>
+  );
+
+  if (dest !== 'home') {
+    return shell;
+  }
+
+  return (
+    <div className="relative overflow-hidden before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-[28rem] before:bg-[radial-gradient(ellipse_at_top_right,rgba(255,104,0,0.28)_0%,rgba(255,104,0,0.08)_35%,transparent_70%)] before:content-['']">
+      {event.posterUrl ? (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 top-0 h-[28rem] bg-cover bg-[position:80%_25%] opacity-[0.28] [mask-image:linear-gradient(to_bottom,black_0%,black_40%,transparent_100%)]"
+          style={{ backgroundImage: `url(${event.posterUrl})` }}
+        />
+      ) : null}
+      {shell}
+    </div>
   );
 }

@@ -30,6 +30,7 @@ export function EventHomePanel({
   checkedInCount: _checkedInCount,
   entryHref,
   peopleHref,
+  pageHref,
   onNavigate,
   onPublished,
 }: {
@@ -40,6 +41,7 @@ export function EventHomePanel({
   checkedInCount: number | null;
   entryHref: string;
   peopleHref: string;
+  pageHref: string;
   onNavigate: (dest: ControlDest) => void;
   onPublished: (next: OrganizerEventDetailDto) => void;
 }) {
@@ -88,7 +90,7 @@ export function EventHomePanel({
           <DestCard
             title="Event Page"
             body="Poster, details, updates"
-            onClick={() => onNavigate('page')}
+            href={pageHref}
           />
         </div>
       </div>
@@ -179,6 +181,10 @@ export function EventHomePanel({
                       window.location.href = entryHref;
                       return;
                     }
+                    if (item.dest === 'page') {
+                      window.location.href = pageHref;
+                      return;
+                    }
                     if (item.dest) onNavigate(item.dest);
                   }}
                   className="flex w-full items-center gap-3 rounded-2xl border border-[#2a2a2a] bg-[#141414] px-4 py-4 text-left transition-colors hover:border-accent/40"
@@ -234,7 +240,7 @@ export function EventHomePanel({
         <DestCard
           title="Event Page"
           body="Poster, details, updates"
-          onClick={() => onNavigate('page')}
+          href={pageHref}
         />
       </div>
     </div>
