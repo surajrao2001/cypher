@@ -76,7 +76,7 @@ export function PosterThumb({
     sm: 'aspect-[3/4] w-16',
     md: 'aspect-[3/4] w-24 sm:w-28',
     lg: 'aspect-[3/4] w-32 sm:w-40',
-    hero: 'aspect-[3/4] w-[13rem] sm:w-[16rem] md:w-[18rem] lg:w-[20rem] xl:w-[22rem]',
+    hero: 'aspect-[3/4] w-[5.75rem] sm:w-[16rem] md:w-[18rem] lg:w-[20rem] xl:w-[22rem]',
   } as const;
 
   return (

@@ -114,7 +114,7 @@ export function EventControlHeader({
   }
 
   return (
-    <header className={cn('relative space-y-6', className)}>
+    <header className={cn('relative space-y-4 sm:space-y-6', className)}>
       <PageBreadcrumb
         className="mb-0"
         items={[
@@ -123,16 +123,16 @@ export function EventControlHeader({
         ]}
       />
 
-      <div className="relative flex flex-col gap-6 sm:flex-row sm:items-start sm:gap-8 lg:gap-10 xl:gap-12">
+      <div className="relative flex flex-row items-start gap-3.5 sm:gap-8 lg:gap-10 xl:gap-12">
         <PosterThumb
           src={event.posterUrl}
           size="hero"
-          className="mx-auto shadow-[0_28px_56px_-18px_rgba(0,0,0,0.8)] sm:mx-0"
+          className="shrink-0 shadow-[0_16px_32px_-12px_rgba(0,0,0,0.75)] sm:shadow-[0_28px_56px_-18px_rgba(0,0,0,0.8)]"
         />
 
-        <div className="min-w-0 flex-1 space-y-5 pt-1 sm:space-y-6 sm:pt-3 lg:pt-4">
-          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
-            <span className="text-xs font-bold uppercase tracking-[0.18em] text-text-secondary sm:text-[13px]">
+        <div className="min-w-0 flex-1 space-y-2.5 pt-0 sm:space-y-6 sm:pt-3 lg:pt-4">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-text-secondary sm:text-[13px] sm:tracking-[0.18em]">
               {eventTypeDisplayLabel(event.eventType)}
             </span>
             <span className="text-text-muted" aria-hidden>
@@ -140,7 +140,7 @@ export function EventControlHeader({
             </span>
             <span
               className={cn(
-                'inline-flex rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.14em] sm:text-[11px]',
+                'inline-flex rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] sm:px-3 sm:py-1 sm:text-[11px] sm:tracking-[0.14em]',
                 isLive
                   ? 'bg-accent-2 text-bg'
                   : isDraft
@@ -152,35 +152,35 @@ export function EventControlHeader({
             </span>
           </div>
 
-          <h1 className="display-title max-w-[16ch] text-[3rem] leading-[0.88] tracking-[0.03em] text-text-primary sm:text-6xl md:text-7xl lg:text-[4.75rem] xl:text-[5.25rem]">
+          <h1 className="display-title max-w-[16ch] text-[1.65rem] leading-[0.92] tracking-[0.03em] text-text-primary sm:text-6xl sm:leading-[0.88] md:text-7xl lg:text-[4.75rem] xl:text-[5.25rem]">
             {event.title}
           </h1>
 
-          <div className="space-y-2.5 text-[15px] text-text-secondary sm:text-base lg:text-[17px]">
+          <div className="space-y-1 text-[12px] text-text-secondary sm:space-y-2.5 sm:text-base lg:text-[17px]">
             {when ? (
-              <p className="flex items-center gap-2.5">
-                <ByndIcon name="calendar" className="size-4 shrink-0 text-text-muted" />
-                <span>{when}</span>
+              <p className="flex items-center gap-1.5 sm:gap-2.5">
+                <ByndIcon name="calendar" className="size-3 shrink-0 text-text-muted sm:size-4" />
+                <span className="truncate">{when}</span>
               </p>
             ) : null}
             {place ? (
-              <p className="flex items-center gap-2.5">
-                <ByndIcon name="pin" className="size-4 shrink-0 text-text-muted" />
-                <span>{place}</span>
+              <p className="flex items-center gap-1.5 sm:gap-2.5">
+                <ByndIcon name="pin" className="size-3 shrink-0 text-text-muted sm:size-4" />
+                <span className="truncate">{place}</span>
               </p>
             ) : null}
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 pt-2">
+          <div className="flex flex-wrap items-center gap-2 pt-0.5 sm:gap-3 sm:pt-2">
             {!isDraft ? (
               <Button
                 asChild
                 size="lg"
-                className="h-12 min-w-[9.5rem] rounded-xl px-7 text-sm font-semibold tracking-[0.12em] sm:h-[3.25rem] sm:min-w-[11rem] sm:px-8 sm:text-[15px]"
+                className="size-10 rounded-xl p-0 sm:h-[3.25rem] sm:w-auto sm:min-w-[11rem] sm:px-8 sm:text-[15px]"
               >
-                <Link href={checkInHref}>
+                <Link href={checkInHref} aria-label="Check in">
                   <ByndIcon name="checkIn" className="size-5" />
-                  Check in
+                  <span className="hidden sm:inline">Check in</span>
                 </Link>
               </Button>
             ) : null}
@@ -190,10 +190,11 @@ export function EventControlHeader({
                 size="lg"
                 variant="outline"
                 onClick={() => void share()}
-                className="h-12 min-w-[7.5rem] rounded-xl border-[#2a2a2a] bg-[#141414]/70 px-6 text-sm tracking-[0.12em] hover:border-accent/35 sm:h-[3.25rem] sm:min-w-[8.5rem] sm:px-7 sm:text-[15px]"
+                aria-label="Share"
+                className="size-10 rounded-xl border-[#2a2a2a] bg-[#141414]/70 p-0 hover:border-accent/35 sm:h-[3.25rem] sm:w-auto sm:min-w-[8.5rem] sm:px-7 sm:text-[15px]"
               >
                 <ByndIcon name="external" className="size-5" />
-                Share
+                <span className="hidden sm:inline">Share</span>
               </Button>
             ) : null}
             <div className="relative">
@@ -205,14 +206,17 @@ export function EventControlHeader({
                 aria-haspopup="menu"
                 aria-label="More actions"
                 onClick={() => setMenuOpen((o) => !o)}
-                className="h-12 min-w-[7rem] rounded-xl border-[#2a2a2a] bg-[#141414]/70 px-6 text-sm tracking-[0.12em] hover:border-accent/35 sm:h-[3.25rem] sm:px-7 sm:text-[15px]"
+                className="size-10 rounded-xl border-[#2a2a2a] bg-[#141414]/70 p-0 hover:border-accent/35 sm:h-[3.25rem] sm:w-auto sm:min-w-[7rem] sm:px-7 sm:text-[15px]"
               >
-                ··· More
+                <span className="text-base leading-none tracking-widest sm:hidden" aria-hidden>
+                  ···
+                </span>
+                <span className="hidden sm:inline">··· More</span>
               </Button>
               {menuOpen ? (
                 <div
                   role="menu"
-                  className="absolute left-0 z-20 mt-2 min-w-[12rem] rounded-xl border border-border bg-surface py-1 shadow-lg sm:left-auto sm:right-0"
+                  className="absolute right-0 z-20 mt-2 min-w-[12rem] rounded-xl border border-border bg-surface py-1 shadow-lg"
                 >
                   {onEditEvent ? (
                     <button

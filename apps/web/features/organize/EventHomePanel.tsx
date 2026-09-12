@@ -355,7 +355,7 @@ export function EventHomePanel({
       ) : null}
 
       {metrics.length > 0 ? (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[repeat(auto-fit,minmax(13.5rem,1fr))]">
+        <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-[repeat(auto-fit,minmax(13.5rem,1fr))]">
           {metrics.map((m) => (
             <MetricCard key={m.id} {...m} />
           ))}
@@ -413,17 +413,17 @@ export function EventHomePanel({
       </div>
 
       {!past || latestUpdate ? (
-        <section className="rounded-2xl border border-[#252525] bg-gradient-to-b from-[#171717]/90 to-[#121212] p-4 sm:p-5">
-          <div className="mb-3.5 flex items-center justify-between gap-3">
-            <h2 className="inline-flex items-center gap-2 text-[15px] font-semibold text-text-primary">
-              <ByndIcon name="megaphone" className="size-4 text-accent" />
+        <section className="rounded-xl border border-[#252525] bg-gradient-to-b from-[#171717]/90 to-[#121212] p-3 sm:rounded-2xl sm:p-5">
+          <div className="mb-2.5 flex items-center justify-between gap-3 sm:mb-3.5">
+            <h2 className="inline-flex items-center gap-2 text-sm font-semibold text-text-primary sm:text-[15px]">
+              <ByndIcon name="megaphone" className="size-3.5 text-accent sm:size-4" />
               Latest update
             </h2>
             {updateCount > 0 ? (
               <button
                 type="button"
                 onClick={() => onViewAllUpdates?.()}
-                className="text-sm font-medium text-accent transition-colors hover:text-accent/80"
+                className="text-xs font-medium text-accent transition-colors hover:text-accent/80 sm:text-sm"
               >
                 View all →
               </button>
@@ -431,35 +431,37 @@ export function EventHomePanel({
               <button
                 type="button"
                 onClick={() => onPostUpdate()}
-                className="text-sm font-medium text-accent transition-colors hover:text-accent/80"
+                className="text-xs font-medium text-accent transition-colors hover:text-accent/80 sm:text-sm"
               >
-                Post update →
+                Post →
               </button>
             ) : null}
           </div>
           {latestUpdate ? (
-            <article className="flex gap-4 rounded-xl border border-[#2a2a2a] bg-[#0e0e0e] p-3.5 sm:p-4">
-              <div className="relative h-[4.5rem] w-[4.5rem] shrink-0 overflow-hidden rounded-xl bg-[#1a1a1a]">
+            <article className="flex gap-3 rounded-lg border border-[#2a2a2a] bg-[#0e0e0e] p-2.5 sm:gap-4 sm:rounded-xl sm:p-4">
+              <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-[#1a1a1a] sm:h-[4.5rem] sm:w-[4.5rem] sm:rounded-xl">
                 {latestUpdate.posterUrl ? (
                   <img src={latestUpdate.posterUrl} alt="" className="h-full w-full object-cover" />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center">
-                    <ByndIcon name="megaphone" className="size-5 text-text-muted" />
+                    <ByndIcon name="megaphone" className="size-4 text-text-muted sm:size-5" />
                   </div>
                 )}
               </div>
-              <div className="min-w-0 flex-1 space-y-1">
-                <p className="text-[15px] font-semibold text-text-primary">
+              <div className="min-w-0 flex-1 space-y-0.5 sm:space-y-1">
+                <p className="truncate text-sm font-semibold text-text-primary sm:text-[15px]">
                   {latestUpdate.title?.trim() || 'Update'}
                 </p>
-                <p className="text-xs text-text-muted">{relativeTime(latestUpdate.publishedAt)}</p>
-                <p className="line-clamp-2 text-sm leading-snug text-text-secondary">
+                <p className="text-[11px] text-text-muted sm:text-xs">
+                  {relativeTime(latestUpdate.publishedAt)}
+                </p>
+                <p className="hidden line-clamp-2 text-sm leading-snug text-text-secondary sm:block">
                   {latestUpdate.body}
                 </p>
               </div>
             </article>
           ) : (
-            <p className="rounded-xl border border-dashed border-[#2a2a2a] px-4 py-5 text-sm text-text-muted">
+            <p className="rounded-lg border border-dashed border-[#2a2a2a] px-3 py-3.5 text-sm text-text-muted sm:rounded-xl sm:px-4 sm:py-5">
               No updates yet.
               {onPostUpdate ? (
                 <>
@@ -509,23 +511,23 @@ function MetricCard({
   detail,
 }: Metric) {
   return (
-    <div className="flex min-h-[5.75rem] items-center gap-4 rounded-2xl border border-[#252525] bg-gradient-to-b from-[#171717] to-[#121212] px-4 py-4 transition-[border-color] duration-150 hover:border-[#333] sm:min-h-[6.25rem] sm:gap-5 sm:px-5">
+    <div className="flex min-h-0 items-center gap-2.5 rounded-xl border border-[#252525] bg-gradient-to-b from-[#171717] to-[#121212] px-2.5 py-2.5 transition-[border-color] duration-150 hover:border-[#333] sm:min-h-[6.25rem] sm:gap-5 sm:rounded-2xl sm:px-5 sm:py-4">
       <span
         className={cn(
-          'flex size-11 shrink-0 items-center justify-center rounded-xl bg-white/[0.04] sm:size-12',
+          'flex size-8 shrink-0 items-center justify-center rounded-lg bg-white/[0.04] sm:size-12 sm:rounded-xl',
           iconClass,
         )}
       >
-        <Icon className="size-5 sm:size-6" strokeWidth={1.85} absoluteStrokeWidth aria-hidden />
+        <Icon className="size-4 sm:size-6" strokeWidth={1.85} absoluteStrokeWidth aria-hidden />
       </span>
-      <div className="min-w-0 flex-1 space-y-1">
-        <p className="font-display text-[1.85rem] leading-none tracking-[0.02em] text-text-primary sm:text-[2.05rem]">
+      <div className="min-w-0 flex-1 space-y-0.5 sm:space-y-1">
+        <p className="font-display text-xl leading-none tracking-[0.02em] text-text-primary sm:text-[2.05rem]">
           {value}
         </p>
-        <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-text-secondary">
+        <p className="truncate text-[9px] font-bold uppercase tracking-[0.12em] text-text-secondary sm:text-[11px] sm:tracking-[0.14em]">
           {label}
         </p>
-        <p className="truncate text-[12px] leading-snug text-text-muted sm:text-[13px]">{detail}</p>
+        <p className="hidden truncate text-[13px] leading-snug text-text-muted sm:block">{detail}</p>
       </div>
     </div>
   );
@@ -547,20 +549,20 @@ function DestRow({
   onClick?: () => void;
 }) {
   const className =
-    'group flex w-full items-center gap-3.5 rounded-2xl border border-[#252525] bg-[#141414] px-3.5 py-3.5 text-left transition-[border-color,background-color,transform] duration-150 hover:border-accent/35 hover:bg-[#171717] sm:px-4 sm:py-3.5';
+    'group flex w-full items-center gap-3 rounded-xl border border-[#252525] bg-[#141414] px-3 py-2.5 text-left transition-[border-color,background-color,transform] duration-150 hover:border-accent/35 hover:bg-[#171717] sm:gap-3.5 sm:rounded-2xl sm:px-4 sm:py-3.5';
   const inner = (
     <>
       <span
         className={cn(
-          'flex size-10 shrink-0 items-center justify-center rounded-xl sm:size-11',
+          'flex size-9 shrink-0 items-center justify-center rounded-lg sm:size-11 sm:rounded-xl',
           iconWrap,
         )}
       >
-        <Icon className="size-5" strokeWidth={1.85} absoluteStrokeWidth aria-hidden />
+        <Icon className="size-4 sm:size-5" strokeWidth={1.85} absoluteStrokeWidth aria-hidden />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block text-[15px] font-semibold text-text-primary">{title}</span>
-        <span className="mt-0.5 block text-[12px] leading-snug text-text-secondary sm:text-[13px]">
+        <span className="block text-sm font-semibold text-text-primary sm:text-[15px]">{title}</span>
+        <span className="mt-0.5 hidden text-[13px] leading-snug text-text-secondary sm:block">
           {body}
         </span>
       </span>
@@ -601,18 +603,18 @@ function PublicPageCard({
   onEditEvent: () => void;
 }) {
   return (
-    <section className="flex h-full flex-col rounded-2xl border border-[#252525] bg-gradient-to-b from-[#171717] to-[#121212] p-4 sm:p-5">
-      <div className="mb-3.5 flex items-start justify-between gap-2">
-        <div className="space-y-1">
-          <p className="inline-flex items-center gap-2 text-[15px] font-semibold text-text-primary">
-            <Eye className="size-4 text-[#E8B84A]" strokeWidth={1.85} absoluteStrokeWidth aria-hidden />
+    <section className="flex h-full flex-col rounded-xl border border-[#252525] bg-gradient-to-b from-[#171717] to-[#121212] p-3 sm:rounded-2xl sm:p-5">
+      <div className="mb-2.5 flex items-center justify-between gap-2 sm:mb-3.5 sm:items-start">
+        <div className="space-y-0.5 sm:space-y-1">
+          <p className="inline-flex items-center gap-2 text-sm font-semibold text-text-primary sm:text-[15px]">
+            <Eye className="size-3.5 text-[#E8B84A] sm:size-4" strokeWidth={1.85} absoluteStrokeWidth aria-hidden />
             Public Page
           </p>
-          <p className="text-[12px] text-text-muted">This is what dancers see.</p>
+          <p className="hidden text-[12px] text-text-muted sm:block">This is what dancers see.</p>
         </div>
         <span
           className={cn(
-            'inline-flex shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em]',
+            'inline-flex shrink-0 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] sm:px-2.5 sm:text-[10px] sm:tracking-[0.14em]',
             isLive ? 'bg-accent-2 text-bg' : 'bg-[#1e1e1e] text-text-secondary',
           )}
         >
@@ -620,54 +622,55 @@ function PublicPageCard({
         </span>
       </div>
 
-      <div className="flex flex-1 gap-3.5 rounded-xl border border-[#2a2a2a] bg-[#0e0e0e] p-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
-        <div className="relative aspect-[3/4] w-[4.25rem] shrink-0 overflow-hidden rounded-lg bg-[#1a1a1a] sm:w-[4.75rem]">
+      <div className="flex flex-1 gap-3 rounded-lg border border-[#2a2a2a] bg-[#0e0e0e] p-2.5 sm:gap-3.5 sm:rounded-xl sm:p-3.5 sm:shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+        <div className="relative aspect-[3/4] w-12 shrink-0 overflow-hidden rounded-md bg-[#1a1a1a] sm:w-[4.75rem] sm:rounded-lg">
           {event.posterUrl ? (
             <img src={event.posterUrl} alt="" className="h-full w-full object-cover" />
           ) : (
             <div className="flex h-full w-full flex-col items-center justify-center gap-0.5">
               <span className="font-display text-sm text-text-muted/40">+</span>
-              <span className="text-[8px] font-semibold uppercase tracking-[0.14em] text-text-muted/50">
-                Poster
-              </span>
             </div>
           )}
         </div>
-        <div className="min-w-0 flex-1 space-y-1.5 py-0.5">
-          <p className="truncate font-display text-xl leading-none tracking-[0.04em] text-text-primary">
+        <div className="min-w-0 flex-1 space-y-0.5 py-0 sm:space-y-1.5 sm:py-0.5">
+          <p className="truncate font-display text-base leading-none tracking-[0.04em] text-text-primary sm:text-xl">
             {event.title}
           </p>
-          {when ? <p className="truncate text-[12px] text-text-secondary">{when}</p> : null}
-          {place ? <p className="truncate text-[12px] text-text-muted">{place}</p> : null}
-          <p className="pt-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-text-muted">
+          {when ? <p className="truncate text-[11px] text-text-secondary sm:text-[12px]">{when}</p> : null}
+          {place ? (
+            <p className="hidden truncate text-[12px] text-text-muted sm:block">{place}</p>
+          ) : null}
+          <p className="hidden pt-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-text-muted sm:block">
             {eventTypeDisplayLabel(event.eventType)}
           </p>
         </div>
       </div>
 
-      <div className="mt-4 grid grid-cols-2 gap-2.5">
+      <div className="mt-3 grid grid-cols-2 gap-2 sm:mt-4 sm:gap-2.5">
         {isLive ? (
           <Link
             href={publicHref}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-[#2a2a2a] bg-[#141414] px-3 text-[11px] font-semibold uppercase tracking-[0.1em] text-text-primary transition-colors duration-150 hover:border-accent/40"
+            aria-label="View event"
+            className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-xl border border-[#2a2a2a] bg-[#141414] px-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-text-primary transition-colors duration-150 hover:border-accent/40 sm:min-h-10 sm:px-3 sm:text-[11px] sm:tracking-[0.1em]"
           >
-            View Event
             <ByndIcon name="external" className="size-3.5" />
+            <span>View</span>
           </Link>
         ) : (
-          <span className="inline-flex min-h-10 items-center justify-center rounded-xl border border-[#2a2a2a] px-3 text-[11px] font-semibold uppercase tracking-[0.1em] text-text-muted">
-            Not live yet
+          <span className="inline-flex min-h-9 items-center justify-center rounded-xl border border-[#2a2a2a] px-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted sm:min-h-10 sm:px-3 sm:text-[11px]">
+            Not live
           </span>
         )}
         <button
           type="button"
           onClick={onEditEvent}
-          className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-accent/50 bg-accent/10 px-3 text-[11px] font-semibold uppercase tracking-[0.1em] text-accent transition-colors duration-150 hover:border-accent hover:bg-accent/15"
+          aria-label="Edit event"
+          className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-xl border border-accent/50 bg-accent/10 px-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-accent transition-colors duration-150 hover:border-accent hover:bg-accent/15 sm:min-h-10 sm:px-3 sm:text-[11px] sm:tracking-[0.1em]"
         >
           <ByndIcon name="edit" className="size-3.5" />
-          Edit Event
+          <span>Edit</span>
         </button>
       </div>
     </section>
