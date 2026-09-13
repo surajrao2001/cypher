@@ -1,11 +1,13 @@
-import { EventEditor } from '@/features/organize/EventEditor';
+import { redirect } from 'next/navigation';
 
-/** New night — same stepper as edit; draft is created on first save. */
+import { routes } from '@cypher/contracts';
+
+/** Legacy new-event URL → V2 create flow (keeps slug host context). */
 export default async function NewEventPage({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  return <EventEditor slug={slug} />;
+  redirect(`${routes.organize}/create?host=${encodeURIComponent(slug)}`);
 }

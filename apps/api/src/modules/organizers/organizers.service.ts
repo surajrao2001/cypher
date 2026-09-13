@@ -63,6 +63,7 @@ export type CategoryInput = {
   minTeamSize?: number;
   maxTeamSize?: number;
   teamSize?: number;
+  posterUrl?: string | null;
 };
 
 export type UpdateCategoryInput = {
@@ -73,6 +74,7 @@ export type UpdateCategoryInput = {
   minTeamSize?: number;
   maxTeamSize?: number;
   teamSize?: number;
+  posterUrl?: string | null;
 };
 
 export type CreateEventInput = {
@@ -351,6 +353,7 @@ export class OrganizersService {
           entryType: sizes.entryType,
           minTeamSize: sizes.minTeamSize,
           maxTeamSize: sizes.maxTeamSize,
+          posterUrl: category.posterUrl?.trim() || null,
         };
       }),
       ...(input.audiencePass?.enabled
@@ -620,6 +623,7 @@ export class OrganizersService {
         entryType: sizes.entryType,
         minTeamSize: sizes.minTeamSize,
         maxTeamSize: sizes.maxTeamSize,
+        posterUrl: input.posterUrl?.trim() || null,
       },
     });
     return this.getEvent(userId, organizerId, eventId);
@@ -672,6 +676,8 @@ export class OrganizersService {
         entryType: sizes?.entryType,
         minTeamSize: sizes?.minTeamSize,
         maxTeamSize: sizes?.maxTeamSize,
+        posterUrl:
+          input.posterUrl === undefined ? undefined : input.posterUrl?.trim() || null,
       },
     });
     return this.getEvent(userId, organizerId, eventId);
@@ -696,9 +702,6 @@ export class OrganizersService {
     }
     if (category.reservedCount + category.confirmedCount > 0) {
       throw new BadRequestException('Cannot delete a category with reserved or confirmed spots');
-    }
-    if (event.status === EventStatus.published && event.categories.length <= 1) {
-      throw new BadRequestException('Published events need at least one category');
     }
     const registrationCount = await this.prisma.registration.count({ where: { categoryId } });
     if (registrationCount > 0) {

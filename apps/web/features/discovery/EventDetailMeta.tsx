@@ -66,8 +66,8 @@ export function EventDetailMeta({ event }: Props) {
         : (viewers[0]?.currentPriceMinor ?? viewers[0]?.priceMinor ?? 0);
       parts.push(
         viewers.length > 1
-          ? `${viewers.length} viewers passes`
-          : `Viewers · ${vPrice === 0 ? 'Free' : formatMinorUnits(vPrice)}`,
+          ? `${viewers.length} audience passes`
+          : `Audience · ${vPrice === 0 ? 'Free' : formatMinorUnits(vPrice)}`,
       );
     }
     if (earlyBird) parts.push('Early bird on');
@@ -102,7 +102,7 @@ export function EventDetailMeta({ event }: Props) {
           </p>
         </InsightCell>
 
-        <InsightCell icon={<ByndIcon name="tickets" className="size-3.5 text-accent" />} label="Tickets">
+        <InsightCell icon={<ByndIcon name="tickets" className="size-3.5 text-accent" />} label="Entry">
           <p className="font-medium leading-snug">{ticketLine}</p>
           <p className="mt-1 text-xs text-text-secondary">Hosted by {event.organizerName}</p>
         </InsightCell>

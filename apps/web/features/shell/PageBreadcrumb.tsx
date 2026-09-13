@@ -1,21 +1,32 @@
-import { ByndIcon } from '@/components/icons/bynd8';
 import Link from 'next/link';
+
+import { ByndIcon } from '@/components/icons/bynd8';
+import { cn } from '@/lib/utils';
 
 export type BreadcrumbItem = {
   label: string;
   href?: string;
 };
 
-export function PageBreadcrumb({ items }: { items: BreadcrumbItem[] }) {
+export function PageBreadcrumb({
+  items,
+  tone = 'muted',
+  className,
+}: {
+  items: BreadcrumbItem[];
+  tone?: 'muted' | 'accent';
+  className?: string;
+}) {
   if (items.length === 0) {
     return null;
   }
 
   const parent = [...items].reverse().find((item) => item.href) ?? items[0];
   const trail = items.filter((item) => item.label);
+  const accent = tone === 'accent';
 
   return (
-    <nav aria-label="Breadcrumb" className="mb-6">
+    <nav aria-label="Breadcrumb" className={cn('mb-6', className)}>
       {parent?.href ? (
         <Link
           href={parent.href}
@@ -26,18 +37,33 @@ export function PageBreadcrumb({ items }: { items: BreadcrumbItem[] }) {
         </Link>
       ) : null}
 
-      <ol className="hidden flex-wrap items-center gap-2 text-xs uppercase tracking-[0.14em] text-text-muted md:flex">
+      <ol
+        className={cn(
+          'hidden flex-wrap items-center gap-2 text-xs uppercase tracking-[0.14em] md:flex',
+          accent ? 'text-accent' : 'text-text-muted',
+        )}
+      >
         {trail.map((item, index) => {
           const isLast = index === trail.length - 1;
           return (
             <li key={`${item.label}-${String(index)}`} className="flex items-center gap-2">
-              {index > 0 ? <span aria-hidden>/</span> : null}
+              {index > 0 ? (
+                <span aria-hidden className={accent ? 'text-accent/60' : undefined}>
+                  /
+                </span>
+              ) : null}
               {item.href && !isLast ? (
                 <Link href={item.href} className="transition-colors hover:text-accent">
                   {item.label}
                 </Link>
               ) : (
-                <span className={isLast ? 'text-text-secondary' : undefined}>{item.label}</span>
+                <span
+                  className={
+                    isLast ? (accent ? 'text-accent' : 'text-text-secondary') : undefined
+                  }
+                >
+                  {item.label}
+                </span>
               )}
             </li>
           );

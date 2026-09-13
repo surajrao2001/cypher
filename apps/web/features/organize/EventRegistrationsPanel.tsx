@@ -120,14 +120,14 @@ export function EventRegistrationsPanel({
   if (data.categories.length === 0) {
     return (
       <TabEmptyState
-        icon="layers"
-        kicker="Categories first"
-        title="Can’t register into thin air"
-        body="Add a compete or audience category in Edit, then this list fills as people lock spots."
+        icon="tickets"
+        kicker="Entry first"
+        title="No registrations yet"
+        body="Add competition or an audience pass under Entry, then this list fills as people register."
       >
         {editHref ? (
           <Button asChild variant="outline" size="sm">
-            <Link href={editHref}>Open edit</Link>
+            <Link href={editHref}>Open Entry</Link>
           </Button>
         ) : (
           <Button asChild variant="outline" size="sm">

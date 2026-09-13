@@ -39,6 +39,15 @@ export function friendlyError(
   if (/5\d\d|internal server|bad gateway|service unavailable/i.test(msg)) {
     return 'Our side hiccuped. Try again shortly.';
   }
+  if (/cashfree|payouts before creating paid|paid categor/i.test(msg)) {
+    return 'Set up payouts before you can charge for registrations.';
+  }
+  if (/capacity cannot be below|below .* occupied/i.test(msg)) {
+    return "Capacity can't be lower than the number of spots already taken.";
+  }
+  if (/cannot delete a category.*(reserved|confirmed|registration)/i.test(msg)) {
+    return "This entry already has registrations and can't be removed.";
+  }
 
   // Keep short, intentional product validation copy; drop stack-y / Nest noise.
   if (

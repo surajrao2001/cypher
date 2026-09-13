@@ -19,7 +19,7 @@ type Props = {
 };
 
 /**
- * Shown only until settlement is connected (or ?payout=1 to reopen setup).
+ * Shown only until payouts are connected (or ?payout=1 to reopen setup).
  * Once payoutReady, the org dashboard is events-first — no onboarding wall.
  */
 export function OrganizerNextSteps({
@@ -51,14 +51,14 @@ export function OrganizerNextSteps({
       )}
     >
       <div className="space-y-2">
-        <p className="kicker text-accent">Settlement</p>
+        <p className="kicker text-accent">Payouts</p>
         <h2 className="display-title text-3xl md:text-4xl">
-          {payoutReady ? 'Update settlement' : 'Connect bank or UPI for entry fees'}
+          {payoutReady ? 'Update payout details' : 'Add bank or UPI for paid entries'}
         </h2>
         <p className="max-w-xl text-sm leading-relaxed text-text-secondary">
           {payoutReady
-            ? 'Settlement is connected. You can update bank or UPI details here.'
-            : 'Paid entry and audience fees need somewhere to land. Free (₹0) events still work without this.'}
+            ? 'Your payout account is connected. You can update bank or UPI details here.'
+            : 'Needed only when you charge entry or audience fees. Free (₹0) nights work without this.'}
         </p>
       </div>
 
@@ -71,7 +71,7 @@ export function OrganizerNextSteps({
         />
       ) : (
         <Button type="button" size="lg" onClick={() => setShowBank(true)}>
-          Connect settlement account
+          Connect bank or UPI
         </Button>
       )}
 

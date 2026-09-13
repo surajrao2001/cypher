@@ -35,7 +35,7 @@ function OrganizerDashboardInner({ slug }: { slug: string }) {
   const [org, setOrg] = useState<OrganizerDto | null>(null);
   const [events, setEvents] = useState<OrganizerEventDetailDto[] | null>(null);
   const [payoutReady, setPayoutReady] = useState(false);
-  const [showPayout, setShowPayout] = useState(searchParams.get('payout') === '1');
+  const wantPayout = searchParams.get('payout') === '1';
   const [tab, setTab] = useState<EventTab>('all');
   const [error, setError] = useState<unknown>(null);
   const [reloadKey, setReloadKey] = useState(0);
@@ -107,7 +107,7 @@ function OrganizerDashboardInner({ slug }: { slug: string }) {
     return <PageLoading variant="page" className="px-6 py-16" label="Loading organizer" />;
   }
 
-  const createHref = `${routes.organize}/${org.slug}/events/new`;
+  const createHref = `${routes.organize}/create?host=${encodeURIComponent(org.slug)}`;
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 px-4 py-8 md:px-8">
@@ -120,49 +120,40 @@ function OrganizerDashboardInner({ slug }: { slug: string }) {
 
       <header className="flex flex-col gap-4 border-b border-border pb-7 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="kicker text-accent">Your events</p>
+          <p className="kicker text-accent">Host profile</p>
           <h1 className="display-title text-3xl md:text-4xl">{org.orgName}</h1>
           <p className="mt-1 text-[13px] text-text-secondary">
             {org.type}
             {org.city ? ` · ${org.city}` : ''}
             {' · '}
             <Link href={routes.organize} className="underline underline-offset-2">
-              All organizers
+              Your Events
             </Link>
           </p>
           <div className="mt-2 flex flex-wrap gap-2">
-            {payoutReady ? <Badge variant="lime">Settlement connected</Badge> : null}
+            {payoutReady ? <Badge variant="lime">Payouts connected</Badge> : null}
+            <Link
+              href={`${routes.organize}/${org.slug}/payouts`}
+              className="text-xs text-text-muted underline underline-offset-2 hover:text-accent"
+            >
+              {payoutReady ? 'Update payouts' : 'Payouts'}
+            </Link>
           </div>
         </div>
         <Button asChild size="lg">
-          <Link href={createHref}>+ New event</Link>
+          <Link href={createHref}>+ Create</Link>
         </Button>
       </header>
 
-      {!payoutReady ? (
-        <div className="space-y-3">
-          <div className="flex flex-col gap-3 rounded-lg border border-accent/50 bg-[linear-gradient(90deg,rgba(255,104,0,0.1),transparent)] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-sm font-semibold text-text-primary">Settlement not connected</p>
-              <p className="text-[12.5px] text-text-secondary">
-                Connect settlement to receive payouts for paid entries and audience passes.
-              </p>
-            </div>
-            <Button type="button" variant="lime" size="sm" onClick={() => setShowPayout((v) => !v)}>
-              {showPayout ? 'Hide setup' : 'Connect settlement'}
-            </Button>
-          </div>
-          {showPayout ? (
-            <OrganizerNextSteps
-              organizerId={org.id}
-              orgSlug={org.slug}
-              orgName={org.orgName}
-              isFirstEvent={events.length === 0}
-              payoutReady={payoutReady}
-              onPayoutReadyChange={setPayoutReady}
-            />
-          ) : null}
-        </div>
+      {wantPayout ? (
+        <OrganizerNextSteps
+          organizerId={org.id}
+          orgSlug={org.slug}
+          orgName={org.orgName}
+          isFirstEvent={events.length === 0}
+          payoutReady={payoutReady}
+          onPayoutReadyChange={setPayoutReady}
+        />
       ) : null}
 
       <div className="space-y-4">
@@ -197,14 +188,12 @@ function OrganizerDashboardInner({ slug }: { slug: string }) {
             title={events.length === 0 ? 'No events yet' : 'Nothing in this tab'}
             body={
               events.length === 0
-                ? 'Create a night — poster, categories, then publish. Manage registrations and door from the event.'
-                : 'Switch tabs, or create another event for this crew.'
+                ? 'Create something happening, then put it up when you’re ready.'
+                : 'Switch tabs, or create another event for this host.'
             }
           >
             <Button asChild>
-              <Link href={createHref}>
-                {events.length === 0 ? 'Create your first event' : 'New event'}
-              </Link>
+              <Link href={createHref}>{events.length === 0 ? 'Create' : '+ Create'}</Link>
             </Button>
           </EmptyState>
         ) : (

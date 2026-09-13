@@ -28,7 +28,7 @@ const navItems = [
   { href: routes.discover, label: 'Discover', icon: 'discover' as const },
   { href: routes.events, label: 'Events', icon: 'events' as const },
   { href: routes.organize, label: 'Organize', icon: 'organize' as const },
-  { href: routes.tickets, label: 'Tickets', icon: 'tickets' as const },
+  { href: routes.tickets, label: 'Passes', icon: 'tickets' as const },
   { href: routes.profile, label: 'Profile', icon: 'profile' as const },
 ];
 
@@ -185,7 +185,7 @@ function SidebarBody({ onNavigate }: { onNavigate?: () => void }) {
 
 export function AppSidebar() {
   return (
-    <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 border-r border-border bg-surface lg:flex lg:flex-col">
+    <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 border-r border-border/70 bg-surface lg:flex lg:flex-col">
       <SidebarBody />
     </aside>
   );

@@ -1,33 +1,29 @@
 'use client';
 
+/**
+ * Event details + media editor.
+ * Competition / audience / early bird live on the Entry surface (Phase C).
+ */
+
 import { routes } from '@cypher/contracts';
 import type { EventType, OrganizerDto, OrganizerEventDetailDto } from '@cypher/contracts';
 import { assertEndAfterStart, assertRegistrationWindow } from '@cypher/validation';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense, useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { toastCopy, toastError, toastPending, toastReject, toastResolve } from '@/components/ui/toaster';
+import { toastCopy, toastPending, toastReject, toastResolve } from '@/components/ui/toaster';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { OrganizeGate } from '@/features/organize/OrganizeGate';
 import { EventMediaLinksEditor } from '@/features/organize/EventMediaLinksEditor';
 import { EVENT_TYPE_GROUPS, eventTypeHint } from '@/features/organize/event-taxonomy';
-import { CategoryNameSuggestions } from '@/features/organize/CategoryNameSuggestions';
 import {
-  EventDaysPricingPanel,
-  spansMultipleCalendarDays,
-} from '@/features/organize/EventDaysPricingPanel';
-import { EventEarlyBirdPanel } from '@/features/organize/EventEarlyBirdPanel';
-import {
-  EVENT_EDIT_STEPS,
-  EventEditStepper,
   isEventEditStepId,
   type EventEditStepId,
 } from '@/features/organize/EventEditStepper';
-import { EventEditNextSteps } from '@/features/organize/EventEditNextSteps';
 import { PosterField } from '@/features/organize/PosterField';
 import { StyleChipsField } from '@/features/organize/StyleChipsField';
 import { VenueMapField, type VenueCoords } from '@/features/organize/VenueMapField';
@@ -50,7 +46,6 @@ function toLocalInputValue(iso: string | null | undefined): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-/** Next Saturday 6pm local, for new-night defaults. */
 function defaultStartLocal(): string {
   const d = new Date();
   const daysUntilSat = (6 - d.getDay() + 7) % 7 || 7;
@@ -59,21 +54,14 @@ function defaultStartLocal(): string {
   return toLocalInputValue(d.toISOString());
 }
 
+const LEGACY_ENTRY_HASHES = new Set(['categories', 'viewers', 'early-bird']);
+
 function stepFromHash(): EventEditStepId {
   if (typeof window === 'undefined') return 'basics';
   const raw = window.location.hash.replace(/^#/, '');
+  if (LEGACY_ENTRY_HASHES.has(raw)) return 'basics';
   return isEventEditStepId(raw) ? raw : 'basics';
 }
-
-type CategoryEdit = {
-  id: string;
-  name: string;
-  capacity: string;
-  priceRupees: string;
-  teamSize: string;
-  reservedCount: number;
-  confirmedCount: number;
-};
 
 export function EventEditor({ slug, eventId }: { slug: string; eventId?: string }) {
   return (
@@ -104,15 +92,7 @@ function EventEditorInner({ slug, eventId }: { slug: string; eventId?: string })
   const [regClosesAt, setRegClosesAt] = useState('');
   const [description, setDescription] = useState('');
   const [posterUrl, setPosterUrl] = useState('');
-  const [styles, setStyles] = useState<string[]>(() => (isCreate ? ['Breaking'] : []));
-  const [categoryEdits, setCategoryEdits] = useState<CategoryEdit[]>([]);
-  const [newCatName, setNewCatName] = useState('');
-  const [newCatCapacity, setNewCatCapacity] = useState('32');
-  const [newCatPrice, setNewCatPrice] = useState('0');
-  const [newCatTeam, setNewCatTeam] = useState('1');
-  const [audienceEnabled, setAudienceEnabled] = useState(false);
-  const [audiencePrice, setAudiencePrice] = useState('0');
-  const [audienceCapacity, setAudienceCapacity] = useState('100');
+  const [styles, setStyles] = useState<string[]>([]);
   const [pending, setPending] = useState(false);
   const [loadError, setLoadError] = useState<unknown>(null);
   const [reloadKey, setReloadKey] = useState(0);
@@ -123,31 +103,35 @@ function EventEditorInner({ slug, eventId }: { slug: string; eventId?: string })
     if (typeof window !== 'undefined') {
       const url = `${window.location.pathname}${window.location.search}#${next}`;
       window.history.replaceState(null, '', url);
-      // Scroll so the step names are in view, not just the body
-      window.requestAnimationFrame(() => {
-        const el = document.getElementById('edit-steps');
-        if (el) {
-          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        } else {
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-      });
-    }
-  }
-
-  useEffect(() => {
-    setStep(stepFromHash());
-    function onHashChange() {
-      setStep(stepFromHash());
       window.requestAnimationFrame(() => {
         const el = document.getElementById('edit-steps');
         if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
         else window.scrollTo({ top: 0, behavior: 'smooth' });
       });
     }
+  }
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !eventId) return;
+    const raw = window.location.hash.replace(/^#/, '');
+    if (LEGACY_ENTRY_HASHES.has(raw)) {
+      router.replace(routes.organizeEventEntry(slug, eventId));
+    }
+  }, [eventId, router, slug]);
+
+  useEffect(() => {
+    setStep(stepFromHash());
+    function onHashChange() {
+      const raw = window.location.hash.replace(/^#/, '');
+      if (eventId && LEGACY_ENTRY_HASHES.has(raw)) {
+        router.replace(routes.organizeEventEntry(slug, eventId));
+        return;
+      }
+      setStep(stepFromHash());
+    }
     window.addEventListener('hashchange', onHashChange);
     return () => window.removeEventListener('hashchange', onHashChange);
-  }, []);
+  }, [eventId, router, slug]);
 
   function syncFromEvent(detail: OrganizerEventDetailDto) {
     setEvent(detail);
@@ -167,23 +151,6 @@ function EventEditorInner({ slug, eventId }: { slug: string; eventId?: string })
     setDescription(detail.description ?? '');
     setPosterUrl(detail.posterUrl ?? '');
     setStyles(detail.styles ?? []);
-    const audience = detail.audience;
-    setAudienceEnabled(Boolean(audience?.enabled));
-    setAudiencePrice(String(Math.round((audience?.priceMinor ?? 0) / 100)));
-    setAudienceCapacity(String(audience?.capacity || 100));
-    setCategoryEdits(
-      detail.categories
-        .filter((cat) => cat.entryType !== 'viewer')
-        .map((cat) => ({
-          id: cat.id,
-          name: cat.name,
-          capacity: String(cat.capacity),
-          priceRupees: String(Math.round(cat.priceMinor / 100)),
-          teamSize: String(cat.teamSize),
-          reservedCount: cat.reservedCount,
-          confirmedCount: cat.confirmedCount,
-        })),
-    );
   }
 
   useEffect(() => {
@@ -202,9 +169,7 @@ function EventEditorInner({ slug, eventId }: { slug: string; eventId?: string })
         if (cancelled) return;
         syncFromEvent(detail);
       } catch (err) {
-        if (!cancelled) {
-          setLoadError(err);
-        }
+        if (!cancelled) setLoadError(err);
       }
     }
     void load();
@@ -213,36 +178,14 @@ function EventEditorInner({ slug, eventId }: { slug: string; eventId?: string })
     };
   }, [auth.api, eventId, slug, reloadKey]);
 
-  const isMultiDay = useMemo(() => {
-    if (!event) return false;
-    return spansMultipleCalendarDays(event.startTime, event.endTime) || event.days.length >= 2;
-  }, [event]);
-
-  const stepIndex = EVENT_EDIT_STEPS.findIndex((s) => s.id === step);
-  const prevStep = stepIndex > 0 ? EVENT_EDIT_STEPS[stepIndex - 1]?.id : null;
-  const nextStep =
-    stepIndex >= 0 && stepIndex < EVENT_EDIT_STEPS.length - 1
-      ? EVENT_EDIT_STEPS[stepIndex + 1]?.id
-      : null;
-
-  /** What’s cooking — create draft on first save, then update. */
   async function saveBasics() {
     if (!org) return;
     setPending(true);
     const tid = toastPending(toastCopy.saving);
     try {
-      if (!title.trim()) {
-        throw new Error('Name the night first');
-      }
-      if (!city.trim()) {
-        throw new Error('Say which city');
-      }
-      if (!startTime) {
-        throw new Error('Pick a start time');
-      }
-      if (styles.length === 0) {
-        throw new Error('Add at least one dance style');
-      }
+      if (!title.trim()) throw new Error('Add an event name');
+      if (!city.trim()) throw new Error('Add a city');
+      if (!startTime) throw new Error('Pick a start time');
       const startIso = toIsoFromLocal(startTime);
       const endIso = endTime ? toIsoFromLocal(endTime) : null;
       const opensIso = regOpensAt ? toIsoFromLocal(regOpensAt) : null;
@@ -268,15 +211,13 @@ function EventEditorInner({ slug, eventId }: { slug: string; eventId?: string })
           registrationClosesAt: closesIso,
           description: description || undefined,
           posterUrl: posterUrl.trim() || undefined,
-          styles,
+          styles: styles.length > 0 ? styles : undefined,
         });
         toastResolve(tid, toastCopy.basicsSaved);
-        router.replace(`${routes.organize}/${org.slug}/events/${created.id}/edit?fresh=1`);
+        router.replace(`${routes.organize}/${org.slug}/events/${created.id}?created=1`);
         return;
       }
 
-      // Omit audiencePass here: single-day viewers save on the Viewers step;
-      // multi-day viewers come from EventDaysPricingPanel generate — don't toggle a conflicting pass.
       const updated = await auth.api.updateOrganizerEvent(org.id, event.id, {
         title: title.trim(),
         city: city.trim(),
@@ -290,32 +231,10 @@ function EventEditorInner({ slug, eventId }: { slug: string; eventId?: string })
         registrationClosesAt: closesIso,
         description: description || null,
         posterUrl: posterUrl.trim() || null,
-        styles,
+        styles: styles.length > 0 ? styles : [],
       });
       syncFromEvent(updated);
       toastResolve(tid, toastCopy.basicsSaved);
-    } catch (err) {
-      toastReject(tid, toastCopy.saveFailed, err instanceof Error ? err.message : undefined);
-    } finally {
-      setPending(false);
-    }
-  }
-
-  async function saveViewersPass() {
-    if (!org || !event || isMultiDay) return;
-    setPending(true);
-    const tid = toastPending(toastCopy.saving);
-    try {
-      const updated = await auth.api.updateOrganizerEvent(org.id, event.id, {
-        audiencePass: {
-          enabled: audienceEnabled,
-          priceMinor: Math.round(Number(audiencePrice || 0) * 100),
-          capacity: Number(audienceCapacity || 100),
-          name: 'Viewers pass',
-        },
-      });
-      syncFromEvent(updated);
-      toastResolve(tid, audienceEnabled ? toastCopy.viewersOn : toastCopy.viewersOff);
     } catch (err) {
       toastReject(tid, toastCopy.saveFailed, err instanceof Error ? err.message : undefined);
     } finally {
@@ -339,71 +258,6 @@ function EventEditorInner({ slug, eventId }: { slug: string; eventId?: string })
       );
     } catch (err) {
       toastReject(tid, toastCopy.publishFailed, err instanceof Error ? err.message : undefined);
-    } finally {
-      setPending(false);
-    }
-  }
-
-  async function saveCategory(row: CategoryEdit) {
-    if (!org || !event) return;
-    setPending(true);
-    const tid = toastPending(toastCopy.saving);
-    try {
-      const updated = await auth.api.updateOrganizerEventCategory(org.id, event.id, row.id, {
-        name: row.name.trim(),
-        capacity: Number(row.capacity),
-        priceMinor: Math.round(Number(row.priceRupees || 0) * 100),
-        teamSize: Number(row.teamSize || 1),
-      });
-      syncFromEvent(updated);
-      toastResolve(tid, toastCopy.categoryUpdated(row.name.trim()));
-    } catch (err) {
-      toastReject(tid, toastCopy.saveFailed, err instanceof Error ? err.message : undefined);
-    } finally {
-      setPending(false);
-    }
-  }
-
-  async function removeCategory(row: CategoryEdit) {
-    if (!org || !event) return;
-    if (!window.confirm(`Delete category “${row.name}”?`)) return;
-    setPending(true);
-    const tid = toastPending(toastCopy.saving);
-    try {
-      const updated = await auth.api.deleteOrganizerEventCategory(org.id, event.id, row.id);
-      syncFromEvent(updated);
-      toastResolve(tid, toastCopy.categoryDeleted(row.name));
-    } catch (err) {
-      toastReject(tid, toastCopy.saveFailed, err instanceof Error ? err.message : undefined);
-    } finally {
-      setPending(false);
-    }
-  }
-
-  async function addCategory() {
-    if (!org || !event) return;
-    const name = newCatName.trim();
-    if (!name) {
-      toastError(toastCopy.categoryNameNeeded);
-      return;
-    }
-    setPending(true);
-    const tid = toastPending(toastCopy.saving);
-    try {
-      const updated = await auth.api.addOrganizerEventCategory(org.id, event.id, {
-        name,
-        capacity: Number(newCatCapacity),
-        priceMinor: Math.round(Number(newCatPrice || 0) * 100),
-        teamSize: Number(newCatTeam || 1),
-      });
-      syncFromEvent(updated);
-      setNewCatName('');
-      setNewCatCapacity('32');
-      setNewCatPrice('0');
-      setNewCatTeam('1');
-      toastResolve(tid, toastCopy.categoryAdded);
-    } catch (err) {
-      toastReject(tid, toastCopy.saveFailed, err instanceof Error ? err.message : undefined);
     } finally {
       setPending(false);
     }
@@ -444,52 +298,35 @@ function EventEditorInner({ slug, eventId }: { slug: string; eventId?: string })
   const viewHref = event
     ? `${routes.organize}/${org.slug}/events/${event.id}`
     : `${routes.organize}/${org.slug}`;
+  const entryHref = event ? routes.organizeEventEntry(org.slug, event.id) : null;
   const isPublished = event?.status === 'published';
-  const hasViewerCats = (event?.viewerCategories?.length ?? 0) > 0;
-  const saveWhatsCookingFirst = (
-    <p className="rounded-md border border-dashed border-border bg-surface px-4 py-6 text-sm text-text-secondary">
-      Save <span className="font-semibold text-text-primary">What’s cooking</span> first — then
-      categories, viewers, early bird, and media unlock here.
-    </p>
-  );
 
   return (
     <div className="mx-auto max-w-5xl space-y-6 px-4 py-10 pb-24 md:px-7">
       <PageBreadcrumb
         items={[
           { label: 'Organize', href: routes.organize },
-          { label: org.orgName, href: `${routes.organize}/${org.slug}` },
+          { label: 'Your Events', href: routes.organize },
           {
-            label:
-              !event || event.title === 'Untitled night' || !title.trim()
-                ? 'New night'
-                : title.trim() || event.title,
+            label: !event || !title.trim() ? 'Event' : title.trim() || event.title,
             href: viewHref,
           },
           { label: isFresh ? 'New' : 'Edit' },
         ]}
       />
-      <h1 className="display-title text-4xl md:text-5xl">
-        {isFresh ? 'New night' : 'Edit event'}
-      </h1>
+      <h1 className="display-title text-4xl md:text-5xl">{isFresh ? 'New event' : 'Edit event'}</h1>
 
-      {event ? (
-        <Suspense fallback={null}>
-          <EventEditNextSteps
-            checklist={{
-              hasCategories: categoryEdits.length > 0,
-              hasViewersPass:
-                audienceEnabled || Boolean(event.audience?.enabled) || hasViewerCats,
-              hasPoster: Boolean(posterUrl.trim() || event.posterUrl),
-              hasVenuePin: coords != null,
-              hasMedia: (event.mediaLinks?.length ?? 0) > 0,
-              isDraft: event.status === 'draft',
-            }}
-          />
-        </Suspense>
+      {entryHref ? (
+        <p className="text-sm text-text-secondary">
+          Competition and audience are under{' '}
+          <Link href={entryHref} className="font-semibold text-accent underline underline-offset-2">
+            Entry
+          </Link>
+          .
+        </p>
       ) : null}
 
-      <div className="flex flex-col gap-3 rounded-lg border border-border bg-surface px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 rounded-2xl border border-[#2a2a2a] bg-[#141414] px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-sm font-semibold text-text-primary">
             {!event
@@ -502,10 +339,10 @@ function EventEditorInner({ slug, eventId }: { slug: string; eventId?: string })
           </p>
           <p className="text-xs text-text-secondary">
             {!event
-              ? 'Fill What’s cooking and save — then add categories and the rest'
+              ? 'Save details first'
               : isPublished
                 ? 'Visible on Discover and Events'
-                : 'Not visible publicly until you publish'}
+                : 'Not visible publicly until you put it up'}
           </p>
           <div className="mt-2 flex flex-wrap gap-2">
             <Badge variant={isPublished ? 'lime' : 'muted'}>{event?.status ?? 'draft'}</Badge>
@@ -519,11 +356,28 @@ function EventEditorInner({ slug, eventId }: { slug: string; eventId?: string })
           disabled={pending || !event}
           onClick={() => void togglePublish()}
         >
-          {isPublished ? 'Unpublish' : 'Publish'}
+          {isPublished ? 'Unpublish' : 'Put it up'}
         </Button>
       </div>
 
-      <EventEditStepper active={step} onChange={goToStep} />
+      {step === 'media' ? (
+        <div className="flex items-center justify-between gap-3">
+          <button
+            type="button"
+            onClick={() => goToStep('basics')}
+            className="inline-flex items-center gap-1 text-sm text-text-muted transition-colors hover:text-accent"
+          >
+            ← Back to details
+          </button>
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-text-muted">
+            Manage media
+          </p>
+        </div>
+      ) : (
+        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-text-muted">
+          Public details
+        </p>
+      )}
 
       {step === 'basics' ? (
         <section id="basics" className="scroll-mt-24 space-y-4">
@@ -577,7 +431,7 @@ function EventEditorInner({ slug, eventId }: { slug: string; eventId?: string })
               End
               <Input type="datetime-local" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
               <span className="block text-[11px] font-normal text-text-muted">
-                Optional — set end on another day for multi-day pricing
+                Optional — set end on another day for multi-day audience passes
               </span>
             </label>
             <label className="block space-y-2 text-sm font-semibold text-text-secondary">
@@ -613,11 +467,13 @@ function EventEditorInner({ slug, eventId }: { slug: string; eventId?: string })
           />
           <PosterField value={posterUrl} onChange={setPosterUrl} disabled={pending} />
           <div className="space-y-2 text-sm font-semibold text-text-secondary">
-            <p>Dance styles</p>
+            <p>
+              Dance styles <span className="font-normal text-text-muted">(optional)</span>
+            </p>
             <StyleChipsField value={styles} onChange={setStyles} disabled={pending} />
           </div>
           <label className="block space-y-2 text-sm font-semibold text-text-secondary">
-            About this night
+            About
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -625,354 +481,66 @@ function EventEditorInner({ slug, eventId }: { slug: string; eventId?: string })
               className="flex w-full rounded-md border border-border bg-elevated px-3 py-2 font-body text-sm text-text-primary focus-visible:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
             />
           </label>
+
+          {event ? (
+            <div className="rounded-2xl border border-[#2a2a2a] bg-[#141414] px-4 py-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-text-muted">
+                Media
+              </p>
+              <p className="mt-1 text-sm text-text-secondary">
+                {(event.mediaLinks ?? []).length} link
+                {(event.mediaLinks ?? []).length === 1 ? '' : 's'}
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                className="mt-3 rounded-xl"
+                onClick={() => goToStep('media')}
+              >
+                Manage media
+              </Button>
+            </div>
+          ) : null}
+
           <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
             <Button asChild variant="ghost">
               <Link href={viewHref}>{event ? 'Back to event' : 'Cancel'}</Link>
             </Button>
-            <div className="flex flex-wrap gap-2">
-              <Button type="button" disabled={pending} onClick={() => void saveBasics()}>
-                Save what’s cooking
-              </Button>
-              {nextStep && event ? (
-                <Button type="button" variant="outline" onClick={() => goToStep(nextStep)}>
-                  Next
-                </Button>
-              ) : null}
-            </div>
+            <Button type="button" disabled={pending} onClick={() => void saveBasics()}>
+              Save details
+            </Button>
           </div>
-        </section>
-      ) : null}
-
-      {step === 'categories' ? (
-        <section id="categories" className="scroll-mt-24 space-y-4">
-          {!event ? (
-            saveWhatsCookingFirst
-          ) : (
-            <>
-          <div className="flex items-center justify-between gap-3">
-            <h2 className="text-sm font-bold text-text-primary">Categories</h2>
-            <span className="text-[12.5px] text-text-muted">1v1 / crew · prelims · exhibition</span>
-          </div>
-          <p className="text-xs leading-relaxed text-text-muted">
-            How people enter — the format. Solo, pairs, or full crew against another. Tap a chip or
-            type your own.
-          </p>
-
-          <div className="space-y-3">
-            {categoryEdits.length === 0 ? (
-              <p className="rounded-md border border-dashed border-border px-3 py-4 text-sm text-text-muted">
-                No categories yet. Add 1v1 / 2v2 / open below before you publish.
-              </p>
-            ) : null}
-            {categoryEdits.map((row) => {
-              const occupied = row.reservedCount + row.confirmedCount;
-              const canDelete = occupied === 0;
-              return (
-                <div key={row.id} className="rounded-lg border border-border bg-surface p-[18px]">
-                  <div className="mb-3.5 flex items-center justify-between gap-2">
-                    <p className="text-sm font-bold text-text-primary">{row.name || 'Category'}</p>
-                    <button
-                      type="button"
-                      className="text-xs text-text-muted hover:text-error disabled:opacity-40"
-                      disabled={pending || !canDelete}
-                      title={!canDelete ? 'Category has reserved/confirmed spots' : undefined}
-                      onClick={() => void removeCategory(row)}
-                    >
-                      Remove
-                    </button>
-                  </div>
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                    <label className="block space-y-2 text-sm text-text-secondary">
-                      <span className="font-semibold text-text-primary">Category name</span>
-                      <CategoryNameSuggestions
-                        value={row.name}
-                        onPick={(name) =>
-                          setCategoryEdits((rows) =>
-                            rows.map((item) => (item.id === row.id ? { ...item, name } : item)),
-                          )
-                        }
-                        disabled={pending}
-                      />
-                      <Input
-                        value={row.name}
-                        onChange={(e) =>
-                          setCategoryEdits((rows) =>
-                            rows.map((item) =>
-                              item.id === row.id ? { ...item, name: e.target.value } : item,
-                            ),
-                          )
-                        }
-                        placeholder="e.g. 1v1, Crew, Prelims"
-                      />
-                    </label>
-                    <label className="block space-y-2 text-sm text-text-secondary">
-                      <span className="font-semibold text-text-primary">Spots</span>
-                      <Input
-                        type="number"
-                        min={Math.max(1, occupied)}
-                        value={row.capacity}
-                        onChange={(e) =>
-                          setCategoryEdits((rows) =>
-                            rows.map((item) =>
-                              item.id === row.id ? { ...item, capacity: e.target.value } : item,
-                            ),
-                          )
-                        }
-                      />
-                      <span className="block text-[11px] text-text-muted">
-                        {occupied} already locked in
-                      </span>
-                    </label>
-                    <label className="block space-y-2 text-sm text-text-secondary">
-                      <span className="font-semibold text-text-primary">Team size</span>
-                      <span className="block text-[11px] text-text-muted">1 = solo · 2 = duo</span>
-                      <Input
-                        type="number"
-                        min={1}
-                        max={50}
-                        value={row.teamSize}
-                        onChange={(e) =>
-                          setCategoryEdits((rows) =>
-                            rows.map((item) =>
-                              item.id === row.id ? { ...item, teamSize: e.target.value } : item,
-                            ),
-                          )
-                        }
-                      />
-                    </label>
-                  </div>
-                  <label className="mt-3 block space-y-2 text-sm text-text-secondary sm:max-w-xs">
-                    <span className="font-semibold text-text-primary">Fee (₹)</span>
-                    <span className="block text-[11px] text-text-muted">
-                      0 = free · Early bird is on step 4
-                    </span>
-                    <Input
-                      type="number"
-                      min={0}
-                      value={row.priceRupees}
-                      onChange={(e) =>
-                        setCategoryEdits((rows) =>
-                          rows.map((item) =>
-                            item.id === row.id ? { ...item, priceRupees: e.target.value } : item,
-                          ),
-                        )
-                      }
-                      placeholder="0 for free"
-                    />
-                  </label>
-                  <Button
-                    type="button"
-                    size="sm"
-                    className="mt-3"
-                    disabled={pending}
-                    onClick={() => void saveCategory(row)}
-                  >
-                    Save category
-                  </Button>
-                </div>
-              );
-            })}
-
-            <div className="rounded-lg border border-dashed border-border bg-surface/50 p-[18px]">
-              <p className="mb-3 text-sm font-bold text-text-primary">+ Add category</p>
-              <label className="block space-y-2 text-sm text-text-secondary">
-                <span className="font-semibold text-text-primary">Category name</span>
-                <CategoryNameSuggestions value={newCatName} onPick={setNewCatName} disabled={pending} />
-                <Input
-                  value={newCatName}
-                  onChange={(e) => setNewCatName(e.target.value)}
-                  placeholder="e.g. Open, Exhibition"
-                />
-              </label>
-              <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
-                <label className="block space-y-2 text-sm text-text-secondary">
-                  <span className="font-semibold text-text-primary">Spots</span>
-                  <Input
-                    type="number"
-                    min={1}
-                    value={newCatCapacity}
-                    onChange={(e) => setNewCatCapacity(e.target.value)}
-                  />
-                </label>
-                <label className="block space-y-2 text-sm text-text-secondary">
-                  <span className="font-semibold text-text-primary">Fee (₹)</span>
-                  <Input
-                    type="number"
-                    min={0}
-                    value={newCatPrice}
-                    onChange={(e) => setNewCatPrice(e.target.value)}
-                  />
-                </label>
-                <label className="block space-y-2 text-sm text-text-secondary">
-                  <span className="font-semibold text-text-primary">Team size</span>
-                  <Input
-                    type="number"
-                    min={1}
-                    value={newCatTeam}
-                    onChange={(e) => setNewCatTeam(e.target.value)}
-                  />
-                </label>
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                className="mt-3"
-                disabled={pending}
-                onClick={() => void addCategory()}
-              >
-                Add category
-              </Button>
-            </div>
-          </div>
-
-          <StepNav prev={prevStep} next={nextStep} onGo={goToStep} />
-            </>
-          )}
-        </section>
-      ) : null}
-
-      {step === 'viewers' ? (
-        <section id="viewers" className="scroll-mt-24 space-y-4">
-          {!event ? (
-            saveWhatsCookingFirst
-          ) : (
-            <>
-          <h2 className="text-sm font-bold text-text-primary">Viewers</h2>
-          {isMultiDay ? (
-            <EventDaysPricingPanel
-              organizerId={org.id}
-              eventId={event.id}
-              event={event}
-              onUpdated={(updated) => syncFromEvent(updated)}
-            />
-          ) : (
-            <div className="rounded-lg border border-border bg-surface p-[18px] space-y-3">
-              <p className="text-sm text-text-secondary">
-                For people who come to watch — not compete. Optional if it’s compete-only.
-              </p>
-              <label className="flex min-h-11 cursor-pointer items-start gap-3 rounded-md border border-border bg-elevated/40 px-3 py-3 text-sm">
-                <input
-                  type="checkbox"
-                  className="mt-1 h-4 w-4"
-                  checked={audienceEnabled}
-                  onChange={(e) => setAudienceEnabled(e.target.checked)}
-                />
-                <span>
-                  <span className="font-semibold text-text-primary">Sell a viewers pass</span>
-                  <span className="mt-0.5 block text-xs text-text-muted">
-                    Crowd who aren’t entering a category
-                  </span>
-                </span>
-              </label>
-              {audienceEnabled ? (
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <label className="block space-y-2 text-sm text-text-secondary">
-                    <span className="font-semibold text-text-primary">Pass fee (₹)</span>
-                    <Input
-                      type="number"
-                      min={0}
-                      value={audiencePrice}
-                      onChange={(e) => setAudiencePrice(e.target.value)}
-                    />
-                  </label>
-                  <label className="block space-y-2 text-sm text-text-secondary">
-                    <span className="font-semibold text-text-primary">Viewer spots</span>
-                    <Input
-                      type="number"
-                      min={1}
-                      value={audienceCapacity}
-                      onChange={(e) => setAudienceCapacity(e.target.value)}
-                    />
-                  </label>
-                </div>
-              ) : null}
-              <Button type="button" disabled={pending} onClick={() => void saveViewersPass()}>
-                Save viewers pass
-              </Button>
-            </div>
-          )}
-          <StepNav prev={prevStep} next={nextStep} onGo={goToStep} />
-            </>
-          )}
-        </section>
-      ) : null}
-
-      {step === 'early-bird' ? (
-        <section id="early-bird" className="scroll-mt-24 space-y-4">
-          {!event ? (
-            saveWhatsCookingFirst
-          ) : (
-            <>
-          <EventEarlyBirdPanel
-            organizerId={org.id}
-            eventId={event.id}
-            event={event}
-            onUpdated={(updated) => syncFromEvent(updated)}
-          />
-          <StepNav prev={prevStep} next={nextStep} onGo={goToStep} />
-            </>
-          )}
         </section>
       ) : null}
 
       {step === 'media' ? (
         <section id="media" className="scroll-mt-24 space-y-4">
           {!event ? (
-            saveWhatsCookingFirst
+            <p className="rounded-md border border-dashed border-border bg-surface px-4 py-6 text-sm text-text-secondary">
+              Save event details first — then media unlocks here.
+            </p>
           ) : (
             <>
-          <h2 className="text-sm font-bold text-text-primary">Media</h2>
-          <EventMediaLinksEditor
-            organizerId={org.id}
-            eventId={event.id}
-            links={event.mediaLinks ?? []}
-            categories={event.categories
-              .filter((c) => c.entryType !== 'viewer')
-              .map((c) => ({ id: c.id, name: c.name }))}
-            onUpdated={(updated) => syncFromEvent(updated)}
-          />
-          <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-            {prevStep ? (
-              <Button type="button" variant="outline" onClick={() => goToStep(prevStep)}>
-                Prev
-              </Button>
-            ) : (
-              <span />
-            )}
-            <Button asChild variant="ghost">
-              <Link href={viewHref}>Done — view event</Link>
-            </Button>
-          </div>
+              <EventMediaLinksEditor
+                organizerId={org.id}
+                eventId={event.id}
+                links={event.mediaLinks ?? []}
+                categories={event.categories
+                  .filter((c) => c.entryType !== 'viewer')
+                  .map((c) => ({ id: c.id, name: c.name }))}
+                onUpdated={(updated) => syncFromEvent(updated)}
+              />
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+                <Button type="button" variant="outline" onClick={() => goToStep('basics')}>
+                  Back to details
+                </Button>
+                <Button asChild variant="ghost">
+                  <Link href={viewHref}>Done</Link>
+                </Button>
+              </div>
             </>
           )}
         </section>
-      ) : null}
-    </div>
-  );
-}
-
-function StepNav({
-  prev,
-  next,
-  onGo,
-}: {
-  prev: EventEditStepId | null | undefined;
-  next: EventEditStepId | null | undefined;
-  onGo: (step: EventEditStepId) => void;
-}) {
-  return (
-    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
-      {prev ? (
-        <Button type="button" variant="outline" onClick={() => onGo(prev)}>
-          Prev
-        </Button>
-      ) : (
-        <span />
-      )}
-      {next ? (
-        <Button type="button" variant="outline" onClick={() => onGo(next)}>
-          Next
-        </Button>
       ) : null}
     </div>
   );

@@ -17,7 +17,7 @@ export default function AppShellLayout({ children }: Readonly<{ children: ReactN
           <div className="flex min-h-dvh bg-bg">
             <AppSidebar />
             <div className="flex min-w-0 flex-1 flex-col">
-              <header className="sticky top-0 z-30 flex items-center gap-2 border-b border-border bg-bg/85 px-3 py-3 backdrop-blur-md md:px-6">
+              <header className="sticky top-0 z-30 flex items-center gap-2 border-b border-border/60 bg-bg/85 px-3 py-3 backdrop-blur-md md:px-6">
                 <MobileNav />
                 <Suspense fallback={<SearchBarFallback />}>
                   <SearchBar />

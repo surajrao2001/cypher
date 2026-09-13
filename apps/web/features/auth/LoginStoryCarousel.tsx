@@ -44,8 +44,8 @@ const SLIDES: StorySlide[] = [
   {
     id: 'organize',
     kicker: 'For organizers',
-    title: 'You run the floor. We’ll run what’s around it.',
-    body: 'Categories, registrations, tickets, door check-in — so you can stay on the music, not the spreadsheet.',
+    title: 'Got something happening?',
+    body: 'Entry, registrations, passes, and check-in — so you can stay on the music.',
     imageSrc: '/login/floor-04.jpg',
     imageAlt: 'B-boy freeze in front of a watching crowd',
   },

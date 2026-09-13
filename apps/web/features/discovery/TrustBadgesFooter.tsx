@@ -4,12 +4,12 @@ const badges: Array<{ icon: ByndIconName; title: string; body: string }> = [
   {
     icon: 'tickets',
     title: 'Hold a spot',
-    body: 'Reserve a category entry, confirm free events, and get a registration code.',
+    body: 'Reserve an entry, confirm free events, and get a registration code.',
   },
   {
     icon: 'shield',
-    title: 'Digital tickets',
-    body: 'Confirmed entries show a QR on My Tickets — bring it to the door.',
+    title: 'Digital passes',
+    body: 'Confirmed entries show a QR on Passes — bring it to check-in.',
   },
   {
     icon: 'bell',

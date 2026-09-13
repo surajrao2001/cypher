@@ -167,10 +167,10 @@ export function assertCapacityFloor(capacity: number, occupied: number): void {
 }
 
 export function assertPublishCategories(
-  categories: Array<{ entryType: string }>,
+  _categories: Array<{ entryType: string }>,
 ): void {
-  const compete = categories.filter((c) => c.entryType !== 'viewer');
-  if (compete.length < 1) {
-    throw new Error('Add at least one compete category before publishing');
-  }
+  // Categories are optional at publish — free sessions / announcement nights
+  // can go live without compete or viewer lanes. Registration stays gated by
+  // whatever categories exist later.
+  void _categories;
 }

@@ -183,7 +183,7 @@ export function ProfilePanel() {
         >
           <label className="block space-y-2 text-sm text-text-secondary">
             <span className="flex flex-wrap items-baseline gap-2">
-              <span className="font-semibold text-text-primary">What should we call you, cuh?</span>
+              <span className="font-semibold text-text-primary">What should we call you?</span>
               <span className="text-[11px] font-medium uppercase tracking-[0.12em] text-accent/80">
                 needed
               </span>
@@ -227,7 +227,7 @@ export function ProfilePanel() {
               value={crew}
               onChange={(event) => setCrew(event.target.value)}
               className="rounded-sm"
-              placeholder="If you ride with one"
+              placeholder="Crew or collective (optional)"
             />
           </label>
           <label className="block space-y-2 text-sm text-text-secondary">
@@ -430,7 +430,7 @@ export function ProfilePanel() {
                 <p className="font-display text-2xl text-text-primary">
                   {ticketCount === null ? '—' : ticketCount}
                 </p>
-                <p className="text-xs text-text-muted">Tickets</p>
+                <p className="text-xs text-text-muted">Passes</p>
               </div>
               <div>
                 <p className="font-display text-2xl text-text-primary">

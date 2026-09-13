@@ -64,6 +64,7 @@ function toCategoryDto(category: CategoryRecord, now = new Date()): EventCategor
     minTeamSize: category.minTeamSize,
     maxTeamSize: category.maxTeamSize,
     teamSize: category.maxTeamSize,
+    posterUrl: category.posterUrl ?? null,
     priceTiers: tiers.map(toTierDto),
     validDayIds: validDays.map((row) => row.dayId),
     activeTierName: resolved.tier?.name ?? null,

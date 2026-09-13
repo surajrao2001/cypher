@@ -10,11 +10,10 @@ import { Button } from '@/components/ui/button';
 import { EventCard } from '@/features/discovery/EventCard';
 import { EmptyState } from '@/features/shell/EmptyState';
 import { EventTypeTabs } from '@/features/discovery/EventTypeTabs';
-import { HeroCarousel } from '@/features/discovery/HeroCarousel';
 import { SceneEmptyBoard } from '@/features/discovery/SceneEmptyBoard';
 import { TrustBadgesFooter } from '@/features/discovery/TrustBadgesFooter';
 import { CITIES } from '@/features/discovery/catalog';
-import { applyDiscoverFilters, featuredForFilters } from '@/features/discovery/filter-events';
+import { applyDiscoverFilters } from '@/features/discovery/filter-events';
 import { useDiscoverQuery } from '@/features/discovery/use-discover-query';
 import { cn } from '@/lib/utils';
 
@@ -28,7 +27,6 @@ export function DiscoverBoard({ catalog }: { catalog: EventListResponse }) {
   };
   const boardEmpty = catalog.items.length === 0;
   const filtered = applyDiscoverFilters(catalog.items, filters);
-  const featured = featuredForFilters(catalog.items, filters);
   const activeCity = filters.city && filters.city !== 'all' ? filters.city : null;
 
   if (boardEmpty) {
@@ -45,7 +43,7 @@ export function DiscoverBoard({ catalog }: { catalog: EventListResponse }) {
   const battles = filtered.filter((e) => e.eventType.toLowerCase().includes('battle'));
   const jams = filtered.filter((e) => {
     const t = e.eventType.toLowerCase();
-    return t.includes('jam') || t.includes('cypher');
+    return t.includes('jam') || t.includes('cypher') || t.includes('session');
   });
   const battleIds = new Set(battles.map((e) => e.id));
   const jamIds = new Set(jams.map((e) => e.id));
@@ -53,14 +51,16 @@ export function DiscoverBoard({ catalog }: { catalog: EventListResponse }) {
 
   return (
     <div className="flex min-h-full flex-col">
-      <div className="flex flex-1 flex-col gap-8 px-4 py-6 md:gap-10 md:px-6 md:py-8">
+      <div className="flex flex-1 flex-col gap-7 px-4 py-6 md:gap-9 md:px-6 md:py-8">
         <header className="space-y-5">
           <div>
             <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-text-muted">
               <span className="size-1.5 rounded-full bg-accent" aria-hidden />
               The operating layer for the Indian dance scene
             </p>
-            <h1 className="display-title mt-2 text-5xl md:text-7xl">Tonight starts here.</h1>
+            <h1 className="display-title mt-2 text-5xl text-text-primary md:text-7xl">
+              Tonight starts here.
+            </h1>
           </div>
 
           <div className="flex flex-wrap gap-2">
@@ -94,12 +94,8 @@ export function DiscoverBoard({ catalog }: { catalog: EventListResponse }) {
             ))}
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <EventTypeTabs />
-          </div>
+          <EventTypeTabs />
         </header>
-
-        {featured.length > 0 ? <HeroCarousel events={featured} /> : null}
 
         {filtered.length === 0 ? (
           <EmptyState
@@ -120,20 +116,20 @@ export function DiscoverBoard({ catalog }: { catalog: EventListResponse }) {
           <div className="space-y-10">
             {battles.length > 0 ? (
               <Section title="Battles" href={routes.events}>
-                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                <PosterGrid>
                   {battles.map((event) => (
                     <EventCard key={event.id} event={event} />
                   ))}
-                </div>
+                </PosterGrid>
               </Section>
             ) : null}
             {jams.length > 0 ? (
-              <Section title="Jams & cyphers" href={routes.events}>
-                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              <Section title="Jams & sessions" href={routes.events}>
+                <PosterGrid>
                   {jams.map((event) => (
                     <EventCard key={event.id} event={event} />
                   ))}
-                </div>
+                </PosterGrid>
               </Section>
             ) : null}
             {rest.length > 0 || (battles.length === 0 && jams.length === 0) ? (
@@ -141,26 +137,26 @@ export function DiscoverBoard({ catalog }: { catalog: EventListResponse }) {
                 title={battles.length || jams.length ? 'More nights' : 'Happening soon'}
                 href={routes.events}
               >
-                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                <PosterGrid>
                   {(battles.length || jams.length ? rest : filtered).map((event) => (
                     <EventCard key={event.id} event={event} />
                   ))}
-                </div>
+                </PosterGrid>
               </Section>
             ) : null}
 
-            <aside className="flex flex-col gap-4 rounded-xl border border-border bg-surface px-5 py-5 sm:flex-row sm:items-center sm:justify-between">
+            <aside className="flex flex-col gap-4 border-t border-border pt-8 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <p className="font-display text-2xl uppercase tracking-[0.04em] text-text-primary">
-                  You run the floor?
+                  Got something happening?
                 </p>
-                <p className="mt-1 text-sm text-text-secondary">
-                  Publish a night — registrations, passes, and door check-in in one place.
+                <p className="mt-1 max-w-md text-sm text-text-secondary">
+                  Put it up — registrations, passes, and check-in in one place.
                 </p>
               </div>
               <Button asChild className="rounded-full shrink-0">
                 <Link href={routes.organize}>
-                  Get started <span aria-hidden>→</span>
+                  Organize <span aria-hidden>→</span>
                 </Link>
               </Button>
             </aside>
@@ -169,6 +165,12 @@ export function DiscoverBoard({ catalog }: { catalog: EventListResponse }) {
       </div>
       <TrustBadgesFooter />
     </div>
+  );
+}
+
+function PosterGrid({ children }: { children: ReactNode }) {
+  return (
+    <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-4">{children}</div>
   );
 }
 

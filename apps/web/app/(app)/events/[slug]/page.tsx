@@ -6,9 +6,9 @@ import { notFound } from 'next/navigation';
 
 import { ByndIcon } from '@/components/icons/bynd8';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { EventMediaSection } from '@/features/discovery/EventMediaSection';
 import { EventPoster } from '@/features/discovery/EventPoster';
+import { OpenRegisterButton } from '@/features/discovery/OpenRegisterButton';
 import { StickyRegisterBar } from '@/features/discovery/StickyRegisterBar';
 import { VenueMapView } from '@/features/discovery/VenueMapView';
 import { spotsTone } from '@/features/discovery/catalog';
@@ -91,6 +91,7 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
       ? event.viewerCategories
       : event.categories.filter((c) => c.entryType === 'viewer');
   const viewersOpen = viewers.length > 0 || event.audience?.enabled;
+  const hasEntry = compete.length > 0 || viewersOpen;
   const hasPin = event.venueLatitude != null && event.venueLongitude != null;
 
   return (
@@ -137,24 +138,18 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
           </section>
 
           <section className="space-y-4">
+            {hasEntry ? (
+              <>
             <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
               Compete
             </p>
             {compete.length === 0 ? (
               <EmptyState
-                kicker="Categories"
-                title="No compete categories yet"
-                body={
-                  viewersOpen
-                    ? 'This night is watch-only for now — grab an audience pass below.'
-                    : 'The organizer hasn’t opened compete entries yet.'
-                }
+                kicker="Compete"
+                title="Watch-only for now"
+                body="Grab an audience pass below to watch the floor."
                 className="py-8 md:py-10"
-              >
-                <Button asChild variant="outline" className="rounded-full">
-                  <Link href={routes.discover}>Browse Discover</Link>
-                </Button>
-              </EmptyState>
+              />
             ) : (
               <ul className="space-y-2">
                 {compete.map((category) => {
@@ -172,13 +167,22 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
                           {categoryPriceLabel(category)} · {categoryLeft} left
                         </p>
                       </div>
-                      <Button asChild size="sm" className="rounded-full">
-                        <a href="#get-in">Get in</a>
-                      </Button>
+                      <OpenRegisterButton mode="compete" categoryId={category.id}>
+                        Get in
+                      </OpenRegisterButton>
                     </li>
                   );
                 })}
               </ul>
+            )}
+              </>
+            ) : (
+              <EmptyState
+                kicker="Get in"
+                title="No registration needed"
+                body="This one’s open — check the details and show up."
+                className="py-8 md:py-10"
+              />
             )}
           </section>
 
@@ -192,7 +196,7 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
                   Audience pass
                 </p>
                 <p className="mt-1 text-sm text-text-secondary">
-                  Presence without entering a category — still a real pass at the door.
+                  Watch the floor without entering a competition.
                 </p>
                 <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
                   <p className="text-sm font-semibold text-text-primary">
@@ -202,9 +206,13 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
                         ? 'Free'
                         : formatMinorUnits(event.audience.priceMinor)}
                   </p>
-                  <Button asChild variant="outline" size="sm" className="rounded-full">
-                    <a href="#get-in">Watch the floor</a>
-                  </Button>
+                  <OpenRegisterButton
+                    mode="watch"
+                    categoryId={viewers[0]?.id}
+                    variant="outline"
+                  >
+                    Watch the floor
+                  </OpenRegisterButton>
                 </div>
               </div>
             </section>
@@ -253,27 +261,39 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
             </span>
           </MetaRow>
 
-          <div className="space-y-2 border-t border-border pt-4" id="get-in">
-            <Button asChild size="lg" className="w-full rounded-full">
-              <a href="#get-in-bar">
-                Compete <span aria-hidden>→</span>
-              </a>
-            </Button>
-            {viewersOpen ? (
-              <Button asChild size="lg" variant="outline" className="w-full rounded-full">
-                <a href="#get-in-bar">Watch the floor</a>
-              </Button>
-            ) : null}
-            <p className="text-center text-[11px] text-text-muted">
-              Free and paid entries both end in a pass + QR.
-            </p>
+          <div className="space-y-2 border-t border-border pt-4">
+            {hasEntry ? (
+              <>
+                {compete.length > 0 ? (
+                  <OpenRegisterButton mode="compete" size="lg" className="w-full">
+                    Compete <span aria-hidden>→</span>
+                  </OpenRegisterButton>
+                ) : null}
+                {viewersOpen ? (
+                  <OpenRegisterButton
+                    mode="watch"
+                    categoryId={viewers[0]?.id}
+                    size="lg"
+                    variant="outline"
+                    className="w-full"
+                  >
+                    Watch the floor
+                  </OpenRegisterButton>
+                ) : null}
+                <p className="text-center text-[11px] text-text-muted">
+                  Confirmed entries get a BYND8 Pass + QR.
+                </p>
+              </>
+            ) : (
+              <p className="text-sm text-text-secondary">
+                No registration needed — check the details and show up.
+              </p>
+            )}
           </div>
         </aside>
       </div>
 
-      <div id="get-in-bar">
-        <StickyRegisterBar event={event} spotsLeft={left} />
-      </div>
+      <StickyRegisterBar event={event} spotsLeft={left} />
     </div>
   );
 }
