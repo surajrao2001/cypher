@@ -10,10 +10,9 @@ import { routes } from '@cypher/contracts';
 import { formatMinorUnits } from '@cypher/utils';
 import { Clock3, IndianRupee, Landmark } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/features/auth/AuthProvider';
 import { EditEventDrawer } from '@/features/organize/EditEventDrawer';
 import {
   hasPaidEntry,
@@ -23,6 +22,7 @@ import {
 import {
   OrganizerEmptyBlock,
   OrganizerEventSubHeader,
+  OrganizerManageShell,
   OrganizerPill,
   OrganizerSearchRow,
   OrganizerSkeletonRows,
@@ -34,7 +34,15 @@ import { OrganizeGate } from '@/features/organize/OrganizeGate';
 import { OrganizerWorkspace } from '@/features/organize/organizer-ui';
 import { PayoutSetupPanel } from '@/features/organize/PayoutSetupPanel';
 import { SoftError } from '@/features/shell/AsyncState';
+import {
+  useEventRegistrationsQuery,
+  useInvalidateOrganize,
+  useOrganizerBySlugQuery,
+  useOrganizerEventQuery,
+  usePayoutAccountQuery,
+} from '@/features/organize/queries';
 import { cn } from '@/lib/utils';
+import { motion } from 'framer-motion';
 
 type MoneyTab = 'transactions' | 'payouts';
 
@@ -47,68 +55,31 @@ export function EventMoneyView({ slug, eventId }: { slug: string; eventId: strin
 }
 
 function EventMoneyScreen({ slug, eventId }: { slug: string; eventId: string }) {
-  const auth = useAuth();
-  const [org, setOrg] = useState<OrganizerDto | null>(null);
-  const [event, setEvent] = useState<OrganizerEventDetailDto | null>(null);
-  const [regs, setRegs] = useState<OrganizerEventRegistrationsResponse | null>(null);
-  const [payoutReady, setPayoutReady] = useState<boolean | null>(null);
-  const [error, setError] = useState<unknown>(null);
-  const [loading, setLoading] = useState(true);
-  const [reloadKey, setReloadKey] = useState(0);
+  const invalidate = useInvalidateOrganize();
   const [editOpen, setEditOpen] = useState(false);
   const [tab, setTab] = useState<MoneyTab>('transactions');
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'paid' | 'pending' | 'refunded'>('all');
   const [filterOpen, setFilterOpen] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      setLoading(true);
-      setError(null);
-      try {
-        const organizer = await auth.api.getMyOrganizerBySlug(slug);
-        const [detail, regList] = await Promise.all([
-          auth.api.getOrganizerEvent(organizer.id, eventId),
-          auth.api.listOrganizerEventRegistrations(organizer.id, eventId).catch(() => null),
-        ]);
-        if (cancelled) return;
-        setOrg(organizer);
-        setEvent(detail);
-        setRegs(regList);
-        if (!hasPaidEntry(detail)) {
-          // Free events should not land here long-term — send home.
-        }
-      } catch (err) {
-        if (!cancelled) setError(err);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-    void load();
-    return () => {
-      cancelled = true;
-    };
-  }, [auth.api, eventId, reloadKey, slug]);
-
-  useEffect(() => {
-    if (!org || !event || !hasPaidEntry(event)) {
-      setPayoutReady(null);
-      return;
-    }
-    let cancelled = false;
-    void auth.api
-      .getOrganizerPaymentAccount(org.id)
-      .then((row) => {
-        if (!cancelled) setPayoutReady(Boolean(row.payoutReady));
-      })
-      .catch(() => {
-        if (!cancelled) setPayoutReady(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [auth.api, event, org]);
+  const orgQuery = useOrganizerBySlugQuery(slug);
+  const org = orgQuery.data ?? null;
+  const eventQuery = useOrganizerEventQuery(org?.id, eventId, Boolean(org?.id));
+  const event = eventQuery.data ?? null;
+  const regsQuery = useEventRegistrationsQuery(org?.id, eventId, Boolean(org?.id));
+  const regs = regsQuery.data ?? null;
+  const paid = event ? hasPaidEntry(event) : false;
+  const payoutQuery = usePayoutAccountQuery(org?.id, Boolean(org?.id) && paid);
+  const payoutReady = !paid
+    ? null
+    : payoutQuery.data
+      ? Boolean(payoutQuery.data.payoutReady)
+      : payoutQuery.isPending
+        ? null
+        : false;
+  const error = orgQuery.error ?? eventQuery.error;
+  const loading =
+    (orgQuery.isPending && !org) || (Boolean(org) && eventQuery.isPending && !event);
 
   const money = moneyFromRegistrations(regs);
   const pendingCount = useMemo(() => {
@@ -166,7 +137,11 @@ function EventMoneyScreen({ slug, eventId }: { slug: string; eventId: string }) 
         <SoftError
           title="Couldn’t load money"
           error={error}
-          onRetry={() => setReloadKey((n) => n + 1)}
+          onRetry={() => {
+            void orgQuery.refetch();
+            void eventQuery.refetch();
+            void regsQuery.refetch();
+          }}
         />
       </div>
     );
@@ -176,12 +151,11 @@ function EventMoneyScreen({ slug, eventId }: { slug: string; eventId: string }) 
 
   const manageHref = `${routes.organize}/${org.slug}/events/${event.id}`;
   const freeOnly = isFreeOnlyEvent(event);
-  const paid = hasPaidEntry(event);
 
   if (freeOnly && !paid) {
     return (
-      <div className="min-h-[70vh] bg-[#080908]">
-        <OrganizerWorkspace width="canvas" className="space-y-5">
+      <OrganizerManageShell>
+        <OrganizerWorkspace width="canvas" className="relative z-10 space-y-5">
           <OrganizerEventSubHeader
             org={org}
             event={event}
@@ -202,15 +176,15 @@ function EventMoneyScreen({ slug, eventId }: { slug: string; eventId: string }) 
             organizerId={org.id}
             orgSlug={org.slug}
             event={event}
-            onUpdated={setEvent}
+            onUpdated={(next) => invalidate.setEventCache(next)}
           />
         </OrganizerWorkspace>
-      </div>
+      </OrganizerManageShell>
     );
   }
 
   return (
-    <div className="relative min-h-[70vh] bg-[#080908]">
+    <OrganizerManageShell>
       <OrganizerWorkspace width="canvas" className="relative z-10 space-y-5 sm:space-y-6">
         <OrganizerEventSubHeader
           org={org}
@@ -225,11 +199,17 @@ function EventMoneyScreen({ slug, eventId }: { slug: string; eventId: string }) 
           orgSlug={org.slug}
           event={event}
           onUpdated={(next) => {
-            setEvent(next);
-            setReloadKey((n) => n + 1);
+            invalidate.setEventCache(next);
+            invalidate.invalidateOrganizerEvents(org.id);
           }}
         />
 
+        <motion.div
+          initial={{ opacity: 0.88 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.16 }}
+          className="space-y-5"
+        >
         {paid && payoutReady === false ? (
           <section className="space-y-4">
             <OrganizerEmptyBlock
@@ -244,7 +224,9 @@ function EventMoneyScreen({ slug, eventId }: { slug: string; eventId: string }) 
               organizerId={org.id}
               orgName={org.orgName}
               embedded
-              onReadyChange={setPayoutReady}
+              onReadyChange={() => {
+                void payoutQuery.refetch();
+              }}
             />
           </section>
         ) : (
@@ -453,8 +435,9 @@ function EventMoneyScreen({ slug, eventId }: { slug: string; eventId: string }) 
             )}
           </>
         )}
+        </motion.div>
       </OrganizerWorkspace>
-    </div>
+    </OrganizerManageShell>
   );
 }
 

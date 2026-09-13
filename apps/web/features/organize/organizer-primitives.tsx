@@ -260,6 +260,37 @@ export function OrganizerIconTile({
   );
 }
 
+/** Full-bleed orange stage wash — same language as Event Home, compact for sub-pages. */
+export function OrganizerManageShell({
+  children,
+  className,
+  glow = 'center',
+}: {
+  children: ReactNode;
+  className?: string;
+  /** Your Events uses a top-right wash to match the reference. */
+  glow?: 'center' | 'top-right';
+}) {
+  const wash =
+    glow === 'top-right'
+      ? 'bg-[radial-gradient(ellipse_90%_70%_at_88%_-8%,rgba(255,104,0,0.34)_0%,rgba(255,104,0,0.14)_28%,rgba(255,104,0,0.04)_52%,transparent_72%)]'
+      : 'bg-[radial-gradient(ellipse_120%_75%_at_50%_-12%,rgba(255,104,0,0.28)_0%,rgba(255,104,0,0.12)_30%,rgba(255,104,0,0.04)_52%,transparent_72%)]';
+
+  return (
+    <div className={cn('relative min-h-[70vh] overflow-hidden bg-[#080908]', className)}>
+      <div
+        aria-hidden
+        className={cn('pointer-events-none absolute inset-x-0 top-0 h-[min(28rem,52vh)]', wash)}
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-[min(14rem,28vh)] h-40 bg-gradient-to-b from-transparent via-[#080908]/55 to-[#080908]"
+      />
+      {children}
+    </div>
+  );
+}
+
 export function OrganizerEventSubHeader({
   org,
   event,
@@ -282,7 +313,7 @@ export function OrganizerEventSubHeader({
   const publicHref = `${routes.events}/${event.slug}`;
 
   return (
-    <header className={cn('space-y-4', className)}>
+    <header className={cn('relative space-y-4', className)}>
       <PageBreadcrumb
         className="mb-0"
         items={[
@@ -292,9 +323,10 @@ export function OrganizerEventSubHeader({
         ]}
       />
 
-      <div className="flex flex-col gap-4 rounded-xl border border-white/[0.08] bg-[#161716]/90 px-3.5 py-3.5 sm:flex-row sm:items-center sm:gap-5 sm:px-5 sm:py-4">
+      {/* Open stage — no card chrome; sits on the page wash like Event Home / reference */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6 lg:gap-8">
         <div className="flex min-w-0 flex-1 items-start gap-3.5 sm:items-center sm:gap-4">
-          <div className="relative h-20 w-16 shrink-0 overflow-hidden rounded-lg border border-white/[0.08] bg-[#111211] sm:h-[5.5rem] sm:w-[4.5rem]">
+          <div className="relative h-20 w-16 shrink-0 overflow-hidden rounded-lg bg-[#111211] shadow-[0_12px_28px_-14px_rgba(0,0,0,0.85)] sm:h-[5.5rem] sm:w-[4.5rem]">
             {event.posterUrl ? (
               <img src={event.posterUrl} alt="" className="h-full w-full object-cover" />
             ) : (
@@ -336,7 +368,7 @@ export function OrganizerEventSubHeader({
               asChild
               variant="outline"
               size="sm"
-              className="h-10 gap-1.5 rounded-lg border-white/[0.1] bg-[#111211] px-3.5 text-[12px] font-semibold tracking-[0.06em] text-[#F4F4F1] hover:border-white/20"
+              className="h-10 gap-1.5 rounded-lg border-white/[0.12] bg-[#111211]/55 px-3.5 text-[12px] font-semibold tracking-[0.06em] text-[#F4F4F1] backdrop-blur-[6px] hover:border-white/20 hover:bg-[#111211]/80"
             >
               <Link href={publicHref} target="_blank" rel="noreferrer">
                 <ExternalLink className="size-3.5" strokeWidth={1.75} aria-hidden />
@@ -350,7 +382,7 @@ export function OrganizerEventSubHeader({
               variant="outline"
               size="sm"
               onClick={onEditEvent}
-              className="h-10 gap-1.5 rounded-lg border-white/[0.1] bg-[#111211] px-3.5 text-[12px] font-semibold tracking-[0.06em] text-[#F4F4F1] hover:border-white/20"
+              className="h-10 gap-1.5 rounded-lg border-white/[0.12] bg-[#111211]/55 px-3.5 text-[12px] font-semibold tracking-[0.06em] text-[#F4F4F1] backdrop-blur-[6px] hover:border-white/20 hover:bg-[#111211]/80"
             >
               <Pencil className="size-3.5" strokeWidth={1.75} aria-hidden />
               Edit event

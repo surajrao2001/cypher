@@ -12,6 +12,7 @@ import { useAuth } from '@/features/auth/AuthProvider';
 import { EventMediaLinksEditor } from '@/features/organize/EventMediaLinksEditor';
 import { EventUpdatesPanel, PostUpdateDialog } from '@/features/organize/EventUpdatesPanel';
 import { OrganizeGate } from '@/features/organize/OrganizeGate';
+import { useInvalidateOrganize } from '@/features/organize/queries';
 import { OrganizerWorkspace } from '@/features/organize/organizer-ui';
 import { PageLoading, SoftError } from '@/features/shell/AsyncState';
 import { PageBreadcrumb } from '@/features/shell/PageBreadcrumb';
@@ -37,13 +38,13 @@ export function EventPageView({ slug, eventId }: { slug: string; eventId: string
 
 function EventPagePanel({ slug, eventId }: { slug: string; eventId: string }) {
   const auth = useAuth();
+  const invalidate = useInvalidateOrganize();
   const [org, setOrg] = useState<OrganizerDto | null>(null);
   const [event, setEvent] = useState<OrganizerEventDetailDto | null>(null);
   const [error, setError] = useState<unknown>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [active, setActive] = useState<SectionId>('poster');
   const [postOpen, setPostOpen] = useState(false);
-  const [updatesKey, setUpdatesKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -255,7 +256,6 @@ function EventPagePanel({ slug, eventId }: { slug: string; eventId: string }) {
                 <EventUpdatesPanel
                   organizerId={org.id}
                   eventId={event.id}
-                  refreshKey={updatesKey}
                 />
               </section>
             ) : null}
@@ -267,7 +267,7 @@ function EventPagePanel({ slug, eventId }: { slug: string; eventId: string }) {
           eventId={event.id}
           open={postOpen}
           onOpenChange={setPostOpen}
-          onPosted={() => setUpdatesKey((n) => n + 1)}
+          onPosted={() => invalidate.invalidateEventUpdates(event.id)}
         />
       </OrganizerWorkspace>
     </div>

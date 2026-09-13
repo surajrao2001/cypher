@@ -2,6 +2,7 @@
 
 import type { OrganizerDto, OrganizerEventDetailDto, OrganizerMemberRole } from '@cypher/contracts';
 import { routes } from '@cypher/contracts';
+import { motion, useReducedMotion } from 'framer-motion';
 import Link from 'next/link';
 import { useState } from 'react';
 
@@ -74,6 +75,7 @@ export function EventControlHeader({
   onPublishToggle,
   onPostUpdate,
   onEditEvent,
+  sharedLayout = false,
   className,
 }: {
   org: OrganizerDto;
@@ -82,8 +84,11 @@ export function EventControlHeader({
   onPublishToggle?: () => void;
   onPostUpdate?: () => void;
   onEditEvent?: () => void;
+  /** Enable poster/title layoutId morph from Your Events. */
+  sharedLayout?: boolean;
   className?: string;
 }) {
+  const reduceMotion = useReducedMotion();
   const [menuOpen, setMenuOpen] = useState(false);
   const [shareHint, setShareHint] = useState<string | null>(null);
   const isLive = event.status === 'published';
@@ -94,6 +99,7 @@ export function EventControlHeader({
   const publicHref = `${routes.events}/${event.slug}`;
   const place = [event.venue, event.city].filter(Boolean).join(', ');
   const when = formatEventHomeWhen(event.startTime);
+  const useShared = sharedLayout && !reduceMotion;
 
   async function share() {
     if (!isLive) return;
@@ -124,11 +130,17 @@ export function EventControlHeader({
       />
 
       <div className="relative flex flex-row items-start gap-3.5 sm:gap-8 lg:gap-10 xl:gap-12">
-        <PosterThumb
-          src={event.posterUrl}
-          size="hero"
-          className="shrink-0 shadow-[0_16px_32px_-12px_rgba(0,0,0,0.75)] sm:shadow-[0_28px_56px_-18px_rgba(0,0,0,0.8)]"
-        />
+        <motion.div
+          layoutId={useShared ? `event-poster-${event.id}` : undefined}
+          className="shrink-0"
+          transition={{ type: 'spring', stiffness: 380, damping: 34 }}
+        >
+          <PosterThumb
+            src={event.posterUrl}
+            size="hero"
+            className="shadow-[0_16px_32px_-12px_rgba(0,0,0,0.75)] sm:shadow-[0_28px_56px_-18px_rgba(0,0,0,0.8)]"
+          />
+        </motion.div>
 
         <div className="min-w-0 flex-1 space-y-2.5 pt-0 sm:space-y-6 sm:pt-3 lg:pt-4">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -152,9 +164,13 @@ export function EventControlHeader({
             </span>
           </div>
 
-          <h1 className="display-title max-w-[16ch] text-[1.65rem] leading-[0.92] tracking-[0.03em] text-text-primary sm:text-6xl sm:leading-[0.88] md:text-7xl lg:text-[4.75rem] xl:text-[5.25rem]">
+          <motion.h1
+            layoutId={useShared ? `event-title-${event.id}` : undefined}
+            className="display-title max-w-[16ch] text-[1.65rem] leading-[0.92] tracking-[0.03em] text-text-primary sm:text-6xl sm:leading-[0.88] md:text-7xl lg:text-[4.75rem] xl:text-[5.25rem]"
+            transition={{ type: 'spring', stiffness: 380, damping: 34 }}
+          >
             {event.title}
-          </h1>
+          </motion.h1>
 
           <div className="space-y-1 text-[12px] text-text-secondary sm:space-y-2.5 sm:text-base lg:text-[17px]">
             {when ? (

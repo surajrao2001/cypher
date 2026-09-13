@@ -1,14 +1,10 @@
 'use client';
 
-import type {
-  OrganizerDto,
-  OrganizerEventDetailDto,
-  OrganizerEventRegistrationsResponse,
-  OrganizerRegistrationItemDto,
-} from '@cypher/contracts';
+import type { OrganizerRegistrationItemDto } from '@cypher/contracts';
 import { routes } from '@cypher/contracts';
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
+import { motion } from 'framer-motion';
 
 import { Button } from '@/components/ui/button';
 import { toastCopy, toastPending, toastReject, toastResolve } from '@/components/ui/toaster';
@@ -17,6 +13,7 @@ import { EditEventDrawer } from '@/features/organize/EditEventDrawer';
 import {
   OrganizerEmptyBlock,
   OrganizerEventSubHeader,
+  OrganizerManageShell,
   OrganizerPill,
   OrganizerSearchRow,
   OrganizerSkeletonRows,
@@ -25,6 +22,13 @@ import {
   type OrganizerPillTone,
 } from '@/features/organize/organizer-primitives';
 import { OrganizeGate } from '@/features/organize/OrganizeGate';
+import {
+  useEventCheckInsQuery,
+  useEventRegistrationsQuery,
+  useInvalidateOrganize,
+  useOrganizerBySlugQuery,
+  useOrganizerEventQuery,
+} from '@/features/organize/queries';
 import { OrganizerWorkspace } from '@/features/organize/organizer-ui';
 import { SoftError, friendlyError } from '@/features/shell/AsyncState';
 import { cn } from '@/lib/utils';
@@ -44,13 +48,7 @@ export function EventPeopleView({ slug, eventId }: { slug: string; eventId: stri
 
 function EventPeoplePanel({ slug, eventId }: { slug: string; eventId: string }) {
   const auth = useAuth();
-  const [org, setOrg] = useState<OrganizerDto | null>(null);
-  const [event, setEvent] = useState<OrganizerEventDetailDto | null>(null);
-  const [data, setData] = useState<OrganizerEventRegistrationsResponse | null>(null);
-  const [checkedAt, setCheckedAt] = useState<Map<string, string>>(new Map());
-  const [error, setError] = useState<unknown>(null);
-  const [loading, setLoading] = useState(true);
-  const [reloadKey, setReloadKey] = useState(0);
+  const invalidate = useInvalidateOrganize();
   const [filter, setFilter] = useState<PeopleFilter>('all');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [filterOpen, setFilterOpen] = useState(false);
@@ -59,38 +57,21 @@ function EventPeoplePanel({ slug, eventId }: { slug: string; eventId: string }) 
   const [editOpen, setEditOpen] = useState(false);
   const [checkingId, setCheckingId] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      setLoading(true);
-      setError(null);
-      try {
-        const organizer = await auth.api.getMyOrganizerBySlug(slug);
-        const [detail, regs, checkIns] = await Promise.all([
-          auth.api.getOrganizerEvent(organizer.id, eventId),
-          auth.api.listOrganizerEventRegistrations(organizer.id, eventId),
-          auth.api.listCheckIns(organizer.id, eventId).catch(() => null),
-        ]);
-        if (cancelled) return;
-        setOrg(organizer);
-        setEvent(detail);
-        setData(regs);
-        const map = new Map<string, string>();
-        for (const c of checkIns?.items ?? []) {
-          map.set(c.registrationId, c.checkedInAt);
-        }
-        setCheckedAt(map);
-      } catch (err) {
-        if (!cancelled) setError(err);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
+  const orgQuery = useOrganizerBySlugQuery(slug);
+  const org = orgQuery.data;
+  const eventQuery = useOrganizerEventQuery(org?.id, eventId, Boolean(org?.id));
+  const event = eventQuery.data;
+  const regsQuery = useEventRegistrationsQuery(org?.id, eventId, Boolean(org?.id));
+  const data = regsQuery.data ?? null;
+  const checkInsQuery = useEventCheckInsQuery(org?.id, eventId, Boolean(org?.id));
+
+  const checkedAt = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const c of checkInsQuery.data?.items ?? []) {
+      map.set(c.registrationId, c.checkedInAt);
     }
-    void load();
-    return () => {
-      cancelled = true;
-    };
-  }, [auth.api, eventId, reloadKey, slug]);
+    return map;
+  }, [checkInsQuery.data]);
 
   const viewerIds = useMemo(() => {
     const viewers =
@@ -108,12 +89,7 @@ function EventPeoplePanel({ slug, eventId }: { slug: string; eventId: string }) 
       if (filter === 'audience' && !isAudience) return false;
       if (filter === 'checked_in' && !isChecked) return false;
       if (statusFilter === 'confirmed' && row.registrationStatus !== 'confirmed') return false;
-      if (
-        statusFilter === 'pending' &&
-        row.registrationStatus !== 'pending_payment'
-      ) {
-        return false;
-      }
+      if (statusFilter === 'pending' && row.registrationStatus !== 'pending_payment') return false;
       if (statusFilter === 'checked_in' && !isChecked) return false;
       if (!q) return true;
       const hay = [
@@ -163,11 +139,7 @@ function EventPeoplePanel({ slug, eventId }: { slug: string; eventId: string }) 
         registrationCode: row.registrationCode,
         channel: 'MANUAL',
       });
-      setCheckedAt((prev) => {
-        const next = new Map(prev);
-        next.set(row.id, new Date().toISOString());
-        return next;
-      });
+      invalidate.invalidateEventRegistrations(eventId);
       toastResolve(tid, 'Checked in');
     } catch (err) {
       toastReject(tid, toastCopy.saveFailed, friendlyError(err));
@@ -176,21 +148,33 @@ function EventPeoplePanel({ slug, eventId }: { slug: string; eventId: string }) 
     }
   }
 
-  if (loading && !data) {
+  const loadError = orgQuery.error ?? eventQuery.error ?? regsQuery.error;
+  const coldLoading =
+    (orgQuery.isPending && !org) ||
+    (Boolean(org) && eventQuery.isPending && !event) ||
+    (Boolean(org) && regsQuery.isPending && !data);
+
+  if (coldLoading) {
     return (
-      <OrganizerWorkspace width="canvas" className="space-y-6">
-        <div className="h-28 animate-pulse rounded-xl bg-white/[0.04]" />
-        <OrganizerSkeletonRows count={6} />
-      </OrganizerWorkspace>
+      <OrganizerManageShell>
+        <OrganizerWorkspace width="canvas" className="relative z-10 space-y-6">
+          <div className="h-28 animate-pulse rounded-xl bg-white/[0.04]" />
+          <OrganizerSkeletonRows count={6} />
+        </OrganizerWorkspace>
+      </OrganizerManageShell>
     );
   }
-  if (error && !event) {
+  if (loadError && !event) {
     return (
       <div className="px-6 py-16">
         <SoftError
           title="Couldn’t load people"
-          error={error}
-          onRetry={() => setReloadKey((n) => n + 1)}
+          error={loadError}
+          onRetry={() => {
+            void orgQuery.refetch();
+            void eventQuery.refetch();
+            void regsQuery.refetch();
+          }}
         />
       </div>
     );
@@ -208,7 +192,7 @@ function EventPeoplePanel({ slug, eventId }: { slug: string; eventId: string }) 
   ];
 
   return (
-    <div className="relative min-h-[70vh] bg-[#080908]">
+    <OrganizerManageShell>
       <OrganizerWorkspace width="canvas" className="relative z-10 space-y-5 sm:space-y-6">
         <OrganizerEventSubHeader
           org={org}
@@ -224,12 +208,17 @@ function EventPeoplePanel({ slug, eventId }: { slug: string; eventId: string }) 
           orgSlug={org.slug}
           event={event}
           onUpdated={(next) => {
-            setEvent(next);
-            setReloadKey((n) => n + 1);
+            invalidate.setEventCache(next);
           }}
         />
 
-        {data.categories.length === 0 ? (
+        <motion.div
+          initial={{ opacity: 0.88 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.16 }}
+          className="space-y-4 sm:space-y-5"
+        >
+{data.categories.length === 0 ? (
           <OrganizerEmptyBlock
             title="No registrations yet"
             body="Add a competition or audience pass to start taking registrations."
@@ -494,10 +483,13 @@ function EventPeoplePanel({ slug, eventId }: { slug: string; eventId: string }) 
             )}
           </div>
         )}
+      
+        </motion.div>
       </OrganizerWorkspace>
-    </div>
+    </OrganizerManageShell>
   );
 }
+
 
 function PeopleStatusPill({
   status,

@@ -3,8 +3,6 @@
 import type {
   EventUpdateDto,
   EventUpdateKind,
-  OrganizerDto,
-  OrganizerEventDetailDto,
 } from '@cypher/contracts';
 import { routes } from '@cypher/contracts';
 import {
@@ -20,7 +18,8 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { motion } from 'framer-motion';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -44,6 +43,7 @@ import { PosterField } from '@/features/organize/PosterField';
 import {
   OrganizerEmptyBlock,
   OrganizerEventSubHeader,
+  OrganizerManageShell,
   OrganizerPill,
   OrganizerSkeletonRows,
   OrganizerTabs,
@@ -54,6 +54,12 @@ import { formatEventHomeWhen } from '@/features/organize/EventControlHeader';
 import { statusLabel } from '@/features/organize/event-control';
 import { OrganizeGate } from '@/features/organize/OrganizeGate';
 import { OrganizerWorkspace } from '@/features/organize/organizer-ui';
+import {
+  useEventUpdatesQuery,
+  useInvalidateOrganize,
+  useOrganizerBySlugQuery,
+  useOrganizerEventQuery,
+} from '@/features/organize/queries';
 import { SoftError, friendlyError } from '@/features/shell/AsyncState';
 
 type UpdateFilter = 'all' | 'announcements' | 'schedule' | 'media' | 'other';
@@ -94,39 +100,23 @@ export function EventUpdatesView({ slug, eventId }: { slug: string; eventId: str
 
 function EventUpdatesScreen({ slug, eventId }: { slug: string; eventId: string }) {
   const auth = useAuth();
-  const [org, setOrg] = useState<OrganizerDto | null>(null);
-  const [event, setEvent] = useState<OrganizerEventDetailDto | null>(null);
-  const [items, setItems] = useState<EventUpdateDto[]>([]);
-  const [error, setError] = useState<unknown>(null);
-  const [loading, setLoading] = useState(true);
-  const [reloadKey, setReloadKey] = useState(0);
+  const invalidate = useInvalidateOrganize();
   const [editEventOpen, setEditEventOpen] = useState(false);
   const [composerOpen, setComposerOpen] = useState(false);
   const [editing, setEditing] = useState<EventUpdateDto | null>(null);
   const [filter, setFilter] = useState<UpdateFilter>('all');
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const organizer = await auth.api.getMyOrganizerBySlug(slug);
-      const [detail, updates] = await Promise.all([
-        auth.api.getOrganizerEvent(organizer.id, eventId),
-        auth.api.listEventUpdates(organizer.id, eventId),
-      ]);
-      setOrg(organizer);
-      setEvent(detail);
-      setItems(updates.items);
-    } catch (err) {
-      setError(err);
-    } finally {
-      setLoading(false);
-    }
-  }, [auth.api, eventId, slug]);
-
-  useEffect(() => {
-    void load();
-  }, [load, reloadKey]);
+  const orgQuery = useOrganizerBySlugQuery(slug);
+  const org = orgQuery.data ?? null;
+  const eventQuery = useOrganizerEventQuery(org?.id, eventId, Boolean(org?.id));
+  const event = eventQuery.data ?? null;
+  const updatesQuery = useEventUpdatesQuery(org?.id, eventId, Boolean(org?.id));
+  const items = updatesQuery.data ?? [];
+  const error = orgQuery.error ?? eventQuery.error ?? updatesQuery.error;
+  const loading =
+    (orgQuery.isPending && !org) ||
+    (Boolean(org) && eventQuery.isPending && !event) ||
+    (Boolean(org) && updatesQuery.isPending && !updatesQuery.data);
 
   const counts = useMemo(() => {
     const base = { all: items.length, announcements: 0, schedule: 0, media: 0, other: 0 };
@@ -148,7 +138,7 @@ function EventUpdatesScreen({ slug, eventId }: { slug: string; eventId: string }
     const tid = toastPending(toastCopy.saving);
     try {
       await auth.api.deleteEventUpdate(org.id, eventId, id);
-      setItems((prev) => prev.filter((u) => u.id !== id));
+      invalidate.invalidateEventUpdates(eventId);
       toastResolve(tid, 'Update deleted');
     } catch (err) {
       toastReject(tid, toastCopy.saveFailed, friendlyError(err));
@@ -157,17 +147,27 @@ function EventUpdatesScreen({ slug, eventId }: { slug: string; eventId: string }
 
   if (loading && !event) {
     return (
-      <OrganizerWorkspace width="canvas" className="space-y-6">
-        <div className="h-28 animate-pulse rounded-xl bg-white/[0.04]" />
-        <OrganizerSkeletonRows count={4} />
-      </OrganizerWorkspace>
+      <OrganizerManageShell>
+        <OrganizerWorkspace width="canvas" className="relative z-10 space-y-6">
+          <div className="h-28 animate-pulse rounded-xl bg-white/[0.04]" />
+          <OrganizerSkeletonRows count={4} />
+        </OrganizerWorkspace>
+      </OrganizerManageShell>
     );
   }
 
   if (error && !event) {
     return (
       <div className="px-6 py-16">
-        <SoftError title="Couldn’t load updates" error={error} onRetry={() => setReloadKey((n) => n + 1)} />
+        <SoftError
+          title="Couldn’t load updates"
+          error={error}
+          onRetry={() => {
+            void orgQuery.refetch();
+            void eventQuery.refetch();
+            void updatesQuery.refetch();
+          }}
+        />
       </div>
     );
   }
@@ -175,7 +175,7 @@ function EventUpdatesScreen({ slug, eventId }: { slug: string; eventId: string }
   if (!org || !event) return null;
 
   return (
-    <div className="relative min-h-[70vh] bg-[#080908]">
+    <OrganizerManageShell>
       <OrganizerWorkspace width="canvas" className="relative z-10 space-y-5 sm:space-y-6">
         <OrganizerEventSubHeader
           org={org}
@@ -204,7 +204,7 @@ function EventUpdatesScreen({ slug, eventId }: { slug: string; eventId: string }
           organizerId={org.id}
           orgSlug={org.slug}
           event={event}
-          onUpdated={setEvent}
+          onUpdated={(next) => invalidate.setEventCache(next)}
         />
 
         <UpdateComposerSheet
@@ -216,10 +216,16 @@ function EventUpdatesScreen({ slug, eventId }: { slug: string; eventId: string }
           onSaved={() => {
             setComposerOpen(false);
             setEditing(null);
-            setReloadKey((n) => n + 1);
+            invalidate.invalidateEventUpdates(event.id);
           }}
         />
 
+        <motion.div
+          initial={{ opacity: 0.88 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.16 }}
+          className="space-y-4 sm:space-y-5"
+        >
         <OrganizerTabs
           ariaLabel="Update categories"
           items={[
@@ -351,6 +357,7 @@ function EventUpdatesScreen({ slug, eventId }: { slug: string; eventId: string }
             })}
           </ul>
         )}
+        </motion.div>
       </OrganizerWorkspace>
 
       <button
@@ -364,7 +371,7 @@ function EventUpdatesScreen({ slug, eventId }: { slug: string; eventId: string }
       >
         <Plus className="size-5" strokeWidth={2} />
       </button>
-    </div>
+    </OrganizerManageShell>
   );
 }
 
@@ -395,40 +402,21 @@ function EventUpdateDetailScreen({
 }) {
   const auth = useAuth();
   const router = useRouter();
-  const [org, setOrg] = useState<OrganizerDto | null>(null);
-  const [event, setEvent] = useState<OrganizerEventDetailDto | null>(null);
-  const [item, setItem] = useState<EventUpdateDto | null>(null);
-  const [error, setError] = useState<unknown>(null);
-  const [loading, setLoading] = useState(true);
+  const invalidate = useInvalidateOrganize();
   const [composerOpen, setComposerOpen] = useState(false);
   const [editEventOpen, setEditEventOpen] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      setLoading(true);
-      setError(null);
-      try {
-        const organizer = await auth.api.getMyOrganizerBySlug(slug);
-        const [detail, updates] = await Promise.all([
-          auth.api.getOrganizerEvent(organizer.id, eventId),
-          auth.api.listEventUpdates(organizer.id, eventId),
-        ]);
-        if (cancelled) return;
-        setOrg(organizer);
-        setEvent(detail);
-        setItem(updates.items.find((u) => u.id === updateId) ?? null);
-      } catch (err) {
-        if (!cancelled) setError(err);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-    void load();
-    return () => {
-      cancelled = true;
-    };
-  }, [auth.api, eventId, slug, updateId]);
+  const orgQuery = useOrganizerBySlugQuery(slug);
+  const org = orgQuery.data ?? null;
+  const eventQuery = useOrganizerEventQuery(org?.id, eventId, Boolean(org?.id));
+  const event = eventQuery.data ?? null;
+  const updatesQuery = useEventUpdatesQuery(org?.id, eventId, Boolean(org?.id));
+  const item = updatesQuery.data?.find((u) => u.id === updateId) ?? null;
+  const error = orgQuery.error ?? eventQuery.error ?? updatesQuery.error;
+  const loading =
+    (orgQuery.isPending && !org) ||
+    (Boolean(org) && eventQuery.isPending && !event) ||
+    (Boolean(org) && updatesQuery.isPending && !updatesQuery.data);
 
   async function remove() {
     if (!org || !item) return;
@@ -436,6 +424,7 @@ function EventUpdateDetailScreen({
     const tid = toastPending(toastCopy.saving);
     try {
       await auth.api.deleteEventUpdate(org.id, eventId, item.id);
+      invalidate.invalidateEventUpdates(eventId);
       toastResolve(tid, 'Update deleted');
       router.push(routes.organizeEventUpdates(org.slug, eventId));
     } catch (err) {
@@ -460,6 +449,14 @@ function EventUpdateDetailScreen({
   }
 
   if (!org || !event) return null;
+
+  if (updatesQuery.isPending && !updatesQuery.data) {
+    return (
+      <OrganizerWorkspace width="canvas">
+        <div className="h-40 animate-pulse rounded-xl bg-white/[0.04]" />
+      </OrganizerWorkspace>
+    );
+  }
 
   const listHref = routes.organizeEventUpdates(org.slug, event.id);
   const publicHref = `${routes.events}/${event.slug}`;
@@ -598,9 +595,9 @@ function EventUpdateDetailScreen({
           organizerId={org.id}
           eventId={event.id}
           initial={item}
-          onSaved={(next) => {
-            setItem(next);
+          onSaved={() => {
             setComposerOpen(false);
+            invalidate.invalidateEventUpdates(event.id);
           }}
         />
         <EditEventDrawer
@@ -609,7 +606,7 @@ function EventUpdateDetailScreen({
           organizerId={org.id}
           orgSlug={org.slug}
           event={event}
-          onUpdated={setEvent}
+          onUpdated={(next) => invalidate.setEventCache(next)}
         />
       </OrganizerWorkspace>
     </div>
@@ -764,26 +761,20 @@ function UpdateComposerSheet({
 export function EventUpdatesPanel({
   organizerId,
   eventId,
-  refreshKey = 0,
 }: {
   organizerId: string;
   eventId: string;
   refreshKey?: number;
 }) {
-  const { api } = useAuth();
-  const [items, setItems] = useState<EventUpdateDto[]>([]);
+  const updatesQuery = useEventUpdatesQuery(organizerId, eventId, Boolean(organizerId));
+  const items = updatesQuery.data ?? [];
 
-  useEffect(() => {
-    void api
-      .listEventUpdates(organizerId, eventId)
-      .then((res) => setItems(res.items))
-      .catch(() => setItems([]));
-  }, [api, eventId, organizerId, refreshKey]);
+  if (updatesQuery.isPending && !updatesQuery.data) {
+    return <p className="text-sm text-text-secondary">Loading updates…</p>;
+  }
 
   if (items.length === 0) {
-    return (
-      <p className="text-sm text-text-secondary">No updates yet.</p>
-    );
+    return <p className="text-sm text-text-secondary">No updates yet.</p>;
   }
 
   return (
@@ -830,11 +821,11 @@ export function EventUpdatesPanelBySlug({
   slug: string;
   eventId: string;
 }) {
-  const auth = useAuth();
-  const [org, setOrg] = useState<OrganizerDto | null>(null);
-  useEffect(() => {
-    void auth.api.getMyOrganizerBySlug(slug).then(setOrg);
-  }, [auth.api, slug]);
-  if (!org) return <div className="p-4 text-sm text-text-muted">Loading updates…</div>;
+  const orgQuery = useOrganizerBySlugQuery(slug);
+  const org = orgQuery.data;
+  if (orgQuery.isPending && !org) {
+    return <div className="p-4 text-sm text-text-muted">Loading updates…</div>;
+  }
+  if (!org) return <div className="p-4 text-sm text-text-muted">Organizer not found.</div>;
   return <EventUpdatesPanel organizerId={org.id} eventId={eventId} />;
 }

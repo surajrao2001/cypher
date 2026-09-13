@@ -2,7 +2,6 @@
 
 import type {
   EventCategoryPublicDto,
-  OrganizerDto,
   OrganizerEventDetailDto,
 } from '@cypher/contracts';
 import { routes } from '@cypher/contracts';
@@ -35,13 +34,21 @@ import {
   OrganizerEmptyBlock,
   OrganizerEventSubHeader,
   OrganizerIconTile,
+  OrganizerManageShell,
   OrganizerPill,
   OrganizerTabs,
 } from '@/features/organize/organizer-primitives';
 import { OrganizeGate } from '@/features/organize/OrganizeGate';
 import { OrganizerWorkspace } from '@/features/organize/organizer-ui';
 import { SoftError, friendlyError, PageLoading } from '@/features/shell/AsyncState';
+import {
+  useInvalidateOrganize,
+  useOrganizerBySlugQuery,
+  useOrganizerEventQuery,
+  usePayoutAccountQuery,
+} from '@/features/organize/queries';
 import { cn } from '@/lib/utils';
+import { motion } from 'framer-motion';
 
 type Panel =
   | { kind: 'list' }
@@ -73,16 +80,24 @@ export function EventEntryPanel({
   initialPanel?: Panel;
 }) {
   const auth = useAuth();
-  const [org, setOrg] = useState<OrganizerDto | null>(null);
-  const [event, setEvent] = useState<OrganizerEventDetailDto | null>(null);
-  const [loadError, setLoadError] = useState<unknown>(null);
-  const [reloadKey, setReloadKey] = useState(0);
+  const invalidate = useInvalidateOrganize();
   const [panel, setPanel] = useState<Panel>(initialPanel ?? { kind: 'list' });
-  const [payoutReady, setPayoutReady] = useState<boolean | null>(null);
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [tab, setTab] = useState<EntryTab>('competitions');
   const returnFocusRef = useRef<HTMLElement | null>(null);
+
+  const orgQuery = useOrganizerBySlugQuery(slug);
+  const org = orgQuery.data ?? null;
+  const eventQuery = useOrganizerEventQuery(org?.id, eventId, Boolean(org?.id));
+  const event = eventQuery.data ?? null;
+  const payoutQuery = usePayoutAccountQuery(org?.id, Boolean(org?.id));
+  const payoutReady = payoutQuery.data
+    ? Boolean(payoutQuery.data.payoutReady)
+    : payoutQuery.isPending
+      ? null
+      : false;
+  const loadError = orgQuery.error ?? eventQuery.error;
 
   function openPanel(next: Panel, trigger?: HTMLElement | null) {
     returnFocusRef.current = trigger ?? (document.activeElement as HTMLElement | null);
@@ -90,49 +105,16 @@ export function EventEntryPanel({
   }
 
   function closePanel(nextEvent?: OrganizerEventDetailDto) {
-    if (nextEvent) setEvent(nextEvent);
+    if (nextEvent) {
+      invalidate.setEventCache(nextEvent);
+      if (org) invalidate.invalidateOrganizerEvents(org.id);
+    }
     setPanel({ kind: 'list' });
     window.requestAnimationFrame(() => {
       returnFocusRef.current?.focus?.();
       returnFocusRef.current = null;
     });
   }
-
-  useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      setLoadError(null);
-      try {
-        const organizer = await auth.api.getMyOrganizerBySlug(slug);
-        const detail = await auth.api.getOrganizerEvent(organizer.id, eventId);
-        if (cancelled) return;
-        setOrg(organizer);
-        setEvent(detail);
-      } catch (err) {
-        if (!cancelled) setLoadError(err);
-      }
-    }
-    void load();
-    return () => {
-      cancelled = true;
-    };
-  }, [auth.api, eventId, slug, reloadKey]);
-
-  useEffect(() => {
-    if (!org) return;
-    let cancelled = false;
-    void auth.api
-      .getOrganizerPaymentAccount(org.id)
-      .then((row) => {
-        if (!cancelled) setPayoutReady(Boolean(row.payoutReady));
-      })
-      .catch(() => {
-        if (!cancelled) setPayoutReady(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [auth.api, org]);
 
   const compete = useMemo(
     () =>
@@ -164,7 +146,8 @@ export function EventEntryPanel({
     const tid = toastPending(toastCopy.saving);
     try {
       const next = await auth.api.deleteOrganizerEventCategory(org.id, event.id, cat.id);
-      setEvent(next);
+      invalidate.setEventCache(next);
+      invalidate.invalidateOrganizerEvents(org.id);
       toastResolve(
         tid,
         cat.entryType === 'viewer'
@@ -185,13 +168,16 @@ export function EventEntryPanel({
         <SoftError
           title="Couldn’t load entry"
           error={loadError}
-          onRetry={() => setReloadKey((n) => n + 1)}
+          onRetry={() => {
+            void orgQuery.refetch();
+            void eventQuery.refetch();
+          }}
         />
       </div>
     );
   }
 
-  if (!org || !event) {
+  if ((orgQuery.isPending && !org) || (Boolean(org) && eventQuery.isPending && !event) || !org || !event) {
     return (
       <PageLoading
         variant="detail"
@@ -292,7 +278,7 @@ export function EventEntryPanel({
   }
 
   return (
-    <div className="relative min-h-[70vh] bg-[#080908]">
+    <OrganizerManageShell>
       <OrganizerWorkspace width="canvas" className="relative z-10 space-y-5 sm:space-y-6">
         <OrganizerEventSubHeader
           org={org}
@@ -307,13 +293,15 @@ export function EventEntryPanel({
           orgSlug={org.slug}
           event={event}
           onUpdated={(next) => {
-            setEvent(next);
-            setReloadKey((n) => n + 1);
+            invalidate.setEventCache(next);
+            invalidate.invalidateOrganizerEvents(org.id);
           }}
         />
-        {body}
+        <motion.div initial={{ opacity: 0.88 }} animate={{ opacity: 1 }} transition={{ duration: 0.16 }}>
+          {body}
+        </motion.div>
       </OrganizerWorkspace>
-    </div>
+    </OrganizerManageShell>
   );
 }
 

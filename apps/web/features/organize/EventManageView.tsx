@@ -1,16 +1,11 @@
 'use client';
 
 import { routes } from '@cypher/contracts';
-import type {
-  OrganizerDto,
-  OrganizerEventDetailDto,
-  OrganizerEventRegistrationsResponse,
-} from '@cypher/contracts';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useMemo, useState } from 'react';
+import { motion } from 'framer-motion';
 
 import { toastCopy, toastPending, toastReject, toastResolve } from '@/components/ui/toaster';
-import { useAuth } from '@/features/auth/AuthProvider';
 import { EditEventDrawer } from '@/features/organize/EditEventDrawer';
 import { EventControlHeader } from '@/features/organize/EventControlHeader';
 import { EventControlNav } from '@/features/organize/EventControlNav';
@@ -23,6 +18,15 @@ import {
 } from '@/features/organize/event-control';
 import { OrganizeGate } from '@/features/organize/OrganizeGate';
 import { OrganizerWorkspace } from '@/features/organize/organizer-ui';
+import {
+  useEventCheckInsQuery,
+  useEventRegistrationsQuery,
+  useInvalidateOrganize,
+  useOrganizerBySlugQuery,
+  useOrganizerEventQuery,
+  usePayoutAccountQuery,
+  usePublishEventMutation,
+} from '@/features/organize/queries';
 import { PostUpdateDialog } from '@/features/organize/EventUpdatesPanel';
 import { PageLoading, SoftError } from '@/features/shell/AsyncState';
 
@@ -37,26 +41,27 @@ export function EventManageView({ slug, eventId }: { slug: string; eventId: stri
 }
 
 function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string }) {
-  const auth = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const invalidate = useInvalidateOrganize();
   const initialDest = legacyTabToDest(searchParams.get('tab') ?? searchParams.get('section'));
   const [dest, setDest] = useState<ControlDest>(
     initialDest === 'entry' || initialDest === 'people' || initialDest === 'money'
       ? 'home'
       : initialDest,
   );
-  const [org, setOrg] = useState<OrganizerDto | null>(null);
-  const [event, setEvent] = useState<OrganizerEventDetailDto | null>(null);
-  const [regs, setRegs] = useState<OrganizerEventRegistrationsResponse | null>(null);
-  const [checkedInCount, setCheckedInCount] = useState<number | null>(null);
-  const [payoutReady, setPayoutReady] = useState<boolean | null>(null);
-  const [pending, setPending] = useState(false);
-  const [loadError, setLoadError] = useState<unknown>(null);
-  const [reloadKey, setReloadKey] = useState(0);
   const [postUpdateOpen, setPostUpdateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
-  const [updatesRefreshKey, setUpdatesRefreshKey] = useState(0);
+
+  const orgQuery = useOrganizerBySlugQuery(slug);
+  const org = orgQuery.data;
+  const eventQuery = useOrganizerEventQuery(org?.id, eventId, Boolean(org?.id));
+  const event = eventQuery.data;
+  const regsQuery = useEventRegistrationsQuery(org?.id, eventId, Boolean(org?.id));
+  const checkInsQuery = useEventCheckInsQuery(org?.id, eventId, Boolean(org?.id));
+  const showMoney = useMemo(() => (event ? hasPaidEntry(event) : false), [event]);
+  const payoutQuery = usePayoutAccountQuery(org?.id, Boolean(org?.id) && showMoney);
+  const publishMutation = usePublishEventMutation(org?.id ?? '', eventId);
 
   useEffect(() => {
     if (initialDest === 'entry') {
@@ -69,74 +74,22 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
   }, [eventId, initialDest, router, slug]);
 
   useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      setLoadError(null);
-      try {
-        const organizer = await auth.api.getMyOrganizerBySlug(slug);
-        const [detail, regList, checkIns] = await Promise.all([
-          auth.api.getOrganizerEvent(organizer.id, eventId),
-          auth.api.listOrganizerEventRegistrations(organizer.id, eventId).catch(() => null),
-          auth.api.listCheckIns(organizer.id, eventId).catch(() => null),
-        ]);
-        if (cancelled) return;
-        setOrg(organizer);
-        setEvent(detail);
-        setRegs(regList);
-        setCheckedInCount(checkIns?.totals.checkedIn ?? null);
-      } catch (err) {
-        if (!cancelled) setLoadError(err);
-      }
-    }
-    void load();
-    return () => {
-      cancelled = true;
-    };
-  }, [auth.api, eventId, slug, reloadKey]);
-
-  const showMoney = useMemo(() => (event ? hasPaidEntry(event) : false), [event]);
-
-  useEffect(() => {
-    if (!org || !showMoney) {
-      setPayoutReady(null);
-      return;
-    }
-    let cancelled = false;
-    void auth.api
-      .getOrganizerPaymentAccount(org.id)
-      .then((row) => {
-        if (!cancelled) setPayoutReady(Boolean(row.payoutReady));
-      })
-      .catch(() => {
-        if (!cancelled) setPayoutReady(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [auth.api, org, showMoney, event?.id]);
-
-  useEffect(() => {
     if (dest === 'money' && !showMoney) setDest('home');
   }, [dest, showMoney]);
 
   async function togglePublish() {
     if (!org || !event || !canPublish(org.role)) return;
-    setPending(true);
     const tid = toastPending(toastCopy.publishing);
     try {
-      const updated =
-        event.status === 'published'
-          ? await auth.api.unpublishOrganizerEvent(org.id, event.id)
-          : await auth.api.publishOrganizerEvent(org.id, event.id);
-      setEvent(updated);
+      const updated = await publishMutation.mutateAsync(
+        event.status === 'published' ? 'unpublish' : 'publish',
+      );
       toastResolve(
         tid,
         updated.status === 'published' ? toastCopy.published : toastCopy.unpublished,
       );
     } catch (err) {
       toastReject(tid, toastCopy.publishFailed, err instanceof Error ? err.message : undefined);
-    } finally {
-      setPending(false);
     }
   }
 
@@ -153,17 +106,17 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
       router.push(routes.organizeEventMoney(slug, eventId));
       return;
     }
-    const prev = dest;
     setDest(next);
     if (typeof window !== 'undefined') {
       const url = new URL(window.location.href);
       url.searchParams.set('tab', next === 'home' ? 'overview' : next);
       window.history.replaceState(null, '', `${url.pathname}${url.search}`);
     }
-    if (prev === 'home' || next === 'home') {
-      setReloadKey((n) => n + 1);
-    }
   }
+
+  const loadError = orgQuery.error ?? eventQuery.error;
+  const coldLoading =
+    (orgQuery.isPending && !org) || (Boolean(org) && eventQuery.isPending && !event);
 
   if (loadError && !event) {
     return (
@@ -171,25 +124,33 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
         <SoftError
           title="Couldn’t load event"
           error={loadError}
-          onRetry={() => setReloadKey((n) => n + 1)}
+          onRetry={() => {
+            void orgQuery.refetch();
+            void eventQuery.refetch();
+          }}
         />
       </div>
     );
   }
 
-  if (!org || !event) {
+  if (coldLoading || !org || !event) {
     return <PageLoading variant="detail" className="px-6 py-16" label="Loading event" />;
   }
 
   const entryHref = routes.organizeEventEntry(org.slug, event.id);
   const peopleHref = routes.organizeEventPeople(org.slug, event.id);
+  const regs = regsQuery.data ?? null;
+  const checkedInCount = checkInsQuery.data?.totals.checkedIn ?? null;
+  const payoutReady =
+    !showMoney ? null : payoutQuery.data ? Boolean(payoutQuery.data.payoutReady) : payoutQuery.isPending ? null : false;
 
   const shell = (
     <OrganizerWorkspace width="canvas" className="relative z-10 space-y-7 md:space-y-8">
       <EventControlHeader
         org={org}
         event={event}
-        pending={pending}
+        pending={publishMutation.isPending}
+        sharedLayout
         onPublishToggle={() => void togglePublish()}
         onPostUpdate={() => setPostUpdateOpen(true)}
         onEditEvent={() => setEditOpen(true)}
@@ -206,7 +167,7 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
         onOpenChange={setPostUpdateOpen}
         onPosted={() => {
           setPostUpdateOpen(false);
-          setUpdatesRefreshKey((n) => n + 1);
+          invalidate.invalidateEventUpdates(event.id);
         }}
       />
 
@@ -217,32 +178,37 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
         orgSlug={org.slug}
         event={event}
         onUpdated={(next) => {
-          setEvent(next);
-          setReloadKey((n) => n + 1);
+          invalidate.setEventCache(next);
+          invalidate.invalidateOrganizerEvents(org.id);
         }}
       />
 
       {dest === 'home' ? (
-        <EventHomePanel
-          org={org}
-          event={event}
-          regs={regs}
-          payoutReady={payoutReady}
-          checkedInCount={checkedInCount}
-          entryHref={entryHref}
-          peopleHref={peopleHref}
-          onNavigate={navigate}
-          onEditEvent={() => setEditOpen(true)}
-          onPostUpdate={() => setPostUpdateOpen(true)}
-          onViewAllUpdates={() =>
-            router.push(routes.organizeEventUpdates(slug, eventId))
-          }
-          updatesRefreshKey={updatesRefreshKey}
-          onPublished={(next) => {
-            setEvent(next);
-            setReloadKey((n) => n + 1);
-          }}
-        />
+        <motion.div
+          initial={{ opacity: 0.92 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.18 }}
+        >
+          <EventHomePanel
+            org={org}
+            event={event}
+            regs={regs}
+            payoutReady={payoutReady}
+            checkedInCount={checkedInCount}
+            entryHref={entryHref}
+            peopleHref={peopleHref}
+            onNavigate={navigate}
+            onEditEvent={() => setEditOpen(true)}
+            onPostUpdate={() => setPostUpdateOpen(true)}
+            onViewAllUpdates={() =>
+              router.push(routes.organizeEventUpdates(slug, eventId))
+            }
+            onPublished={(next) => {
+              invalidate.setEventCache(next);
+              invalidate.invalidateOrganizerEvents(org.id);
+            }}
+          />
+        </motion.div>
       ) : null}
     </OrganizerWorkspace>
   );
@@ -253,7 +219,6 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
 
   return (
     <div className="relative overflow-hidden">
-      {/* Full-bleed stage wash — spans viewport, fades into content below */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-x-0 top-0 h-[min(42rem,70vh)] bg-[radial-gradient(ellipse_120%_70%_at_50%_-10%,rgba(255,104,0,0.28)_0%,rgba(255,104,0,0.12)_28%,rgba(255,104,0,0.04)_52%,transparent_72%)]"

@@ -1,8 +1,7 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import type {
-  EventUpdateDto,
   OrganizerDto,
   OrganizerEventDetailDto,
   OrganizerEventRegistrationsResponse,
@@ -12,7 +11,6 @@ import { formatMinorUnits } from '@cypher/utils';
 import Link from 'next/link';
 
 import { ByndIcon } from '@/components/icons/bynd8';
-import { useAuth } from '@/features/auth/AuthProvider';
 import {
   hasPaidEntry,
   isPastEvent,
@@ -32,6 +30,7 @@ import {
   type EventTypeGroup,
 } from '@/features/organize/event-type-copy';
 import { EventReadiness } from '@/features/organize/EventReadiness';
+import { useEventUpdatesQuery } from '@/features/organize/queries';
 import { cn } from '@/lib/utils';
 import {
   ChevronRight,
@@ -233,7 +232,6 @@ export function EventHomePanel({
   onEditEvent,
   onPostUpdate,
   onViewAllUpdates,
-  updatesRefreshKey = 0,
 }: {
   org: OrganizerDto;
   event: OrganizerEventDetailDto;
@@ -247,11 +245,9 @@ export function EventHomePanel({
   onEditEvent: () => void;
   onPostUpdate?: () => void;
   onViewAllUpdates?: () => void;
-  updatesRefreshKey?: number;
 }) {
   void _payoutReady;
   void _checkedInCount;
-  const auth = useAuth();
   const isDraft = event.status === 'draft';
   const isLive = event.status === 'published';
   const past = isPastEvent(event);
@@ -278,28 +274,9 @@ export function EventHomePanel({
   const whenShort = formatEventHomeWhenShort(event.startTime);
   const place = [event.venue, event.city].filter(Boolean).join(', ');
 
-  const [latestUpdate, setLatestUpdate] = useState<EventUpdateDto | null>(null);
-  const [updateCount, setUpdateCount] = useState(0);
-
-  useEffect(() => {
-    let cancelled = false;
-    void auth.api
-      .listEventUpdates(org.id, event.id)
-      .then((res) => {
-        if (cancelled) return;
-        setUpdateCount(res.items.length);
-        setLatestUpdate(res.items[0] ?? null);
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setLatestUpdate(null);
-          setUpdateCount(0);
-        }
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [auth.api, event.id, org.id, updatesRefreshKey]);
+  const updatesQuery = useEventUpdatesQuery(org.id, event.id);
+  const latestUpdate = updatesQuery.data?.[0] ?? null;
+  const updateCount = updatesQuery.data?.length ?? 0;
 
   const metrics = useMemo(
     () =>
