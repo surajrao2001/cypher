@@ -1,6 +1,6 @@
 'use client';
 
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, type ReactNode } from 'react';
 
 import { useAuth } from '@/features/auth/AuthProvider';
@@ -10,6 +10,11 @@ import { loginUrl, requiresOnboardingComplete, safeNextPath } from '@/lib/auth-r
 /** Soft placeholder — avoid full-screen takeover copy during redirects / sign-out. */
 function GateQuiet() {
   return <PageLoading variant="page" className="min-h-[40vh]" label="Loading" />;
+}
+
+function currentNextPath(pathname: string): string {
+  if (typeof window === 'undefined') return pathname;
+  return `${window.location.pathname}${window.location.search}`;
 }
 
 /** Blocks children until session is known; redirects anonymous users to login. */
@@ -24,23 +29,21 @@ export function RequireAuth({
   const auth = useAuth();
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
 
   useEffect(() => {
     if (auth.status === 'loading') {
       return;
     }
     if (auth.status === 'unauthenticated') {
-      const qs = searchParams.toString();
-      const next = qs ? `${pathname}?${qs}` : pathname;
-      router.replace(loginUrl(next));
+      // Avoid useSearchParams — it forces Suspense fallback flashes on soft navigations.
+      router.replace(loginUrl(currentNextPath(pathname)));
       return;
     }
     const mustOnboard = requireOnboarded || requiresOnboardingComplete(pathname);
     if (mustOnboard && auth.me?.needsOnboarding) {
       router.replace(`/profile?next=${encodeURIComponent(pathname)}`);
     }
-  }, [auth.me?.needsOnboarding, auth.status, pathname, requireOnboarded, router, searchParams]);
+  }, [auth.me?.needsOnboarding, auth.status, pathname, requireOnboarded, router]);
 
   if (auth.status === 'loading') {
     return <GateQuiet />;
@@ -73,15 +76,18 @@ export function RequireAuth({
 export function RequireGuest({ children }: { children: ReactNode }) {
   const auth = useAuth();
   const router = useRouter();
-  const searchParams = useSearchParams();
 
   useEffect(() => {
     if (auth.status !== 'authenticated') {
       return;
     }
-    const next = safeNextPath(searchParams.get('next'), auth.me?.needsOnboarding ? '/profile' : '/discover');
+    const nextParam =
+      typeof window !== 'undefined'
+        ? new URLSearchParams(window.location.search).get('next')
+        : null;
+    const next = safeNextPath(nextParam, auth.me?.needsOnboarding ? '/profile' : '/discover');
     router.replace(next);
-  }, [auth.me?.needsOnboarding, auth.status, router, searchParams]);
+  }, [auth.me?.needsOnboarding, auth.status, router]);
 
   if (auth.status === 'loading') {
     return <GateQuiet />;

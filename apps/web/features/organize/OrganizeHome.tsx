@@ -509,22 +509,30 @@ function YourEventCard({
       onPointerEnter={onPrefetch}
       onFocus={onPrefetch}
     >
-      <motion.div
-        layoutId={reduceMotion ? undefined : `event-poster-${event.id}`}
-        className="relative mx-auto h-[8.5rem] w-[6.25rem] shrink-0 overflow-hidden rounded-lg bg-[#111211] shadow-[0_12px_28px_-16px_rgba(0,0,0,0.9)] sm:mx-0 sm:h-[9.5rem] sm:w-[7rem]"
-        transition={{ type: 'spring', stiffness: 380, damping: 34 }}
+      <Link
+        href={manageHref}
+        className="relative mx-auto block h-[8.5rem] w-[6.25rem] shrink-0 sm:mx-0 sm:h-[9.5rem] sm:w-[7rem]"
+        onClick={onPrefetch}
+        onPointerEnter={onPrefetch}
+        onFocus={onPrefetch}
       >
-        {event.posterUrl ? (
-          <img src={event.posterUrl} alt="" className="h-full w-full object-cover" />
-        ) : (
-          <div className="flex h-full w-full flex-col items-center justify-center gap-1">
-            <span className="font-display text-lg tracking-[0.08em] text-white/25">+</span>
-            <span className="text-[9px] font-semibold uppercase tracking-[0.14em] text-white/28">
-              Poster
-            </span>
-          </div>
-        )}
-      </motion.div>
+        <motion.div
+          layoutId={reduceMotion ? undefined : `event-poster-${event.id}`}
+          className="relative h-full w-full overflow-hidden rounded-lg bg-[#111211] shadow-[0_12px_28px_-16px_rgba(0,0,0,0.9)]"
+          transition={{ type: 'spring', stiffness: 380, damping: 34 }}
+        >
+          {event.posterUrl ? (
+            <img src={event.posterUrl} alt="" className="h-full w-full object-cover" />
+          ) : (
+            <div className="flex h-full w-full flex-col items-center justify-center gap-1">
+              <span className="font-display text-lg tracking-[0.08em] text-white/25">+</span>
+              <span className="text-[9px] font-semibold uppercase tracking-[0.14em] text-white/28">
+                Poster
+              </span>
+            </div>
+          )}
+        </motion.div>
+      </Link>
 
       <div className="flex min-w-0 flex-1 flex-col gap-2.5">
         <div className="flex items-start justify-between gap-2">
@@ -563,7 +571,7 @@ function YourEventCard({
           </Dropdown>
         </div>
 
-        <Link href={manageHref} className="min-w-0" onClick={onPrefetch}>
+        <Link href={manageHref} className="min-w-0" onClick={onPrefetch} onPointerEnter={onPrefetch}>
           <motion.h2
             layoutId={reduceMotion ? undefined : `event-title-${event.id}`}
             className="display-title truncate text-[1.35rem] leading-[0.95] tracking-[0.04em] text-[#F4F4F1] sm:text-[1.55rem]"

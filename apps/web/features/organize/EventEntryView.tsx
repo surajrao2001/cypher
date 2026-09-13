@@ -40,7 +40,7 @@ import {
 } from '@/features/organize/organizer-primitives';
 import { OrganizeGate } from '@/features/organize/OrganizeGate';
 import { OrganizerWorkspace } from '@/features/organize/organizer-ui';
-import { SoftError, friendlyError, PageLoading } from '@/features/shell/AsyncState';
+import { SoftError, friendlyError } from '@/features/shell/AsyncState';
 import {
   useInvalidateOrganize,
   useOrganizerBySlugQuery,
@@ -177,13 +177,11 @@ export function EventEntryPanel({
     );
   }
 
-  if ((orgQuery.isPending && !org) || (Boolean(org) && eventQuery.isPending && !event) || !org || !event) {
+  if ((orgQuery.isPending && !org && !event) || !org || !event) {
     return (
-      <PageLoading
-        variant="detail"
-        className={showChrome ? 'px-6 py-16' : 'py-8'}
-        label="Loading entry"
-      />
+      <div className={showChrome ? 'px-6 py-16' : 'py-8'}>
+        <div className="h-40 animate-pulse rounded-xl bg-white/[0.04]" />
+      </div>
     );
   }
 

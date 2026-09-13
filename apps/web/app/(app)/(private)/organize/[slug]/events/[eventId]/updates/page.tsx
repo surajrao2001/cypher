@@ -1,10 +1,10 @@
+'use client';
+
+import { useParams } from 'next/navigation';
+
 import { EventUpdatesView } from '@/features/organize/EventUpdatesPanel';
 
-export default async function EventUpdatesPage({
-  params,
-}: {
-  params: Promise<{ slug: string; eventId: string }>;
-}) {
-  const { slug, eventId } = await params;
-  return <EventUpdatesView slug={slug} eventId={eventId} />;
+export default function EventUpdatesPage() {
+  const params = useParams<{ slug: string; eventId: string }>();
+  return <EventUpdatesView slug={params.slug} eventId={params.eventId} />;
 }

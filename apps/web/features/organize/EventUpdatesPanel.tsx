@@ -113,10 +113,8 @@ function EventUpdatesScreen({ slug, eventId }: { slug: string; eventId: string }
   const updatesQuery = useEventUpdatesQuery(org?.id, eventId, Boolean(org?.id));
   const items = updatesQuery.data ?? [];
   const error = orgQuery.error ?? eventQuery.error ?? updatesQuery.error;
-  const loading =
-    (orgQuery.isPending && !org) ||
-    (Boolean(org) && eventQuery.isPending && !event) ||
-    (Boolean(org) && updatesQuery.isPending && !updatesQuery.data);
+  const loading = !org && !event && (orgQuery.isPending || eventQuery.isPending);
+  const updatesPending = Boolean(org) && updatesQuery.isPending && !updatesQuery.data;
 
   const counts = useMemo(() => {
     const base = { all: items.length, announcements: 0, schedule: 0, media: 0, other: 0 };
@@ -239,7 +237,9 @@ function EventUpdatesScreen({ slug, eventId }: { slug: string; eventId: string }
           onChange={setFilter}
         />
 
-        {filtered.length === 0 ? (
+        {updatesPending ? (
+          <OrganizerSkeletonRows count={4} />
+        ) : filtered.length === 0 ? (
           <OrganizerEmptyBlock
             title="No updates yet"
             body="Share schedule changes, announcements or event news here."
@@ -413,10 +413,7 @@ function EventUpdateDetailScreen({
   const updatesQuery = useEventUpdatesQuery(org?.id, eventId, Boolean(org?.id));
   const item = updatesQuery.data?.find((u) => u.id === updateId) ?? null;
   const error = orgQuery.error ?? eventQuery.error ?? updatesQuery.error;
-  const loading =
-    (orgQuery.isPending && !org) ||
-    (Boolean(org) && eventQuery.isPending && !event) ||
-    (Boolean(org) && updatesQuery.isPending && !updatesQuery.data);
+  const loading = !org && !event && (orgQuery.isPending || eventQuery.isPending);
 
   async function remove() {
     if (!org || !item) return;

@@ -1,8 +1,8 @@
 'use client';
 
 import { routes } from '@cypher/contracts';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense, useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 
 import { toastCopy, toastPending, toastReject, toastResolve } from '@/components/ui/toaster';
@@ -28,28 +28,28 @@ import {
   usePublishEventMutation,
 } from '@/features/organize/queries';
 import { PostUpdateDialog } from '@/features/organize/EventUpdatesPanel';
-import { PageLoading, SoftError } from '@/features/shell/AsyncState';
+import { SoftError } from '@/features/shell/AsyncState';
+
+function readInitialDest(): ControlDest {
+  if (typeof window === 'undefined') return 'home';
+  const sp = new URLSearchParams(window.location.search);
+  const dest = legacyTabToDest(sp.get('tab') ?? sp.get('section'));
+  if (dest === 'entry' || dest === 'people' || dest === 'money') return 'home';
+  return dest;
+}
 
 export function EventManageView({ slug, eventId }: { slug: string; eventId: string }) {
   return (
     <OrganizeGate>
-      <Suspense fallback={<PageLoading variant="detail" className="px-6 py-16" label="Loading event" />}>
-        <EventManageViewInner slug={slug} eventId={eventId} />
-      </Suspense>
+      <EventManageViewInner slug={slug} eventId={eventId} />
     </OrganizeGate>
   );
 }
 
 function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string }) {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const invalidate = useInvalidateOrganize();
-  const initialDest = legacyTabToDest(searchParams.get('tab') ?? searchParams.get('section'));
-  const [dest, setDest] = useState<ControlDest>(
-    initialDest === 'entry' || initialDest === 'people' || initialDest === 'money'
-      ? 'home'
-      : initialDest,
-  );
+  const [dest, setDest] = useState<ControlDest>(readInitialDest);
   const [postUpdateOpen, setPostUpdateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
 
@@ -64,6 +64,9 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
   const publishMutation = usePublishEventMutation(org?.id ?? '', eventId);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const sp = new URLSearchParams(window.location.search);
+    const initialDest = legacyTabToDest(sp.get('tab') ?? sp.get('section'));
     if (initialDest === 'entry') {
       router.replace(routes.organizeEventEntry(slug, eventId));
     } else if (initialDest === 'people') {
@@ -71,7 +74,7 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
     } else if (initialDest === 'money') {
       router.replace(routes.organizeEventMoney(slug, eventId));
     }
-  }, [eventId, initialDest, router, slug]);
+  }, [eventId, router, slug]);
 
   useEffect(() => {
     if (dest === 'money' && !showMoney) setDest('home');
@@ -115,10 +118,10 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
   }
 
   const loadError = orgQuery.error ?? eventQuery.error;
-  const coldLoading =
-    (orgQuery.isPending && !org) || (Boolean(org) && eventQuery.isPending && !event);
+  // Only block the full page when we have neither cached org nor cached event.
+  const coldLoading = !org && !event && (orgQuery.isPending || eventQuery.isPending);
 
-  if (loadError && !event) {
+  if (loadError && !org && !event) {
     return (
       <div className="px-6 py-16">
         <SoftError
@@ -134,7 +137,11 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
   }
 
   if (coldLoading || !org || !event) {
-    return <PageLoading variant="detail" className="px-6 py-16" label="Loading event" />;
+    return (
+      <div className="px-6 py-16">
+        <div className="mx-auto h-40 max-w-3xl animate-pulse rounded-xl bg-white/[0.04]" />
+      </div>
+    );
   }
 
   const entryHref = routes.organizeEventEntry(org.slug, event.id);

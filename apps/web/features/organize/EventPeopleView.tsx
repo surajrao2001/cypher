@@ -149,10 +149,7 @@ function EventPeoplePanel({ slug, eventId }: { slug: string; eventId: string }) 
   }
 
   const loadError = orgQuery.error ?? eventQuery.error ?? regsQuery.error;
-  const coldLoading =
-    (orgQuery.isPending && !org) ||
-    (Boolean(org) && eventQuery.isPending && !event) ||
-    (Boolean(org) && regsQuery.isPending && !data);
+  const coldLoading = !org && !event && (orgQuery.isPending || eventQuery.isPending);
 
   if (coldLoading) {
     return (
@@ -179,10 +176,11 @@ function EventPeoplePanel({ slug, eventId }: { slug: string; eventId: string }) 
       </div>
     );
   }
-  if (!org || !event || !data) return null;
+  if (!org || !event) return null;
 
   const entryHref = routes.organizeEventEntry(org.slug, event.id);
   const checkInHref = routes.organizeEventCheckIn(org.slug, event.id);
+  const regsPending = regsQuery.isPending && !data;
 
   const filters: Array<{ id: PeopleFilter; label: string; count: number }> = [
     { id: 'all', label: 'All', count: counts.all },
@@ -218,7 +216,9 @@ function EventPeoplePanel({ slug, eventId }: { slug: string; eventId: string }) 
           transition={{ duration: 0.16 }}
           className="space-y-4 sm:space-y-5"
         >
-{data.categories.length === 0 ? (
+        {regsPending ? (
+          <OrganizerSkeletonRows count={6} />
+        ) : !data || data.categories.length === 0 ? (
           <OrganizerEmptyBlock
             title="No registrations yet"
             body="Add a competition or audience pass to start taking registrations."

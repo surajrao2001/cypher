@@ -1,10 +1,10 @@
+'use client';
+
+import { useParams } from 'next/navigation';
+
 import { EventPeopleView } from '@/features/organize/EventPeopleView';
 
-export default async function EventPeoplePage({
-  params,
-}: {
-  params: Promise<{ slug: string; eventId: string }>;
-}) {
-  const { slug, eventId } = await params;
-  return <EventPeopleView slug={slug} eventId={eventId} />;
+export default function EventPeoplePage() {
+  const params = useParams<{ slug: string; eventId: string }>();
+  return <EventPeopleView slug={params.slug} eventId={params.eventId} />;
 }

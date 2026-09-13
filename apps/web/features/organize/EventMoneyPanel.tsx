@@ -78,8 +78,7 @@ function EventMoneyScreen({ slug, eventId }: { slug: string; eventId: string }) 
         ? null
         : false;
   const error = orgQuery.error ?? eventQuery.error;
-  const loading =
-    (orgQuery.isPending && !org) || (Boolean(org) && eventQuery.isPending && !event);
+  const loading = !org && !event && (orgQuery.isPending || eventQuery.isPending);
 
   const money = moneyFromRegistrations(regs);
   const pendingCount = useMemo(() => {

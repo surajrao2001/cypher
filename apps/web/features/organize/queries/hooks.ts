@@ -24,9 +24,16 @@ const ORG_STALE_MS = 60_000;
 
 export function useMyOrganizersQuery(enabled = true) {
   const { api, status } = useAuth();
+  const queryClient = useQueryClient();
   return useQuery({
     queryKey: orgKeys.organizersMine(),
-    queryFn: () => api.listMyOrganizers(),
+    queryFn: async () => {
+      const list = await api.listMyOrganizers();
+      for (const org of list) {
+        queryClient.setQueryData(orgKeys.organizerSlug(org.slug), org);
+      }
+      return list;
+    },
     enabled: enabled && status === 'authenticated',
     staleTime: ORG_STALE_MS,
   });
@@ -34,11 +41,18 @@ export function useMyOrganizersQuery(enabled = true) {
 
 export function useOrganizerBySlugQuery(slug: string, enabled = true) {
   const { api, status } = useAuth();
+  const queryClient = useQueryClient();
   return useQuery({
     queryKey: orgKeys.organizerSlug(slug),
     queryFn: () => api.getMyOrganizerBySlug(slug),
     enabled: enabled && Boolean(slug) && status === 'authenticated',
     staleTime: ORG_STALE_MS,
+    initialData: () => {
+      const mine = queryClient.getQueryData<OrganizerDto[]>(orgKeys.organizersMine());
+      return mine?.find((o) => o.slug === slug);
+    },
+    initialDataUpdatedAt: () =>
+      queryClient.getQueryState(orgKeys.organizersMine())?.dataUpdatedAt,
   });
 }
 
