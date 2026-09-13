@@ -83,9 +83,9 @@ export function RegisterCta({ event }: RegisterCtaProps) {
   const stepList = useMemo(() => {
     const steps: Array<{ id: Step; label: string }> = [];
     if (mode === 'compete' || (mode === 'watch' && viewers.length > 1)) {
-      steps.push({ id: 'category', label: 'Category' });
+      steps.push({ id: 'category', label: 'Entry' });
     }
-    steps.push({ id: 'details', label: 'Details' });
+    steps.push({ id: 'details', label: 'Who’s entering' });
     if (held && held.totalAmountMinor > 0) steps.push({ id: 'pay', label: 'Pay' });
     if (held || isConfirmed) steps.push({ id: 'confirm', label: 'Confirm' });
     return steps;
@@ -240,9 +240,9 @@ export function RegisterCta({ event }: RegisterCtaProps) {
           }
         }
       }
-      toastInfo(toastCopy.payDone, 'If Tickets are quiet, give it a minute.');
+      toastInfo(toastCopy.payDone, 'Open Passes if it is not there yet.');
       toastDismiss(tid);
-      setError('Payment submitted — check Tickets shortly.');
+      setError('Payment submitted — check Passes shortly.');
     } catch (err) {
       const detail = err instanceof Error ? err.message : undefined;
       toastReject(tid, toastCopy.payFailed, detail);
@@ -265,6 +265,20 @@ export function RegisterCta({ event }: RegisterCtaProps) {
     viewers[0]?.currentPriceMinor ?? viewers[0]?.priceMinor ?? 0,
   );
   const feeMinor = held?.totalAmountMinor ?? sellPrice;
+  const hasEntry = compete.length > 0 || viewers.length > 0;
+  const registrationClosed = event.status === 'registration_closed';
+
+  if (!hasEntry) {
+    return null;
+  }
+
+  if (registrationClosed) {
+    return (
+      <Button size="lg" disabled>
+        Registration closed
+      </Button>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
@@ -281,13 +295,8 @@ export function RegisterCta({ event }: RegisterCtaProps) {
           onClick={() => openMode('watch')}
         >
           {watchSoldOut
-            ? 'Viewers sold out'
+            ? 'Watch · Sold out'
             : `Watch · ${watchFromPrice === 0 ? 'Free' : `from ${formatMinorUnits(watchFromPrice)}`}`}
-        </Button>
-      ) : null}
-      {compete.length === 0 && viewers.length === 0 ? (
-        <Button size="lg" disabled>
-          Registration closed
         </Button>
       ) : null}
 
@@ -303,15 +312,15 @@ export function RegisterCta({ event }: RegisterCtaProps) {
               {isConfirmed
                 ? 'You’re in'
                 : mode === 'watch'
-                  ? 'Viewers pass'
-                  : 'Compete registration'}
+                  ? 'Audience pass'
+                  : 'Get in'}
             </DialogTitle>
             <DialogDescription>
               {isConfirmed
-                ? 'Pass confirmed. Open Tickets for your QR.'
+                ? 'Your pass is ready. Open Passes for your QR.'
                 : mode === 'watch'
-                  ? 'One pass for the floor — no battle category needed.'
-                  : 'Pick a lane, add your crew, then confirm.'}
+                  ? 'Watch the floor — no competition entry needed.'
+                  : 'Choose your entry, add who’s entering, then confirm.'}
             </DialogDescription>
           </DialogHeader>
 
@@ -347,7 +356,7 @@ export function RegisterCta({ event }: RegisterCtaProps) {
             </div>
           ) : isConfirmed && held ? (
             <SummaryCard
-              title={held.category.entryType === 'viewer' ? 'Viewers pass' : held.category.name}
+              title={held.category.entryType === 'viewer' ? 'Audience pass' : held.category.name}
               code={held.registrationCode}
               feeMinor={held.totalAmountMinor}
               status="Confirmed"
@@ -355,7 +364,7 @@ export function RegisterCta({ event }: RegisterCtaProps) {
           ) : held && step === 'pay' ? (
             <div className="space-y-4">
               <SummaryCard
-                title={held.category.entryType === 'viewer' ? 'Viewers pass' : held.category.name}
+                title={held.category.entryType === 'viewer' ? 'Audience pass' : held.category.name}
                 code={held.registrationCode}
                 feeMinor={held.totalAmountMinor}
                 status="Spot held"
@@ -378,7 +387,7 @@ export function RegisterCta({ event }: RegisterCtaProps) {
           ) : held && !isConfirmed && held.totalAmountMinor === 0 ? (
             <div className="space-y-4">
               <SummaryCard
-                title={held.category.entryType === 'viewer' ? 'Viewers pass' : held.category.name}
+                title={held.category.entryType === 'viewer' ? 'Audience pass' : held.category.name}
                 code={held.registrationCode}
                 feeMinor={0}
                 status="Confirm free entry"
@@ -474,7 +483,7 @@ export function RegisterCta({ event }: RegisterCtaProps) {
               <SummaryCard
                 title={
                   mode === 'watch'
-                    ? category?.name || 'Viewers pass'
+                    ? category?.name || 'Audience pass'
                     : category?.name ?? 'Category'
                 }
                 feeMinor={feeMinor}
@@ -570,7 +579,7 @@ export function RegisterCta({ event }: RegisterCtaProps) {
             ) : null}
             {token && me && needsPay ? (
               <Button onClick={() => void payHeld()} disabled={busy}>
-                {busy ? 'Opening Cashfree…' : `Pay ${formatMinorUnits(held!.totalAmountMinor)}`}
+                {busy ? 'Opening secure payment…' : `Pay ${formatMinorUnits(held!.totalAmountMinor)}`}
               </Button>
             ) : null}
             {isConfirmed ? (

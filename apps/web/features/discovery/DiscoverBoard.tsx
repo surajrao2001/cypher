@@ -148,10 +148,10 @@ export function DiscoverBoard({ catalog }: { catalog: EventListResponse }) {
             <aside className="flex flex-col gap-4 border-t border-border pt-8 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <p className="font-display text-2xl uppercase tracking-[0.04em] text-text-primary">
-                  You run the floor?
+                  Got something happening?
                 </p>
                 <p className="mt-1 max-w-md text-sm text-text-secondary">
-                  Publish a night — registrations, passes, and door check-in in one place.
+                  Put it up — registrations, passes, and check-in in one place.
                 </p>
               </div>
               <Button asChild className="rounded-full shrink-0">

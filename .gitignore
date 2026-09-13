@@ -74,6 +74,9 @@ web_modules/
 MILESTONE_TRACKER.local.md
 TEST_FLOW.local.md
 
+# Local Phase F handoff package (reference only — never commit)
+bynd8_phase_f/
+
 # Uploaded posters (local Nest storage)
 apps/api/storage/
 

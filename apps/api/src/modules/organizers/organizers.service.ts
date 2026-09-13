@@ -63,6 +63,7 @@ export type CategoryInput = {
   minTeamSize?: number;
   maxTeamSize?: number;
   teamSize?: number;
+  posterUrl?: string | null;
 };
 
 export type UpdateCategoryInput = {
@@ -73,6 +74,7 @@ export type UpdateCategoryInput = {
   minTeamSize?: number;
   maxTeamSize?: number;
   teamSize?: number;
+  posterUrl?: string | null;
 };
 
 export type CreateEventInput = {
@@ -351,6 +353,7 @@ export class OrganizersService {
           entryType: sizes.entryType,
           minTeamSize: sizes.minTeamSize,
           maxTeamSize: sizes.maxTeamSize,
+          posterUrl: category.posterUrl?.trim() || null,
         };
       }),
       ...(input.audiencePass?.enabled
@@ -620,6 +623,7 @@ export class OrganizersService {
         entryType: sizes.entryType,
         minTeamSize: sizes.minTeamSize,
         maxTeamSize: sizes.maxTeamSize,
+        posterUrl: input.posterUrl?.trim() || null,
       },
     });
     return this.getEvent(userId, organizerId, eventId);
@@ -672,6 +676,8 @@ export class OrganizersService {
         entryType: sizes?.entryType,
         minTeamSize: sizes?.minTeamSize,
         maxTeamSize: sizes?.maxTeamSize,
+        posterUrl:
+          input.posterUrl === undefined ? undefined : input.posterUrl?.trim() || null,
       },
     });
     return this.getEvent(userId, organizerId, eventId);

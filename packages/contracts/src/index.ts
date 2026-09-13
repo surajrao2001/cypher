@@ -159,6 +159,7 @@ export interface EventCategoryPublicDto {
   maxTeamSize: number;
   /** @deprecated use maxTeamSize */
   teamSize: number;
+  posterUrl: string | null;
   priceTiers: CategoryPriceTierDto[];
   validDayIds: string[];
   activeTierName: string | null;
@@ -306,6 +307,7 @@ export interface CreateOrganizerEventBody {
     maxTeamSize?: number;
     /** @deprecated prefer min/max */
     teamSize?: number;
+    posterUrl?: string | null;
   }>;
   /** Optional viewers / door pass (creates a single viewer category). */
   audiencePass?: {
@@ -349,6 +351,7 @@ export interface CreateEventCategoryBody {
   maxTeamSize?: number;
   /** @deprecated prefer min/max */
   teamSize?: number;
+  posterUrl?: string | null;
   validDayIds?: string[];
   priceTiers?: Array<{
     name: string;
@@ -368,6 +371,7 @@ export interface UpdateEventCategoryBody {
   maxTeamSize?: number;
   /** @deprecated prefer min/max */
   teamSize?: number;
+  posterUrl?: string | null;
   validDayIds?: string[];
 }
 
@@ -568,8 +572,18 @@ export const routes = {
   organizePayouts: (slug: string) => `/organize/${slug}/payouts` as const,
   organizeEventCheckIn: (slug: string, eventId: string) =>
     `/organize/${slug}/events/${eventId}/check-in` as const,
+  organizeEventEntry: (slug: string, eventId: string) =>
+    `/organize/${slug}/events/${eventId}/entry` as const,
+  organizeEventPeople: (slug: string, eventId: string) =>
+    `/organize/${slug}/events/${eventId}/people` as const,
+  organizeEventMoney: (slug: string, eventId: string) =>
+    `/organize/${slug}/events/${eventId}/money` as const,
+  organizeEventPage: (slug: string, eventId: string) =>
+    `/organize/${slug}/events/${eventId}/page` as const,
   organizeEventUpdates: (slug: string, eventId: string) =>
     `/organize/${slug}/events/${eventId}/updates` as const,
+  organizeEventUpdate: (slug: string, eventId: string, updateId: string) =>
+    `/organize/${slug}/events/${eventId}/updates/${updateId}` as const,
 } as const;
 
 export type CheckInChannel = 'SCAN' | 'MANUAL' | 'CODE';

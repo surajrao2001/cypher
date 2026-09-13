@@ -78,7 +78,7 @@ export function CheckInPanel({ slug, eventId }: { slug: string; eventId: string 
             : { registrationCode: value, channel },
         );
         setCode('');
-        setMessage('Checked in.');
+        setMessage('CHECKED IN');
         await load();
       } catch (error) {
         setMessage(friendlyError(error, 'Check-in failed'));
@@ -189,7 +189,7 @@ export function CheckInPanel({ slug, eventId }: { slug: string; eventId: string 
   return (
     <div className="mx-auto max-w-3xl space-y-6 px-4 py-8 md:px-8">
       <div>
-        <p className="kicker text-accent">Door ops</p>
+        <p className="kicker text-accent">Check-in</p>
         <h1 className="display-title text-5xl">Check-in</h1>
         <p className="mt-2 text-sm text-text-secondary">
           Point the camera at a ticket QR, or type / paste the registration code.
@@ -241,9 +241,9 @@ export function CheckInPanel({ slug, eventId }: { slug: string; eventId: string 
         </Button>
       </form>
       {message ? (
-        message === 'Checked in.' ? (
+        message === 'CHECKED IN' ? (
           <div className="rounded-md border border-accent-2/40 bg-accent-2 px-4 py-3 text-bg">
-            <p className="font-display text-2xl uppercase tracking-[0.06em]">Checked in</p>
+            <p className="font-display text-2xl uppercase tracking-[0.06em]">CHECKED IN</p>
             <p className="text-sm opacity-80">Ready for the next scan.</p>
           </div>
         ) : (
@@ -256,7 +256,7 @@ export function CheckInPanel({ slug, eventId }: { slug: string; eventId: string 
       </div>
       {(data?.items ?? []).length === 0 ? (
         <div className="rounded-lg border border-dashed border-border bg-surface px-5 py-8">
-          <p className="kicker text-accent">Door list</p>
+          <p className="kicker text-accent">Check-in list</p>
           <p className="mt-2 font-display text-2xl uppercase tracking-[0.04em]">No scans yet</p>
           <p className="mt-2 text-sm text-text-secondary">
             Start the camera or enter a registration code — confirmed guests appear here as they

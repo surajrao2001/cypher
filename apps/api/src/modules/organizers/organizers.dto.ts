@@ -13,6 +13,7 @@ import {
   MaxLength,
   Min,
   MinLength,
+  ValidateIf,
   ValidateNested,
 } from 'class-validator';
 
@@ -126,6 +127,12 @@ export class EventCategoryInputDto {
   @Min(1)
   @Max(50)
   maxTeamSize?: number;
+
+  @IsOptional()
+  @ValidateIf((_, v) => v != null && v !== '')
+  @IsUrl({ require_protocol: true, protocols: ['http', 'https'] })
+  @MaxLength(500)
+  posterUrl?: string | null;
 }
 
 export class UpdateEventCategoryDto {
@@ -174,6 +181,12 @@ export class UpdateEventCategoryDto {
   @Min(1)
   @Max(50)
   maxTeamSize?: number;
+
+  @IsOptional()
+  @ValidateIf((_, v) => v != null && v !== '')
+  @IsUrl({ require_protocol: true, protocols: ['http', 'https'] })
+  @MaxLength(500)
+  posterUrl?: string | null;
 }
 
 export class AudiencePassInputDto {

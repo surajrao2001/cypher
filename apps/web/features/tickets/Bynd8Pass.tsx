@@ -115,7 +115,7 @@ export function Bynd8Pass({
 
           <div className="border-t border-dashed border-border pt-3">
             <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-text-muted">
-              {isViewer ? 'Attendee' : 'Competitor'}
+              {isViewer ? 'Audience' : 'Competitor'}
             </p>
             <p className="mt-0.5 font-display text-xl uppercase tracking-[0.04em] text-text-primary">
               {holderName(ticket)}
@@ -251,7 +251,7 @@ export function Bynd8Pass({
             <p className="text-[10px] uppercase tracking-[0.14em] text-text-muted">
               Or open{' '}
               <Link href={routes.tickets} className="text-accent underline">
-                Tickets
+                Passes
               </Link>{' '}
               anytime
             </p>

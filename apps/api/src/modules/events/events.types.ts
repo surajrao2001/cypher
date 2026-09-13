@@ -53,6 +53,7 @@ export type EventCategoryPublicDto = {
   minTeamSize: number;
   maxTeamSize: number;
   teamSize: number;
+  posterUrl: string | null;
   priceTiers: CategoryPriceTierDto[];
   validDayIds: string[];
   activeTierName: string | null;

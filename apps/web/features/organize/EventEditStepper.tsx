@@ -2,11 +2,9 @@
 
 import { cn } from '@/lib/utils';
 
+/** Details + media only — Entry (competition / audience) is a separate surface. */
 export const EVENT_EDIT_STEPS = [
-  { id: 'basics', label: "What's cooking" },
-  { id: 'categories', label: 'Categories' },
-  { id: 'viewers', label: 'Viewers' },
-  { id: 'early-bird', label: 'Early bird' },
+  { id: 'basics', label: 'Details' },
   { id: 'media', label: 'Media' },
 ] as const;
 
@@ -21,7 +19,6 @@ type Props = {
   onChange: (step: EventEditStepId) => void;
 };
 
-/** Horizontal numbered pills — one step visible at a time in the editor. */
 export function EventEditStepper({ active, onChange }: Props) {
   return (
     <nav id="edit-steps" aria-label="Edit steps" className="scroll-mt-4 overflow-x-auto">
@@ -38,7 +35,7 @@ export function EventEditStepper({ active, onChange }: Props) {
                 onClick={() => onChange(step.id)}
                 aria-current={isActive ? 'step' : undefined}
                 className={cn(
-                  'flex items-center gap-2 rounded-full border px-3 py-2 text-left transition-colors',
+                  'flex min-h-11 items-center gap-2 rounded-md border px-3 py-2 text-left transition-colors',
                   isActive
                     ? 'border-accent bg-accent/15 text-text-primary'
                     : 'border-border bg-surface text-text-secondary hover:border-accent/40 hover:text-text-primary',

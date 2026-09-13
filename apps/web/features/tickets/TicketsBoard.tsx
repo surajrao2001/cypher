@@ -92,14 +92,14 @@ export function TicketsBoard() {
   }, [loading, partitioned.needsAction.length, partitioned.upcoming.length, partitioned.past.length]);
 
   if (!ready || status === 'loading' || loading) {
-    return <PageLoading variant="list" className="mt-10" label="Loading tickets" />;
+    return <PageLoading variant="list" className="mt-10" label="Loading passes" />;
   }
 
   if (status !== 'authenticated' || !token) {
     return (
       <EmptyState
         className="mt-10"
-        kicker="Wallet"
+        kicker="Passes"
         title="Sign in for your passes"
         body="Confirmed entries show here as a BYND8 Pass — name, category, and door QR."
       >
@@ -130,7 +130,7 @@ export function TicketsBoard() {
     return (
       <EmptyState
         className="mt-10"
-        kicker="Wallet"
+        kicker="Passes"
         title="No passes yet"
         body="Register for a night — your BYND8 Pass lands here with a door QR."
       >
@@ -171,7 +171,7 @@ export function TicketsBoard() {
   return (
     <div className="mt-8 space-y-6">
       <div>
-        <p className="kicker text-accent">Wallet</p>
+        <p className="kicker text-accent">Passes</p>
         <h1 className="display-title mt-1 text-4xl md:text-5xl">Your passes</h1>
         <p className="mt-2 max-w-lg text-sm text-text-secondary">
           Not a receipt — your credential for the night. Tap Show at door for a full-screen QR.

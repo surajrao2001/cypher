@@ -34,7 +34,10 @@ export type ByndIconName =
   | 'shield'
   | 'retry'
   | 'signIn'
-  | 'floor';
+  | 'floor'
+  | 'trophy'
+  | 'eye'
+  | 'calendar';
 
 type SvgProps = SVGProps<SVGSVGElement> & {
   title?: string;
@@ -336,6 +339,30 @@ export function IconFloor(props: SvgProps) {
   );
 }
 
+export function IconTrophy(props: SvgProps) {
+  return (
+    <Mark {...props}>
+      <path d="M6 3h12v2.2h2.2A2.8 2.8 0 0 1 23 8c0 3.4-2.4 5.6-5.6 6.2-.7 1.4-1.9 2.4-3.4 2.9V19h3v2H7v-2h3v-1.9c-1.5-.5-2.7-1.5-3.4-2.9C3.4 13.6 1 11.4 1 8a2.8 2.8 0 0 1 2.8-2.8H6V3Zm0 2.2H3.8c-.4 0-.8.4-.8.8 0 2.5 1.7 4.1 4.2 4.5V5.2Zm12 0v4.3c2.5-.4 4.2-2 4.2-4.5 0-.4-.4-.8-.8-.8H18ZM10 5.2v4.5h4V5.2h-4Z" />
+    </Mark>
+  );
+}
+
+export function IconEye(props: SvgProps) {
+  return (
+    <Mark {...props}>
+      <path d="M12 5c5.2 0 9.4 3.4 10.8 7-1.4 3.6-5.6 7-10.8 7S2.6 15.6 1.2 12C2.6 8.4 6.8 5 12 5Zm0 2.2c-3.8 0-7 2.4-8.3 4.8 1.3 2.4 4.5 4.8 8.3 4.8s7-2.4 8.3-4.8c-1.3-2.4-4.5-4.8-8.3-4.8Zm0 1.8a3 3 0 1 1 0 6 3 3 0 0 1 0-6Z" />
+    </Mark>
+  );
+}
+
+export function IconCalendar(props: SvgProps) {
+  return (
+    <Mark {...props}>
+      <path d="M8 2h2v2h4V2h2v2h3.5A1.5 1.5 0 0 1 21 5.5v14A1.5 1.5 0 0 1 19.5 21h-15A1.5 1.5 0 0 1 3 19.5v-14A1.5 1.5 0 0 1 4.5 4H8V2Zm11 7H5v10h14V9ZM7 11h3v3H7v-3Zm4 0h3v3h-3v-3Zm4 0h3v3h-3v-3Z" />
+    </Mark>
+  );
+}
+
 const ICONS: Record<ByndIconName, (props: SvgProps) => ReactElement> = {
   discover: IconDiscover,
   events: IconEvents,
@@ -369,6 +396,9 @@ const ICONS: Record<ByndIconName, (props: SvgProps) => ReactElement> = {
   retry: IconRetry,
   signIn: IconSignIn,
   floor: IconFloor,
+  trophy: IconTrophy,
+  eye: IconEye,
+  calendar: IconCalendar,
 };
 
 export function ByndIcon({

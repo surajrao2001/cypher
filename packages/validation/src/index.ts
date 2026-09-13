@@ -253,6 +253,7 @@ const categoryInputSchema = z.object({
   minTeamSize: z.number().int().min(1).max(50).optional(),
   maxTeamSize: z.number().int().min(1).max(50).optional(),
   teamSize: z.number().int().min(1).max(50).optional(),
+  posterUrl: z.string().url().max(500).nullable().optional(),
 });
 
 export const createOrganizerEventSchema = z.object({

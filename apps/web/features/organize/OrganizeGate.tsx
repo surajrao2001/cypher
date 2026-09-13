@@ -22,8 +22,8 @@ export function OrganizeGate({ children }: { children: ReactNode }) {
     return (
       <EmptyState
         kicker="Organize"
-        title="Sign in to run the floor"
-        body="Sign in with Google or email to create an organizer. Same account — membership comes from the org you create."
+        title="Sign in to create"
+        body="Sign in with Google or email to put events on BYND8."
       >
         <Button asChild size="lg">
           <Link href={loginUrl(routes.organize)}>
@@ -40,7 +40,7 @@ export function OrganizeGate({ children }: { children: ReactNode }) {
       <EmptyState
         kicker="Organize"
         title="Tell us what to call you first"
-        body="Drop your name and city on Profile, then come back to run a crew."
+        body="Drop your name and city on Profile, then come back to create."
       >
         <Button asChild size="lg">
           <Link href={`${routes.profile}?next=${encodeURIComponent(routes.organize)}`}>

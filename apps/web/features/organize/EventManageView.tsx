@@ -1,215 +1,171 @@
 'use client';
 
 import { routes } from '@cypher/contracts';
-import type {
-  OrganizerDto,
-  OrganizerEventDetailDto,
-  OrganizerEventRegistrationsResponse,
-} from '@cypher/contracts';
-import { formatEventDateRange, formatMinorUnits } from '@cypher/utils';
-import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
-import { Suspense, useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useMemo, useState } from 'react';
+import { motion } from 'framer-motion';
 
-import { ByndIcon, type ByndIconName } from '@/components/icons/bynd8';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { toastCopy, toastPending, toastReject, toastResolve } from '@/components/ui/toaster';
-import { useAuth } from '@/features/auth/AuthProvider';
-import { OrganizeGate } from '@/features/organize/OrganizeGate';
-import { EventRegistrationsPanel } from '@/features/organize/EventRegistrationsPanel';
+import { EditEventDrawer } from '@/features/organize/EditEventDrawer';
+import { EventControlHeader } from '@/features/organize/EventControlHeader';
+import { EventControlNav } from '@/features/organize/EventControlNav';
+import { EventHomePanel } from '@/features/organize/EventHomePanel';
 import {
-  EventUpdatesPanel,
-  PostUpdateDialog,
-} from '@/features/organize/EventUpdatesPanel';
-import { PayoutSetupPanel } from '@/features/organize/PayoutSetupPanel';
-import { TabEmptyState } from '@/features/organize/TabEmptyState';
-import { PageBreadcrumb } from '@/features/shell/PageBreadcrumb';
-import { PageLoading, SoftError } from '@/features/shell/AsyncState';
-import { cn } from '@/lib/utils';
+  canPublish,
+  hasPaidEntry,
+  legacyTabToDest,
+  type ControlDest,
+} from '@/features/organize/event-control';
+import { OrganizeGate } from '@/features/organize/OrganizeGate';
+import { OrganizerWorkspace } from '@/features/organize/organizer-ui';
+import {
+  useEventCheckInsQuery,
+  useEventRegistrationsQuery,
+  useInvalidateOrganize,
+  useOrganizerBySlugQuery,
+  useOrganizerEventQuery,
+  usePayoutAccountQuery,
+  usePublishEventMutation,
+} from '@/features/organize/queries';
+import { PostUpdateDialog } from '@/features/organize/EventUpdatesPanel';
+import { SoftError } from '@/features/shell/AsyncState';
 
-type TabId = 'overview' | 'registrations' | 'updates' | 'media' | 'payouts';
-
-const TABS: Array<{ id: TabId; label: string; icon: ByndIconName }> = [
-  { id: 'overview', label: 'Overview', icon: 'floor' },
-  { id: 'registrations', label: 'Registrations', icon: 'crew' },
-  { id: 'updates', label: 'Updates', icon: 'megaphone' },
-  { id: 'media', label: 'Media', icon: 'media' },
-  { id: 'payouts', label: 'Payouts', icon: 'wallet' },
-];
+function readInitialDest(): ControlDest {
+  if (typeof window === 'undefined') return 'home';
+  const sp = new URLSearchParams(window.location.search);
+  const dest = legacyTabToDest(sp.get('tab') ?? sp.get('section'));
+  if (dest === 'entry' || dest === 'people' || dest === 'money') return 'home';
+  return dest;
+}
 
 export function EventManageView({ slug, eventId }: { slug: string; eventId: string }) {
   return (
     <OrganizeGate>
-      <Suspense fallback={<PageLoading variant="detail" className="px-6 py-16" label="Loading event" />}>
-        <EventManageViewInner slug={slug} eventId={eventId} />
-      </Suspense>
+      <EventManageViewInner slug={slug} eventId={eventId} />
     </OrganizeGate>
   );
 }
 
 function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string }) {
-  const auth = useAuth();
-  const searchParams = useSearchParams();
-  const initialTab = (searchParams.get('tab') as TabId | null) ?? 'overview';
-  const [tab, setTab] = useState<TabId>(
-    TABS.some((t) => t.id === initialTab) ? initialTab : 'overview',
-  );
-  const [org, setOrg] = useState<OrganizerDto | null>(null);
-  const [event, setEvent] = useState<OrganizerEventDetailDto | null>(null);
-  const [regs, setRegs] = useState<OrganizerEventRegistrationsResponse | null>(null);
-  const [pending, setPending] = useState(false);
-  const [loadError, setLoadError] = useState<unknown>(null);
-  const [reloadKey, setReloadKey] = useState(0);
+  const router = useRouter();
+  const invalidate = useInvalidateOrganize();
+  const [dest, setDest] = useState<ControlDest>(readInitialDest);
   const [postUpdateOpen, setPostUpdateOpen] = useState(false);
-  const [updatesRefreshKey, setUpdatesRefreshKey] = useState(0);
+  const [editOpen, setEditOpen] = useState(false);
+
+  const orgQuery = useOrganizerBySlugQuery(slug);
+  const org = orgQuery.data;
+  const eventQuery = useOrganizerEventQuery(org?.id, eventId, Boolean(org?.id));
+  const event = eventQuery.data;
+  const regsQuery = useEventRegistrationsQuery(org?.id, eventId, Boolean(org?.id));
+  const checkInsQuery = useEventCheckInsQuery(org?.id, eventId, Boolean(org?.id));
+  const showMoney = useMemo(() => (event ? hasPaidEntry(event) : false), [event]);
+  const payoutQuery = usePayoutAccountQuery(org?.id, Boolean(org?.id) && showMoney);
+  const publishMutation = usePublishEventMutation(org?.id ?? '', eventId);
 
   useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      setLoadError(null);
-      try {
-        const organizer = await auth.api.getMyOrganizerBySlug(slug);
-        const [detail, regList] = await Promise.all([
-          auth.api.getOrganizerEvent(organizer.id, eventId),
-          auth.api.listOrganizerEventRegistrations(organizer.id, eventId).catch(() => null),
-        ]);
-        if (cancelled) return;
-        setOrg(organizer);
-        setEvent(detail);
-        setRegs(regList);
-      } catch (err) {
-        if (!cancelled) {
-          setLoadError(err);
-        }
-      }
+    if (typeof window === 'undefined') return;
+    const sp = new URLSearchParams(window.location.search);
+    const initialDest = legacyTabToDest(sp.get('tab') ?? sp.get('section'));
+    if (initialDest === 'entry') {
+      router.replace(routes.organizeEventEntry(slug, eventId));
+    } else if (initialDest === 'people') {
+      router.replace(routes.organizeEventPeople(slug, eventId));
+    } else if (initialDest === 'money') {
+      router.replace(routes.organizeEventMoney(slug, eventId));
     }
-    void load();
-    return () => {
-      cancelled = true;
-    };
-  }, [auth.api, eventId, slug, reloadKey]);
+  }, [eventId, router, slug]);
 
-  const competeCats = useMemo(
-    () => event?.competeCategories ?? (event?.categories ?? []).filter((c) => c.entryType !== 'viewer'),
-    [event],
-  );
-  const audience = event?.audience;
-
-  const confirmedTotal = useMemo(() => {
-    if (regs) return regs.totals.confirmed;
-    if (!event) return 0;
-    return (event.categories ?? []).reduce((n, c) => n + c.confirmedCount, 0);
-  }, [event, regs]);
-
-  const pendingTotal = regs?.totals.pending ?? 0;
-  const recentRegs = (regs?.items ?? []).slice(0, 5);
+  useEffect(() => {
+    if (dest === 'money' && !showMoney) setDest('home');
+  }, [dest, showMoney]);
 
   async function togglePublish() {
-    if (!org || !event) return;
-    setPending(true);
+    if (!org || !event || !canPublish(org.role)) return;
     const tid = toastPending(toastCopy.publishing);
     try {
-      const updated =
-        event.status === 'published'
-          ? await auth.api.unpublishOrganizerEvent(org.id, event.id)
-          : await auth.api.publishOrganizerEvent(org.id, event.id);
-      setEvent(updated);
+      const updated = await publishMutation.mutateAsync(
+        event.status === 'published' ? 'unpublish' : 'publish',
+      );
       toastResolve(
         tid,
         updated.status === 'published' ? toastCopy.published : toastCopy.unpublished,
       );
     } catch (err) {
       toastReject(tid, toastCopy.publishFailed, err instanceof Error ? err.message : undefined);
-    } finally {
-      setPending(false);
     }
   }
 
-  if (loadError && !event) {
+  function navigate(next: ControlDest) {
+    if (next === 'entry') {
+      router.push(routes.organizeEventEntry(slug, eventId));
+      return;
+    }
+    if (next === 'people') {
+      router.push(routes.organizeEventPeople(slug, eventId));
+      return;
+    }
+    if (next === 'money') {
+      router.push(routes.organizeEventMoney(slug, eventId));
+      return;
+    }
+    setDest(next);
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.set('tab', next === 'home' ? 'overview' : next);
+      window.history.replaceState(null, '', `${url.pathname}${url.search}`);
+    }
+  }
+
+  const loadError = orgQuery.error ?? eventQuery.error;
+  // Only block the full page when we have neither cached org nor cached event.
+  const coldLoading = !org && !event && (orgQuery.isPending || eventQuery.isPending);
+
+  if (loadError && !org && !event) {
     return (
       <div className="px-6 py-16">
         <SoftError
           title="Couldn’t load event"
           error={loadError}
-          onRetry={() => setReloadKey((n) => n + 1)}
+          onRetry={() => {
+            void orgQuery.refetch();
+            void eventQuery.refetch();
+          }}
         />
       </div>
     );
   }
 
-  if (!org || !event) {
-    return <PageLoading variant="detail" className="px-6 py-16" label="Loading event" />;
+  if (coldLoading || !org || !event) {
+    return (
+      <div className="px-6 py-16">
+        <div className="mx-auto h-40 max-w-3xl animate-pulse rounded-xl bg-white/[0.04]" />
+      </div>
+    );
   }
 
-  const editHref = `${routes.organize}/${org.slug}/events/${event.id}/edit`;
+  const entryHref = routes.organizeEventEntry(org.slug, event.id);
+  const peopleHref = routes.organizeEventPeople(org.slug, event.id);
+  const regs = regsQuery.data ?? null;
+  const checkedInCount = checkInsQuery.data?.totals.checkedIn ?? null;
+  const payoutReady =
+    !showMoney ? null : payoutQuery.data ? Boolean(payoutQuery.data.payoutReady) : payoutQuery.isPending ? null : false;
 
-  return (
-    <div className="mx-auto max-w-6xl space-y-8 px-4 py-8 md:px-8">
-      <PageBreadcrumb
-        items={[
-          { label: 'Organize', href: routes.organize },
-          { label: org.orgName, href: `${routes.organize}/${org.slug}` },
-          { label: event.title },
-        ]}
+  const shell = (
+    <OrganizerWorkspace width="canvas" className="relative z-10 space-y-7 md:space-y-8">
+      <EventControlHeader
+        org={org}
+        event={event}
+        pending={publishMutation.isPending}
+        sharedLayout
+        onPublishToggle={() => void togglePublish()}
+        onPostUpdate={() => setPostUpdateOpen(true)}
+        onEditEvent={() => setEditOpen(true)}
       />
 
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div className="space-y-2">
-          <p className="kicker text-accent">{org.orgName}</p>
-          <h1 className="display-title text-5xl md:text-6xl">{event.title}</h1>
-          <div className="flex flex-wrap gap-2">
-            <Badge variant={event.status === 'published' ? 'lime' : 'muted'}>{event.status}</Badge>
-            <Badge variant="outline">{event.eventType}</Badge>
-          </div>
-          <p className="text-sm text-text-secondary">
-            {event.city}
-            {event.venue ? ` · ${event.venue}` : ''} ·{' '}
-            {formatEventDateRange(event.startTime, event.endTime)}
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button asChild size="lg">
-            <Link href={routes.organizeEventCheckIn(org.slug, event.id)}>
-              <ByndIcon name="checkIn" />
-              Check in
-            </Link>
-          </Button>
-          <Button asChild size="lg" variant="secondary">
-            <Link href={editHref}>
-              <ByndIcon name="edit" />
-              Edit
-            </Link>
-          </Button>
-          <Button
-            type="button"
-            size="lg"
-            variant="outline"
-            onClick={() => setPostUpdateOpen(true)}
-          >
-            <ByndIcon name="megaphone" />
-            Post update
-          </Button>
-          <Button
-            type="button"
-            size="lg"
-            variant={event.status === 'published' ? 'outline' : 'lime'}
-            disabled={pending}
-            onClick={() => void togglePublish()}
-          >
-            <ByndIcon name={event.status === 'published' ? 'unpublish' : 'publish'} />
-            {event.status === 'published' ? 'Unpublish' : 'Publish'}
-          </Button>
-          {event.status === 'published' ? (
-            <Button asChild size="lg" variant="ghost">
-              <Link href={`${routes.events}/${event.slug}`}>
-                <ByndIcon name="external" />
-                Public page
-              </Link>
-            </Button>
-          ) : null}
-        </div>
-      </div>
+      {dest !== 'home' ? (
+        <EventControlNav active={dest} onChange={navigate} showMoney={showMoney} />
+      ) : null}
 
       <PostUpdateDialog
         organizerId={org.id}
@@ -217,269 +173,68 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
         open={postUpdateOpen}
         onOpenChange={setPostUpdateOpen}
         onPosted={() => {
-          setUpdatesRefreshKey((n) => n + 1);
-          setTab('updates');
+          setPostUpdateOpen(false);
+          invalidate.invalidateEventUpdates(event.id);
         }}
       />
 
-      <div className="flex gap-5 border-b border-border">
-        {TABS.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            onClick={() => setTab(item.id)}
-            className={cn(
-              'inline-flex items-center gap-1.5 border-b-2 px-0.5 py-2.5 text-[13.5px] font-semibold transition-colors',
-              tab === item.id
-                ? 'border-accent text-text-primary'
-                : 'border-transparent text-text-muted hover:text-text-secondary',
-            )}
-          >
-            <ByndIcon
-              name={item.icon}
-              className={cn('size-3.5', tab === item.id ? 'text-accent' : 'text-current')}
-            />
-            {item.label}
-          </button>
-        ))}
-      </div>
+      <EditEventDrawer
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        organizerId={org.id}
+        orgSlug={org.slug}
+        event={event}
+        onUpdated={(next) => {
+          invalidate.setEventCache(next);
+          invalidate.invalidateOrganizerEvents(org.id);
+        }}
+      />
 
-      {tab === 'overview' ? (
-        <div className="space-y-6">
-          <div className="flex flex-col gap-3 rounded-lg border border-border bg-surface px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-sm font-semibold text-text-primary">
-                {confirmedTotal} confirmed
-                {pendingTotal > 0 ? ` · ${pendingTotal} held` : ''}
-              </p>
-              <p className="text-[12.5px] text-text-secondary">
-                Door ops and registrations for this night — not a BI dashboard.
-              </p>
-            </div>
-            <Button asChild variant="lime" size="sm">
-              <Link href={routes.organizeEventCheckIn(org.slug, event.id)}>Open check-in</Link>
-            </Button>
-          </div>
-
-          <div className="grid gap-4 lg:grid-cols-2">
-            <section className="rounded-lg border border-border bg-surface p-5">
-              <h2 className="mb-4 font-display text-xl tracking-[0.04em]">Category fill</h2>
-              <ul className="space-y-4">
-                {competeCats.map((cat) => (
-                  <FillBar
-                    key={cat.id}
-                    name={cat.name}
-                    confirmed={cat.confirmedCount}
-                    capacity={cat.capacity}
-                    meta={`${cat.entryType} · ${cat.priceMinor === 0 ? 'Free' : formatMinorUnits(cat.priceMinor)}`}
-                  />
-                ))}
-                {audience?.enabled ? (
-                  <FillBar
-                    name={audience.name || 'Audience'}
-                    confirmed={audience.confirmedCount}
-                    capacity={audience.capacity}
-                    meta={`Watch · ${audience.priceMinor === 0 ? 'Free' : formatMinorUnits(audience.priceMinor)}`}
-                  />
-                ) : null}
-                {competeCats.length === 0 && !audience?.enabled ? (
-                  <li>
-                    <TabEmptyState
-                      icon="layers"
-                      kicker="Categories"
-                      title="Nothing to fill yet"
-                      body="Add a 1v1, 2v2, or open category in Edit — empty brackets are just vibes."
-                      className="border-0 bg-transparent px-0 py-2"
-                    >
-                      <Button asChild variant="outline" size="sm">
-                        <Link href={editHref}>Open edit</Link>
-                      </Button>
-                    </TabEmptyState>
-                  </li>
-                ) : null}
-              </ul>
-            </section>
-
-            <section className="flex flex-col justify-between rounded-lg border border-border bg-surface p-5">
-              <div>
-                <h2 className="font-display text-xl tracking-[0.04em]">Door check-in</h2>
-                <p className="mt-2 text-sm text-text-secondary">
-                  Scan ticket QR payloads or enter a registration code, with a live door list.
-                </p>
-              </div>
-              <Button asChild className="mt-5 w-full sm:w-auto" size="lg">
-                <Link href={routes.organizeEventCheckIn(org.slug, event.id)}>
-                  <ByndIcon name="checkIn" />
-                  Open check-in
-                </Link>
-              </Button>
-            </section>
-          </div>
-
-          <section className="rounded-lg border border-border bg-surface p-5">
-            <div className="mb-4 flex items-baseline justify-between gap-3">
-              <h2 className="font-display text-xl tracking-[0.04em]">Recent registrations</h2>
-              <button
-                type="button"
-                className="text-[13px] font-semibold text-text-muted hover:text-text-primary"
-                onClick={() => setTab('registrations')}
-              >
-                See all
-              </button>
-            </div>
-            {recentRegs.length === 0 ? (
-              <TabEmptyState
-                icon="crew"
-                kicker="Quiet night"
-                title="Nobody’s locked a spot"
-                body="Share the public page. Dancers won’t find you through telepathy (we checked)."
-                className="border-0 bg-transparent px-0 py-4"
-              >
-                {event.status === 'published' ? (
-                  <Button asChild variant="outline" size="sm">
-                    <Link href={`${routes.events}/${event.slug}`}>
-                      <ByndIcon name="external" />
-                      Public page
-                    </Link>
-                  </Button>
-                ) : (
-                  <Button type="button" variant="outline" size="sm" onClick={() => setTab('registrations')}>
-                    <ByndIcon name="tickets" />
-                    Registrations
-                  </Button>
-                )}
-              </TabEmptyState>
-            ) : (
-              <ul className="divide-y divide-border">
-                {recentRegs.map((row) => (
-                  <li
-                    key={row.id}
-                    className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm"
-                  >
-                    <div>
-                      <p className="font-medium text-text-primary">
-                        {row.participants[0]?.displayName ?? row.entryName ?? row.registrationCode}
-                      </p>
-                      <p className="text-xs text-text-muted">
-                        {row.categoryName} · {row.registrationStatus.replaceAll('_', ' ')}
-                      </p>
-                    </div>
-                    <p className="text-text-secondary">
-                      {row.totalAmountMinor === 0 ? 'Free' : formatMinorUnits(row.totalAmountMinor)}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-
-          {event.description ? (
-            <section className="space-y-2">
-              <p className="kicker">About</p>
-              <p className="whitespace-pre-wrap text-sm text-text-secondary">{event.description}</p>
-            </section>
-          ) : null}
-        </div>
+      {dest === 'home' ? (
+        <motion.div
+          initial={{ opacity: 0.92 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.18 }}
+        >
+          <EventHomePanel
+            org={org}
+            event={event}
+            regs={regs}
+            payoutReady={payoutReady}
+            checkedInCount={checkedInCount}
+            entryHref={entryHref}
+            peopleHref={peopleHref}
+            onNavigate={navigate}
+            onEditEvent={() => setEditOpen(true)}
+            onPostUpdate={() => setPostUpdateOpen(true)}
+            onViewAllUpdates={() =>
+              router.push(routes.organizeEventUpdates(slug, eventId))
+            }
+            onPublished={(next) => {
+              invalidate.setEventCache(next);
+              invalidate.invalidateOrganizerEvents(org.id);
+            }}
+          />
+        </motion.div>
       ) : null}
-
-      {tab === 'registrations' ? (
-        <EventRegistrationsPanel
-          organizerId={org.id}
-          eventId={eventId}
-          eventSlug={event.slug}
-          eventStatus={event.status}
-          editHref={editHref}
-        />
-      ) : null}
-
-      {tab === 'updates' ? (
-        <EventUpdatesPanel
-          organizerId={org.id}
-          eventId={event.id}
-          refreshKey={updatesRefreshKey}
-        />
-      ) : null}
-
-      {tab === 'media' ? (
-        <section className="space-y-4">
-          <div className="flex flex-wrap items-end justify-between gap-3">
-            <div>
-              <p className="kicker text-accent">Links</p>
-              <h2 className="font-display text-3xl uppercase tracking-[0.04em]">Event media</h2>
-            </div>
-            <Button asChild variant="outline" size="sm">
-              <Link href={`${editHref}#media`}>Manage in edit</Link>
-            </Button>
-          </div>
-          {(event.mediaLinks ?? []).length === 0 ? (
-            <TabEmptyState
-              icon="media"
-              kicker="Media"
-              title="No links on the wall"
-              body="Drop YouTube, IG, or Drive in Edit. We don’t host the aftermovie (your hard drive does)."
-            >
-              <Button asChild variant="outline" size="sm">
-                <Link href={`${editHref}#media`}>
-                  <ByndIcon name="link" />
-                  Add links in edit
-                </Link>
-              </Button>
-            </TabEmptyState>
-          ) : (
-            <ul className="divide-y divide-border border-y border-border">
-              {(event.mediaLinks ?? []).map((link) => (
-                <li key={link.id} className="py-3">
-                  <a
-                    href={link.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="font-medium text-accent hover:underline"
-                  >
-                    {link.title}
-                  </a>
-                  <p className="mt-1 truncate text-xs text-text-muted">{link.url}</p>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-      ) : null}
-
-      {tab === 'payouts' ? (
-        <PayoutSetupPanel organizerId={org.id} orgName={org.orgName} />
-      ) : null}
-
-      <Button asChild variant="ghost">
-        <Link href={`${routes.organize}/${org.slug}`}>Back to organizer</Link>
-      </Button>
-    </div>
+    </OrganizerWorkspace>
   );
-}
 
-function FillBar({
-  name,
-  confirmed,
-  capacity,
-  meta,
-}: {
-  name: string;
-  confirmed: number;
-  capacity: number;
-  meta: string;
-}) {
-  const pct = capacity > 0 ? Math.min(100, Math.round((confirmed / capacity) * 100)) : 0;
+  if (dest !== 'home') {
+    return shell;
+  }
+
   return (
-    <li>
-      <div className="mb-1.5 flex items-baseline justify-between gap-2">
-        <p className="text-sm font-semibold text-text-primary">{name}</p>
-        <p className="text-xs text-text-muted">
-          {confirmed}/{capacity}
-        </p>
-      </div>
-      <div className="h-2 overflow-hidden rounded-sm bg-elevated">
-        <div className="h-full rounded-sm bg-accent transition-[width]" style={{ width: `${pct}%` }} />
-      </div>
-      <p className="mt-1 text-[11px] text-text-muted">{meta}</p>
-    </li>
+    <div className="relative overflow-hidden">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-[min(42rem,70vh)] bg-[radial-gradient(ellipse_120%_70%_at_50%_-10%,rgba(255,104,0,0.28)_0%,rgba(255,104,0,0.12)_28%,rgba(255,104,0,0.04)_52%,transparent_72%)]"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-[min(22rem,38vh)] h-48 bg-gradient-to-b from-transparent via-bg/40 to-bg"
+      />
+      {shell}
+    </div>
   );
 }

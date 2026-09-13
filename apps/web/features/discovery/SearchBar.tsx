@@ -38,7 +38,7 @@ export function SearchBar() {
           defaultValue={query}
           key={query}
           placeholder="Search battles, crews, venues…"
-          className="h-11 border-border bg-surface pl-10"
+          className="h-11 border-border/70 bg-surface/80 pl-10"
           aria-label="Search events"
         />
       </div>
@@ -46,7 +46,7 @@ export function SearchBar() {
         <DropdownTrigger asChild>
           <Button
             variant="outline"
-            className="h-11 shrink-0 gap-2 border-border bg-surface px-3 normal-case tracking-normal"
+            className="h-11 shrink-0 gap-2 border-border/70 bg-surface/80 px-3 normal-case tracking-normal"
           >
             <ByndIcon name="pin" className="size-4 text-accent" />
             <span className="hidden max-w-28 truncate font-medium sm:inline">
