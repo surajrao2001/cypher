@@ -6,9 +6,11 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
-import { toastCopy, toastPending, toastReject, toastResolve } from '@/components/ui/toaster';
+import { toastCopy, toastDismiss, toastPending, toastReject } from '@/components/ui/toaster';
 import { useAuth } from '@/features/auth/AuthProvider';
+import { formatEventHomeWhen } from '@/features/organize/EventControlHeader';
 import { friendlyError, InlineNotice } from '@/features/shell/AsyncState';
+import { SignatureMomentPanel, SignaturePrimaryButton } from '@/features/shell/SignatureMoment';
 import { cn } from '@/lib/utils';
 
 type HardItem = { id: string; label: string; ok: boolean; blocker?: string };
@@ -126,7 +128,7 @@ export function EventReadiness({
     const tid = toastPending(toastCopy.publishing);
     try {
       const updated = await auth.api.publishOrganizerEvent(org.id, event.id);
-      toastResolve(tid, toastCopy.published);
+      toastDismiss(tid);
       onPublished?.(updated);
     } catch (err) {
       const detail = err instanceof Error ? err.message : undefined;
@@ -137,26 +139,44 @@ export function EventReadiness({
     }
   }
 
+  async function shareLive() {
+    const path = `${routes.events}/${event.slug}`;
+    const url = typeof window !== 'undefined' ? `${window.location.origin}${path}` : path;
+    try {
+      if (typeof navigator !== 'undefined' && navigator.share) {
+        await navigator.share({ title: event.title, url });
+        return;
+      }
+      await navigator.clipboard.writeText(url);
+    } catch {
+      // ignore cancel / clipboard failures
+    }
+  }
+
+  const when = formatEventHomeWhen(event.startTime);
+  const place = [event.city].filter(Boolean).join(', ');
+  const liveMeta = [when, place].filter(Boolean).join(' · ');
+  const publicHref = `${routes.events}/${event.slug}`;
+
   if (isLive) {
     return (
-      <section
-        className={cn(
-          'space-y-3 rounded-lg border border-accent-2/40 bg-accent-2/10 px-4 py-4 md:px-5',
-          className,
-        )}
-      >
-        <p className="kicker text-accent-2">Live</p>
-        <h2 className="display-title text-3xl">It&apos;s up.</h2>
-        <p className="text-sm text-text-secondary">Your event is on Discover.</p>
-        <div className="flex flex-wrap gap-2">
-          <Button asChild>
-            <Link href={`${routes.events}/${event.slug}`}>View event</Link>
-          </Button>
-          <Button asChild variant="outline">
-            <Link href={routes.organize}>Your Events</Link>
-          </Button>
-        </div>
-      </section>
+      <SignatureMomentPanel
+        kind="live"
+        eventTitle={event.title}
+        meta={liveMeta || undefined}
+        body="Your event is out there."
+        className={className}
+        actions={
+          <>
+            <SignaturePrimaryButton asChild>
+              <Link href={publicHref}>View event</Link>
+            </SignaturePrimaryButton>
+            <Button type="button" variant="outline" size="lg" className="rounded-lg" onClick={() => void shareLive()}>
+              Share
+            </Button>
+          </>
+        }
+      />
     );
   }
 

@@ -47,6 +47,7 @@ import {
   useOrganizerEventQuery,
   usePayoutAccountQuery,
 } from '@/features/organize/queries';
+import { eventPaneMotion } from '@/features/organize/event-shared-motion';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 
@@ -295,7 +296,7 @@ export function EventEntryPanel({
             invalidate.invalidateOrganizerEvents(org.id);
           }}
         />
-        <motion.div initial={{ opacity: 0.88 }} animate={{ opacity: 1 }} transition={{ duration: 0.16 }}>
+        <motion.div {...eventPaneMotion}>
           {body}
         </motion.div>
       </OrganizerWorkspace>

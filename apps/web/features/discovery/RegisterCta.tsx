@@ -31,6 +31,7 @@ import {
 } from '@/features/discovery/register-events';
 import { openCashfreeCheckout } from '@/features/payments/cashfree-checkout';
 import { friendlyError, InlineNotice } from '@/features/shell/AsyncState';
+import { SignatureMomentPanel, SignaturePrimaryButton } from '@/features/shell/SignatureMoment';
 import { cn } from '@/lib/utils';
 
 interface RegisterCtaProps {
@@ -310,21 +311,21 @@ export function RegisterCta({ event }: RegisterCtaProps) {
           <DialogHeader>
             <DialogTitle>
               {isConfirmed
-                ? 'You’re in'
+                ? "You're in"
                 : mode === 'watch'
                   ? 'Audience pass'
                   : 'Get in'}
             </DialogTitle>
-            <DialogDescription>
-              {isConfirmed
-                ? 'Your pass is ready. Open Passes for your QR.'
-                : mode === 'watch'
+            {!isConfirmed ? (
+              <DialogDescription>
+                {mode === 'watch'
                   ? 'Watch the floor — no competition entry needed.'
                   : 'Choose your entry, add who’s entering, then confirm.'}
-            </DialogDescription>
+              </DialogDescription>
+            ) : null}
           </DialogHeader>
 
-          {stepList.length > 1 ? (
+          {stepList.length > 1 && !isConfirmed ? (
             <ol className="flex flex-wrap gap-2 border-b border-border pb-3">
               {stepList.map((item, index) => {
                 const active = item.id === step;
@@ -355,11 +356,16 @@ export function RegisterCta({ event }: RegisterCtaProps) {
               </Button>
             </div>
           ) : isConfirmed && held ? (
-            <SummaryCard
-              title={held.category.entryType === 'viewer' ? 'Audience pass' : held.category.name}
-              code={held.registrationCode}
-              feeMinor={held.totalAmountMinor}
-              status="Confirmed"
+            <SignatureMomentPanel
+              kind="youreIn"
+              eventTitle={event.title}
+              meta={`${held.category.entryType === 'viewer' ? 'Audience' : held.category.name} · ${held.registrationCode}`}
+              body="Your BYND8 Pass is ready."
+              actions={
+                <SignaturePrimaryButton asChild>
+                  <Link href={routes.tickets}>Open Pass</Link>
+                </SignaturePrimaryButton>
+              }
             />
           ) : held && step === 'pay' ? (
             <div className="space-y-4">
@@ -584,7 +590,7 @@ export function RegisterCta({ event }: RegisterCtaProps) {
             ) : null}
             {isConfirmed ? (
               <Button asChild>
-                <Link href={routes.tickets}>Open tickets</Link>
+                <Link href={routes.tickets}>Open Pass</Link>
               </Button>
             ) : null}
           </DialogFooter>

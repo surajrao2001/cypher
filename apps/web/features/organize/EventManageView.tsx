@@ -5,9 +5,10 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 
-import { toastCopy, toastPending, toastReject, toastResolve } from '@/components/ui/toaster';
+import { toastCopy, toastDismiss, toastPending, toastReject, toastResolve } from '@/components/ui/toaster';
+import { Button } from '@/components/ui/button';
 import { EditEventDrawer } from '@/features/organize/EditEventDrawer';
-import { EventControlHeader } from '@/features/organize/EventControlHeader';
+import { EventControlHeader, formatEventHomeWhen } from '@/features/organize/EventControlHeader';
 import { EventControlNav } from '@/features/organize/EventControlNav';
 import { EventHomePanel } from '@/features/organize/EventHomePanel';
 import {
@@ -16,6 +17,7 @@ import {
   legacyTabToDest,
   type ControlDest,
 } from '@/features/organize/event-control';
+import { eventPaneMotion } from '@/features/organize/event-shared-motion';
 import { OrganizeGate } from '@/features/organize/OrganizeGate';
 import { OrganizerWorkspace } from '@/features/organize/organizer-ui';
 import {
@@ -29,6 +31,11 @@ import {
 } from '@/features/organize/queries';
 import { PostUpdateDialog } from '@/features/organize/EventUpdatesPanel';
 import { SoftError } from '@/features/shell/AsyncState';
+import {
+  SignatureMomentOverlay,
+  SignaturePrimaryButton,
+} from '@/features/shell/SignatureMoment';
+import Link from 'next/link';
 
 function readInitialDest(): ControlDest {
   if (typeof window === 'undefined') return 'home';
@@ -52,6 +59,7 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
   const [dest, setDest] = useState<ControlDest>(readInitialDest);
   const [postUpdateOpen, setPostUpdateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [liveMomentOpen, setLiveMomentOpen] = useState(false);
 
   const orgQuery = useOrganizerBySlugQuery(slug);
   const org = orgQuery.data;
@@ -84,13 +92,19 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
     if (!org || !event || !canPublish(org.role)) return;
     const tid = toastPending(toastCopy.publishing);
     try {
+      const wasDraft = event.status === 'draft';
       const updated = await publishMutation.mutateAsync(
         event.status === 'published' ? 'unpublish' : 'publish',
       );
-      toastResolve(
-        tid,
-        updated.status === 'published' ? toastCopy.published : toastCopy.unpublished,
-      );
+      if (wasDraft && updated.status === 'published') {
+        toastDismiss(tid);
+        setLiveMomentOpen(true);
+      } else {
+        toastResolve(
+          tid,
+          updated.status === 'published' ? toastCopy.published : toastCopy.unpublished,
+        );
+      }
     } catch (err) {
       toastReject(tid, toastCopy.publishFailed, err instanceof Error ? err.message : undefined);
     }
@@ -191,11 +205,7 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
       />
 
       {dest === 'home' ? (
-        <motion.div
-          initial={{ opacity: 0.92 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.18 }}
-        >
+        <motion.div {...eventPaneMotion}>
           <EventHomePanel
             org={org}
             event={event}
@@ -213,10 +223,56 @@ function EventManageViewInner({ slug, eventId }: { slug: string; eventId: string
             onPublished={(next) => {
               invalidate.setEventCache(next);
               invalidate.invalidateOrganizerEvents(org.id);
+              if (next.status === 'published') setLiveMomentOpen(true);
             }}
           />
         </motion.div>
       ) : null}
+
+      <SignatureMomentOverlay
+        open={liveMomentOpen}
+        kind="live"
+        eventTitle={event.title}
+        meta={[formatEventHomeWhen(event.startTime), event.city].filter(Boolean).join(' · ') || undefined}
+        body="Your event is out there."
+        onClose={() => setLiveMomentOpen(false)}
+        actions={
+          <>
+            <SignaturePrimaryButton asChild>
+              <Link
+                href={`${routes.events}/${event.slug}`}
+                onClick={() => setLiveMomentOpen(false)}
+              >
+                View event
+              </Link>
+            </SignaturePrimaryButton>
+            <Button
+              type="button"
+              variant="outline"
+              size="lg"
+              className="rounded-lg"
+              onClick={() => {
+                const path = `${routes.events}/${event.slug}`;
+                const url =
+                  typeof window !== 'undefined' ? `${window.location.origin}${path}` : path;
+                void (async () => {
+                  try {
+                    if (navigator.share) {
+                      await navigator.share({ title: event.title, url });
+                      return;
+                    }
+                    await navigator.clipboard.writeText(url);
+                  } catch {
+                    // ignore
+                  }
+                })();
+              }}
+            >
+              Share
+            </Button>
+          </>
+        }
+      />
     </OrganizerWorkspace>
   );
 
