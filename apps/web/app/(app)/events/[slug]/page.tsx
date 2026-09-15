@@ -13,6 +13,7 @@ import { StickyRegisterBar } from '@/features/discovery/StickyRegisterBar';
 import { VenueMapView } from '@/features/discovery/VenueMapView';
 import { spotsTone } from '@/features/discovery/catalog';
 import { EmptyState } from '@/features/shell/EmptyState';
+import { eventDayBadgeLabel } from '@/features/shell/event-day';
 import { getServerApi } from '@/lib/api';
 
 interface EventDetailPageProps {
@@ -82,6 +83,8 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
 
   const left = spotsLeft(event.spotsCapacity, event.spotsConfirmed);
   const tone = spotsTone(event.spotsConfirmed, event.spotsCapacity);
+  const dayBadge = event.status === 'published' ? eventDayBadgeLabel(event.startTime) : null;
+  const soldOut = event.spotsCapacity > 0 && left === 0;
   const compete =
     event.competeCategories?.length > 0
       ? event.competeCategories
@@ -102,11 +105,17 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
         <div className="relative z-10 mx-auto flex min-h-[20rem] max-w-6xl flex-col justify-end px-4 py-8 md:min-h-[28rem] md:px-8">
           <Link
             href={routes.events}
-            className="mb-4 inline-flex w-fit items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-text-secondary hover:text-accent"
+            className="mb-4 inline-flex min-h-11 w-fit items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-text-secondary hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
           >
             <span aria-hidden>←</span> Events
           </Link>
           <div className="flex flex-wrap items-center gap-2">
+            {dayBadge ? (
+              <Badge className="rounded-full bg-accent text-bg">{dayBadge}</Badge>
+            ) : null}
+            {soldOut ? (
+              <Badge className="rounded-full bg-error/20 text-error">Sold out</Badge>
+            ) : null}
             <Badge className="rounded-full bg-accent text-bg">{event.eventType}</Badge>
             {event.styles.slice(0, 3).map((style) => (
               <Badge key={style} variant="outline" className="rounded-full">
@@ -117,6 +126,11 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
               {tone.label}
             </span>
           </div>
+          {dayBadge ? (
+            <p className="mt-4 display-title text-4xl tracking-[0.04em] text-accent md:text-5xl">
+              {dayBadge === 'Tonight' ? 'TONIGHT.' : 'TODAY.'}
+            </p>
+          ) : null}
           <h1 className="display-title mt-3 max-w-4xl text-5xl md:text-7xl">{event.title}</h1>
           <p className="mt-3 text-sm text-text-secondary">
             by {event.organizerName}
@@ -164,7 +178,12 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
                           {category.name}
                         </p>
                         <p className="mt-0.5 text-xs uppercase tracking-[0.12em] text-text-muted">
-                          {categoryPriceLabel(category)} · {categoryLeft} left
+                          {categoryPriceLabel(category)}
+                          {category.capacity > 0
+                            ? categoryLeft === 0
+                              ? ' · Sold out'
+                              : ` · ${categoryLeft} left`
+                            : null}
                         </p>
                       </div>
                       <OpenRegisterButton mode="compete" categoryId={category.id}>

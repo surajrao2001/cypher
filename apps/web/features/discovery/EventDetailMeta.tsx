@@ -94,7 +94,9 @@ export function EventDetailMeta({ event }: Props) {
         </InsightCell>
 
         <InsightCell icon={<ByndIcon name="crew" className="size-3.5 text-accent" />} label="Floor">
-          <p className={`font-medium ${tone.className}`}>{tone.label}</p>
+          <p className={`font-medium ${tone.className}`}>
+            {event.spotsCapacity > 0 && left === 0 ? 'SOLD OUT.' : tone.label}
+          </p>
           <p className="mt-1 text-xs text-text-secondary">
             {event.spotsConfirmed} confirmed
             {event.spotsCapacity > 0 ? ` · ${left} left` : ''}

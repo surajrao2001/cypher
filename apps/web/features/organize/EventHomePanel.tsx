@@ -31,6 +31,8 @@ import {
 } from '@/features/organize/event-type-copy';
 import { EventReadiness } from '@/features/organize/EventReadiness';
 import { useEventUpdatesQuery } from '@/features/organize/queries';
+import { eventDayMoment } from '@/features/shell/event-day';
+import { SignatureMomentPanel } from '@/features/shell/SignatureMoment';
 import { cn } from '@/lib/utils';
 import {
   ChevronRight,
@@ -312,9 +314,20 @@ export function EventHomePanel({
 
   const noEntryBreath =
     !anyEntry && (group === 'jam' || group === 'session' || group === 'other') && !isDraft;
+  const dayMoment = isLive ? eventDayMoment(event.startTime) : null;
 
   const body = (
     <div className="space-y-7 md:space-y-8">
+      {dayMoment ? (
+        <SignatureMomentPanel
+          kind={dayMoment}
+          compact
+          eventTitle={event.title}
+          meta={when || undefined}
+          body={dayMoment === 'tonight' ? 'Doors and check-in matter tonight.' : 'It’s event day — stay close to People and Check-in.'}
+        />
+      ) : null}
+
       {noEntryBreath ? (
         <p className="text-[15px] text-text-secondary">
           No registration needed.
@@ -323,7 +336,7 @@ export function EventHomePanel({
             onClick={() => {
               if (typeof window !== 'undefined') window.location.href = entryHref;
             }}
-            className="ml-2 font-semibold text-accent hover:underline"
+            className="ml-2 min-h-11 font-semibold text-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
           >
             Add entry
           </button>

@@ -29,6 +29,7 @@ import {
   useOrganizerBySlugQuery,
   useOrganizerEventQuery,
 } from '@/features/organize/queries';
+import { eventPaneMotion } from '@/features/organize/event-shared-motion';
 import { OrganizerWorkspace } from '@/features/organize/organizer-ui';
 import { SoftError, friendlyError } from '@/features/shell/AsyncState';
 import { cn } from '@/lib/utils';
@@ -210,12 +211,7 @@ function EventPeoplePanel({ slug, eventId }: { slug: string; eventId: string }) 
           }}
         />
 
-        <motion.div
-          initial={{ opacity: 0.88 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.16 }}
-          className="space-y-4 sm:space-y-5"
-        >
+        <motion.div {...eventPaneMotion} className="space-y-4 sm:space-y-5">
         {regsPending ? (
           <OrganizerSkeletonRows count={6} />
         ) : !data || data.categories.length === 0 ? (
