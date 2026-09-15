@@ -78,14 +78,14 @@ export function Bynd8Pass({
     <>
       <article
         className={cn(
-          'mx-auto w-full max-w-[17.5rem] overflow-hidden rounded-2xl border border-border bg-bg shadow-[0_12px_40px_rgba(0,0,0,0.35)]',
+          'relative mx-auto w-full max-w-[17.5rem] overflow-hidden rounded-2xl border border-white/[0.1] bg-[#0c0d0c] shadow-[0_18px_50px_-20px_rgba(0,0,0,0.85)]',
           quiet && 'opacity-75',
         )}
       >
         <div
           className={cn(
-            'px-3 py-1.5 text-center text-[10px] font-semibold uppercase tracking-[0.16em]',
-            variant === 'hold' && 'bg-accent/20 text-accent',
+            'px-3 py-2 text-center text-[10px] font-bold uppercase tracking-[0.18em]',
+            variant === 'hold' && 'bg-accent/25 text-accent',
             variant === 'upcoming' && 'bg-accent-2 text-bg',
             variant === 'past' && 'bg-elevated text-text-muted',
           )}
@@ -93,37 +93,41 @@ export function Bynd8Pass({
           {statusCopy(ticket, variant)}
         </div>
 
-        <div className="bg-accent px-4 py-3 text-bg">
-          <p className="text-[9px] font-semibold uppercase tracking-[0.2em] opacity-80">
+        <div className="relative overflow-hidden bg-accent px-4 py-4 text-bg">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_0%,rgba(255,255,255,0.22),transparent_55%)]"
+          />
+          <p className="relative text-[9px] font-bold uppercase tracking-[0.22em] opacity-85">
             BYND8 PASS · {roleLabel(ticket)}
           </p>
-          <p className="mt-1 font-display text-xl uppercase leading-none tracking-[0.04em]">
+          <p className="relative mt-1.5 font-display text-2xl uppercase leading-none tracking-[0.04em]">
             {isViewer ? 'Watch' : categoryLabel(ticket)}
           </p>
         </div>
 
         <div className="space-y-3 px-4 py-4">
           <div>
-            <h2 className="font-display text-2xl uppercase leading-tight tracking-[0.04em] text-text-primary">
+            <h2 className="display-title text-[1.65rem] uppercase leading-[0.95] tracking-[0.04em] text-[#F4F4F1]">
               {ticket.event.title}
             </h2>
-            <p className="mt-1.5 text-xs text-text-secondary">
+            <p className="mt-1.5 text-xs text-white/55">
               {formatEventDate(ticket.event.startTime)}
-              <span className="text-text-muted"> · {ticket.event.city}</span>
+              <span className="text-white/35"> · {ticket.event.city}</span>
             </p>
           </div>
 
-          <div className="border-t border-dashed border-border pt-3">
-            <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-text-muted">
+          <div className="border-t border-dashed border-white/[0.12] pt-3">
+            <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-white/40">
               {isViewer ? 'Audience' : 'Competitor'}
             </p>
-            <p className="mt-0.5 font-display text-xl uppercase tracking-[0.04em] text-text-primary">
+            <p className="mt-0.5 font-display text-xl uppercase tracking-[0.04em] text-[#F4F4F1]">
               {holderName(ticket)}
             </p>
-            <p className="mt-2 font-mono text-xs tracking-wide text-text-secondary">
+            <p className="mt-2 font-mono text-xs tracking-wide text-white/55">
               {ticket.registrationCode}
             </p>
-            <p className="mt-1 text-[10px] uppercase tracking-[0.14em] text-text-muted">
+            <p className="mt-1 text-[10px] uppercase tracking-[0.14em] text-white/40">
               {ticket.totalAmountMinor === 0 ? 'Free' : formatMinorUnits(ticket.totalAmountMinor)}
               {variant === 'hold' && ticket.reservationExpiresAt
                 ? ` · until ${new Date(ticket.reservationExpiresAt).toLocaleString()}`
@@ -135,10 +139,10 @@ export function Bynd8Pass({
         </div>
 
         {/* Ticket perforations */}
-        <div className="relative h-4 bg-bg">
-          <div className="absolute inset-x-3 top-1/2 border-t border-dashed border-border" />
-          <span className="absolute -left-2 top-1/2 size-4 -translate-y-1/2 rounded-full bg-[var(--color-bg,#0B0B0B)] ring-1 ring-border" />
-          <span className="absolute -right-2 top-1/2 size-4 -translate-y-1/2 rounded-full bg-[var(--color-bg,#0B0B0B)] ring-1 ring-border" />
+        <div className="relative h-4 bg-[#0c0d0c]">
+          <div className="absolute inset-x-3 top-1/2 border-t border-dashed border-white/[0.14]" />
+          <span className="absolute -left-2 top-1/2 size-4 -translate-y-1/2 rounded-full bg-bg ring-1 ring-white/[0.1]" />
+          <span className="absolute -right-2 top-1/2 size-4 -translate-y-1/2 rounded-full bg-bg ring-1 ring-white/[0.1]" />
         </div>
 
         {variant !== 'hold' ? (

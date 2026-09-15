@@ -41,6 +41,7 @@ import {
   useOrganizerEventQuery,
   usePayoutAccountQuery,
 } from '@/features/organize/queries';
+import { eventPaneMotion } from '@/features/organize/event-shared-motion';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 
@@ -203,12 +204,7 @@ function EventMoneyScreen({ slug, eventId }: { slug: string; eventId: string }) 
           }}
         />
 
-        <motion.div
-          initial={{ opacity: 0.88 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.16 }}
-          className="space-y-5"
-        >
+        <motion.div {...eventPaneMotion} className="space-y-5">
         {paid && payoutReady === false ? (
           <section className="space-y-4">
             <OrganizerEmptyBlock

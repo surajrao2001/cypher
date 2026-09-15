@@ -30,6 +30,7 @@ import {
 import { toastInfo } from '@/components/ui/toaster';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { hasPaidEntry } from '@/features/organize/event-control';
+import { eventSharedLayoutTransition } from '@/features/organize/event-shared-motion';
 import {
   entryCopyForType,
   eventTypeDisplayLabel,
@@ -51,6 +52,7 @@ import {
 } from '@/features/organize/queries';
 import { orgKeys } from '@/features/organize/queries/keys';
 import { OrganizerWorkspace } from '@/features/organize/organizer-ui';
+import { eventDayBadgeLabel } from '@/features/shell/event-day';
 import { PageLoading, SoftError } from '@/features/shell/AsyncState';
 import { cn } from '@/lib/utils';
 
@@ -492,34 +494,37 @@ function YourEventCard({
     ? routes.organizeEventMoney(org.slug, event.id)
     : routes.organizeEventPeople(org.slug, event.id);
 
+  const dayBadge = kind === 'live' ? eventDayBadgeLabel(event.startTime) : null;
   const statusTone: OrganizerPillTone =
-    kind === 'live' ? 'live' : kind === 'draft' ? 'neutral' : 'neutral';
+    dayBadge ? 'live' : kind === 'live' ? 'live' : kind === 'draft' ? 'neutral' : 'neutral';
   const statusLabelText =
-    kind === 'live'
+    dayBadge ??
+    (kind === 'live'
       ? 'Live'
       : kind === 'draft'
         ? 'Draft'
         : kind === 'cancelled'
           ? 'Cancelled'
-          : 'Past';
+          : 'Past');
 
   return (
     <article
-      className="group flex h-full flex-col gap-3.5 rounded-xl border border-white/[0.08] bg-[#141514] p-3 transition-[border-color,background-color] duration-150 hover:border-white/[0.14] sm:flex-row sm:gap-4 sm:p-3.5"
+      className="group flex h-full flex-col gap-3.5 rounded-xl border border-white/[0.08] bg-[#141514] p-3 transition-[border-color,background-color] duration-150 hover:border-white/[0.14] focus-within:border-accent/40 sm:flex-row sm:gap-4 sm:p-3.5"
       onPointerEnter={onPrefetch}
       onFocus={onPrefetch}
     >
       <Link
         href={manageHref}
-        className="relative mx-auto block h-[8.5rem] w-[6.25rem] shrink-0 sm:mx-0 sm:h-[9.5rem] sm:w-[7rem]"
+        className="relative mx-auto block h-[8.5rem] w-[6.25rem] shrink-0 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 sm:mx-0 sm:h-[9.5rem] sm:w-[7rem]"
         onClick={onPrefetch}
         onPointerEnter={onPrefetch}
         onFocus={onPrefetch}
+        aria-label={`${event.title} poster`}
       >
         <motion.div
           layoutId={reduceMotion ? undefined : `event-poster-${event.id}`}
           className="relative h-full w-full overflow-hidden rounded-lg bg-[#111211] shadow-[0_12px_28px_-16px_rgba(0,0,0,0.9)]"
-          transition={{ type: 'spring', stiffness: 380, damping: 34 }}
+          transition={eventSharedLayoutTransition}
         >
           {event.posterUrl ? (
             <img src={event.posterUrl} alt="" className="h-full w-full object-cover" />
@@ -571,11 +576,16 @@ function YourEventCard({
           </Dropdown>
         </div>
 
-        <Link href={manageHref} className="min-w-0" onClick={onPrefetch} onPointerEnter={onPrefetch}>
+        <Link
+          href={manageHref}
+          className="min-w-0 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
+          onClick={onPrefetch}
+          onPointerEnter={onPrefetch}
+        >
           <motion.h2
             layoutId={reduceMotion ? undefined : `event-title-${event.id}`}
             className="display-title truncate text-[1.35rem] leading-[0.95] tracking-[0.04em] text-[#F4F4F1] sm:text-[1.55rem]"
-            transition={{ type: 'spring', stiffness: 380, damping: 34 }}
+            transition={eventSharedLayoutTransition}
           >
             {event.title}
           </motion.h2>

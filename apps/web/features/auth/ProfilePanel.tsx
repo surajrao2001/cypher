@@ -9,9 +9,13 @@ import { useEffect, useState } from 'react';
 import { BrandLogo } from '@/components/brand/BrandLogo';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { toastCopy, toastPending, toastReject, toastResolve } from '@/components/ui/toaster';
+import { toastCopy, toastDismiss, toastPending, toastReject, toastResolve } from '@/components/ui/toaster';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { PageLoading, SoftError } from '@/features/shell/AsyncState';
+import {
+  SignatureMomentOverlay,
+  SignaturePrimaryButton,
+} from '@/features/shell/SignatureMoment';
 import { safeNextPath } from '@/lib/auth-routes';
 import { createBrowserSupabase } from '@/lib/supabase/browser';
 
@@ -31,6 +35,8 @@ export function ProfilePanel() {
   const [ticketCount, setTicketCount] = useState<number | null>(null);
   const [orgCount, setOrgCount] = useState<number | null>(null);
   const [email, setEmail] = useState<string | null>(null);
+  const [welcomeOpen, setWelcomeOpen] = useState(false);
+  const [welcomeName, setWelcomeName] = useState('');
 
   useEffect(() => {
     if (auth.status !== 'authenticated' || !auth.me || auth.me.needsOnboarding) return;
@@ -100,9 +106,9 @@ export function ProfilePanel() {
           .filter(Boolean),
         instagram: instagram || undefined,
       });
-      toastResolve(tid, toastCopy.profileSaved);
-      const next = safeNextPath(searchParams.get('next'), routes.discover);
-      router.replace(next);
+      toastDismiss(tid);
+      setWelcomeName(dancerName.trim() || 'Dancer');
+      setWelcomeOpen(true);
     } catch (error) {
       toastReject(
         tid,
@@ -112,6 +118,12 @@ export function ProfilePanel() {
     } finally {
       setPending(false);
     }
+  }
+
+  function finishWelcome() {
+    setWelcomeOpen(false);
+    const next = safeNextPath(searchParams.get('next'), routes.discover);
+    router.replace(next);
   }
 
   async function saveProfileEdits() {
@@ -158,8 +170,10 @@ export function ProfilePanel() {
     }
   }
 
-  if (auth.me.needsOnboarding) {
+  if (auth.me.needsOnboarding || welcomeOpen) {
     return (
+      <>
+        {auth.me.needsOnboarding && !welcomeOpen ? (
       <div className="relative mx-auto max-w-lg space-y-8">
         <div
           aria-hidden
@@ -167,7 +181,7 @@ export function ProfilePanel() {
         />
         <div className="relative space-y-4">
           <BrandLogo variant="mark" size="lg" href={null} />
-          <p className="kicker text-accent">You’re in · one more thing</p>
+          <p className="kicker text-accent">Enter the scene</p>
           <h1 className="display-title text-5xl">Who’s on the card?</h1>
           <p className="text-sm leading-relaxed text-text-secondary">
             Name + city and you’re on the list. Props for showing up. Crew and styles can wait —
@@ -269,6 +283,27 @@ export function ProfilePanel() {
           </Button>
         </form>
       </div>
+        ) : null}
+        <SignatureMomentOverlay
+          open={welcomeOpen}
+          kind="youreIn"
+          eventTitle={welcomeName}
+          body="You’re on the list. Discover nights or put one up."
+          onClose={finishWelcome}
+          actions={
+            <>
+              <SignaturePrimaryButton type="button" onClick={finishWelcome}>
+                Enter the scene
+              </SignaturePrimaryButton>
+              <Button type="button" variant="outline" size="lg" className="rounded-lg" asChild>
+                <Link href={routes.organize} onClick={() => setWelcomeOpen(false)}>
+                  Organize
+                </Link>
+              </Button>
+            </>
+          }
+        />
+      </>
     );
   }
 
