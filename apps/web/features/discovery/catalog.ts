@@ -49,9 +49,12 @@ export function spotsTone(
   confirmed: number,
   capacity: number,
 ): { label: string; className: string } {
+  if (capacity <= 0) {
+    return { label: 'Open entry', className: 'text-text-secondary' };
+  }
   const left = spotsLeft(capacity, confirmed);
   if (left === 0) {
-    return { label: `Waitlist · 0 / ${String(capacity)} spots left`, className: 'text-error' };
+    return { label: 'Sold out', className: 'text-error' };
   }
   if (left <= 8) {
     return {

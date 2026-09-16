@@ -4,6 +4,8 @@ import type { EventDetailDto } from '@cypher/contracts';
 import { formatMinorUnits, spotsLeft } from '@cypher/utils';
 
 import { RegisterCta } from '@/features/discovery/RegisterCta';
+import { SignatureMomentPanel } from '@/features/shell/SignatureMoment';
+import { eventDayMoment } from '@/features/shell/event-day';
 
 interface StickyRegisterBarProps {
   event: EventDetailDto;
@@ -21,6 +23,7 @@ export function StickyRegisterBar({ event, spotsLeft: aggregateLeft }: StickyReg
       : event.categories.filter((c) => c.entryType === 'viewer');
   const audienceOpen = viewers.length > 0 || event.audience?.enabled;
   const hasEntry = compete.length > 0 || audienceOpen;
+  const dayMoment = event.status === 'published' ? eventDayMoment(event.startTime) : null;
 
   // Zero Entry: no sticky registration bar (not “Registration closed”).
   if (!hasEntry) {
@@ -43,14 +46,28 @@ export function StickyRegisterBar({ event, spotsLeft: aggregateLeft }: StickyReg
     );
   }
 
-  const soldOut = aggregateLeft === 0;
-  let headline: string;
-  let sub: string;
+  const soldOut = aggregateLeft === 0 && event.spotsCapacity > 0;
 
   if (soldOut) {
-    headline = 'Sold out';
-    sub = 'No spots left';
-  } else if (compete.length === 0 && audienceOpen) {
+    return (
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-bg/95 backdrop-blur-md lg:left-64">
+        <div className="mx-auto max-w-4xl px-4 py-3 md:px-6">
+          <SignatureMomentPanel
+            kind="soldOut"
+            compact
+            meta={dayMoment === 'tonight' ? 'Tonight · no spots left' : 'No spots left'}
+            body="Follow the host for the next one."
+          />
+        </div>
+      </div>
+    );
+  }
+
+  let headline: string;
+  let sub: string;
+  const kicker = dayMoment === 'tonight' ? 'Tonight' : dayMoment === 'today' ? 'Today' : 'Get in';
+
+  if (compete.length === 0 && audienceOpen) {
     headline = 'Watch the floor';
     const price = event.audience?.enabled
       ? event.audience.priceMinor
@@ -73,13 +90,13 @@ export function StickyRegisterBar({ event, spotsLeft: aggregateLeft }: StickyReg
     <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/95 backdrop-blur-md lg:left-64">
       <div className="mx-auto flex max-w-4xl items-center justify-between gap-4 px-4 py-3 md:px-6">
         <div className="min-w-0">
-          <p className="kicker text-text-muted">{soldOut ? 'Full' : 'Get in'}</p>
+          <p className="kicker text-accent">{kicker}</p>
           <p className="truncate font-display text-2xl uppercase tracking-[0.04em] text-text-primary md:text-3xl">
             {headline}
           </p>
           <p className="truncate text-xs text-text-secondary">{sub}</p>
         </div>
-        <div className="shrink-0 [&_button]:rounded-full [&_a]:rounded-full">
+        <div className="shrink-0 [&_button]:min-h-11 [&_button]:rounded-full [&_a]:min-h-11 [&_a]:rounded-full">
           <RegisterCta event={event} spotsLeft={aggregateLeft} />
         </div>
       </div>

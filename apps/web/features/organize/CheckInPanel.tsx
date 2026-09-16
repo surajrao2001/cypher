@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { friendlyError, InlineNotice, PageLoading, SoftError } from '@/features/shell/AsyncState';
+import { SignatureMomentPanel } from '@/features/shell/SignatureMoment';
 
 type BarcodeDetectorLike = {
   detect: (source: ImageBitmapSource) => Promise<Array<{ rawValue?: string }>>;
@@ -242,10 +243,11 @@ export function CheckInPanel({ slug, eventId }: { slug: string; eventId: string 
       </form>
       {message ? (
         message === 'CHECKED IN' ? (
-          <div className="rounded-md border border-accent-2/40 bg-accent-2 px-4 py-3 text-bg">
-            <p className="font-display text-2xl uppercase tracking-[0.06em]">CHECKED IN</p>
-            <p className="text-sm opacity-80">Ready for the next scan.</p>
-          </div>
+          <SignatureMomentPanel
+            kind="checkedIn"
+            body="Ready for the next scan."
+            className="border-accent-2/30"
+          />
         ) : (
           <InlineNotice tone="warn">{message}</InlineNotice>
         )

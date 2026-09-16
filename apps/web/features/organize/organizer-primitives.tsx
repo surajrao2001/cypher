@@ -12,11 +12,13 @@ import {
   UserRound,
   type LucideIcon,
 } from 'lucide-react';
+import { motion, useReducedMotion } from 'framer-motion';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { formatEventHomeWhen } from '@/features/organize/EventControlHeader';
+import { eventSharedLayoutTransition } from '@/features/organize/event-shared-motion';
 import { statusLabel } from '@/features/organize/event-control';
 import { PageBreadcrumb } from '@/features/shell/PageBreadcrumb';
 import { cn } from '@/lib/utils';
@@ -306,6 +308,8 @@ export function OrganizerEventSubHeader({
   trailing?: ReactNode;
   className?: string;
 }) {
+  const reduceMotion = useReducedMotion();
+  const useShared = !reduceMotion;
   const isLive = event.status === 'published';
   const place = [event.venue, event.city].filter(Boolean).join(', ');
   const when = formatEventHomeWhen(event.startTime);
@@ -326,7 +330,11 @@ export function OrganizerEventSubHeader({
       {/* Open stage — no card chrome; sits on the page wash like Event Home / reference */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6 lg:gap-8">
         <div className="flex min-w-0 flex-1 items-start gap-3.5 sm:items-center sm:gap-4">
-          <div className="relative h-20 w-16 shrink-0 overflow-hidden rounded-lg bg-[#111211] shadow-[0_12px_28px_-14px_rgba(0,0,0,0.85)] sm:h-[5.5rem] sm:w-[4.5rem]">
+          <motion.div
+            layoutId={useShared ? `event-poster-${event.id}` : undefined}
+            transition={eventSharedLayoutTransition}
+            className="relative h-20 w-16 shrink-0 overflow-hidden rounded-lg bg-[#111211] shadow-[0_12px_28px_-14px_rgba(0,0,0,0.85)] sm:h-[5.5rem] sm:w-[4.5rem]"
+          >
             {event.posterUrl ? (
               <img src={event.posterUrl} alt="" className="h-full w-full object-cover" />
             ) : (
@@ -334,13 +342,17 @@ export function OrganizerEventSubHeader({
                 Poster
               </div>
             )}
-          </div>
+          </motion.div>
 
           <div className="min-w-0 flex-1 space-y-1.5">
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="display-title text-[1.5rem] leading-[0.95] tracking-[0.03em] text-[#F4F4F1] sm:text-[2.1rem]">
+              <motion.h1
+                layoutId={useShared ? `event-title-${event.id}` : undefined}
+                transition={eventSharedLayoutTransition}
+                className="display-title text-[1.5rem] leading-[0.95] tracking-[0.03em] text-[#F4F4F1] sm:text-[2.1rem]"
+              >
                 {event.title}
-              </h1>
+              </motion.h1>
               <OrganizerPill tone={isLive ? 'live' : 'neutral'}>
                 {isLive ? 'Live' : statusLabel(event.status)}
               </OrganizerPill>

@@ -9,8 +9,10 @@ import { useState } from 'react';
 import { ByndIcon } from '@/components/icons/bynd8';
 import { Button } from '@/components/ui/button';
 import { canPublish, statusLabel } from '@/features/organize/event-control';
+import { eventSharedLayoutTransition } from '@/features/organize/event-shared-motion';
 import { eventTypeDisplayLabel } from '@/features/organize/event-type-copy';
 import { PosterThumb } from '@/features/organize/organizer-ui';
+import { eventDayMoment } from '@/features/shell/event-day';
 import { PageBreadcrumb } from '@/features/shell/PageBreadcrumb';
 import { cn } from '@/lib/utils';
 
@@ -93,6 +95,7 @@ export function EventControlHeader({
   const [shareHint, setShareHint] = useState<string | null>(null);
   const isLive = event.status === 'published';
   const isDraft = event.status === 'draft';
+  const dayMoment = isLive ? eventDayMoment(event.startTime) : null;
   const role = org.role as OrganizerMemberRole;
   const publishOk = canPublish(role);
   const checkInHref = routes.organizeEventCheckIn(org.slug, event.id);
@@ -133,7 +136,7 @@ export function EventControlHeader({
         <motion.div
           layoutId={useShared ? `event-poster-${event.id}` : undefined}
           className="shrink-0"
-          transition={{ type: 'spring', stiffness: 380, damping: 34 }}
+          transition={eventSharedLayoutTransition}
         >
           <PosterThumb
             src={event.posterUrl}
@@ -153,21 +156,29 @@ export function EventControlHeader({
             <span
               className={cn(
                 'inline-flex rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] sm:px-3 sm:py-1 sm:text-[11px] sm:tracking-[0.14em]',
-                isLive
-                  ? 'bg-accent-2 text-bg'
-                  : isDraft
-                    ? 'bg-[#1e1e1e] text-text-secondary'
-                    : 'border border-white/20 text-text-secondary',
+                dayMoment
+                  ? 'bg-accent text-bg'
+                  : isLive
+                    ? 'bg-accent-2 text-bg'
+                    : isDraft
+                      ? 'bg-[#1e1e1e] text-text-secondary'
+                      : 'border border-white/20 text-text-secondary',
               )}
             >
-              {isLive ? 'Live' : statusLabel(event.status)}
+              {dayMoment === 'tonight'
+                ? 'Tonight'
+                : dayMoment === 'today'
+                  ? 'Today'
+                  : isLive
+                    ? 'Live'
+                    : statusLabel(event.status)}
             </span>
           </div>
 
           <motion.h1
             layoutId={useShared ? `event-title-${event.id}` : undefined}
             className="display-title max-w-[16ch] text-[1.65rem] leading-[0.92] tracking-[0.03em] text-text-primary sm:text-6xl sm:leading-[0.88] md:text-7xl lg:text-[4.75rem] xl:text-[5.25rem]"
-            transition={{ type: 'spring', stiffness: 380, damping: 34 }}
+            transition={eventSharedLayoutTransition}
           >
             {event.title}
           </motion.h1>

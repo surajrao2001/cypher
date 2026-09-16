@@ -60,6 +60,7 @@ import {
   useOrganizerBySlugQuery,
   useOrganizerEventQuery,
 } from '@/features/organize/queries';
+import { eventPaneMotion } from '@/features/organize/event-shared-motion';
 import { SoftError, friendlyError } from '@/features/shell/AsyncState';
 
 type UpdateFilter = 'all' | 'announcements' | 'schedule' | 'media' | 'other';
@@ -218,12 +219,7 @@ function EventUpdatesScreen({ slug, eventId }: { slug: string; eventId: string }
           }}
         />
 
-        <motion.div
-          initial={{ opacity: 0.88 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.16 }}
-          className="space-y-4 sm:space-y-5"
-        >
+        <motion.div {...eventPaneMotion} className="space-y-4 sm:space-y-5">
         <OrganizerTabs
           ariaLabel="Update categories"
           items={[
