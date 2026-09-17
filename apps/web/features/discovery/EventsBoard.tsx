@@ -29,6 +29,7 @@ function typeLabel(eventType: string | undefined): string {
 }
 
 function EventsHero() {
+  /* Banner already bakes EVENTS / YOUR SCENE… — no HTML title overlay */
   return (
     <section className="relative w-full overflow-hidden">
       <div className="relative h-[9.5rem] w-full sm:h-[11rem] lg:h-[12.5rem]">
@@ -42,24 +43,8 @@ function EventsHero() {
         />
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 bg-gradient-to-r from-black/70 via-black/25 to-transparent"
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-[50%] bg-gradient-to-t from-[#080808] via-[#080808]/70 to-transparent"
         />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-x-0 bottom-0 h-[55%] bg-gradient-to-t from-[#080808] via-[#080808]/75 to-transparent"
-        />
-        <div className="absolute inset-0 flex flex-col items-start justify-center px-4 text-left sm:px-6 lg:px-8">
-          <h1 className="font-display text-[1.75rem] uppercase leading-[0.9] tracking-[0.03em] text-white sm:text-[2.25rem] lg:text-[2.6rem]">
-            Events
-          </h1>
-          <p className="mt-1 text-[12px] font-semibold uppercase tracking-[0.06em] text-accent sm:text-[13px]">
-            Your scene. All in one place.
-          </p>
-          <p className="mt-1.5 max-w-md text-[12px] leading-snug text-white/65 sm:text-[13px]">
-            Keep track of the events you&apos;re joining, save the ones you love, and never miss
-            what&apos;s next.
-          </p>
-        </div>
       </div>
     </section>
   );
