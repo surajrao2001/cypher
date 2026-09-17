@@ -1,7 +1,7 @@
 import { type ReactNode, Suspense } from 'react';
 
 import { DiscoverQueryProvider } from '@/features/discovery/use-discover-query';
-import { AppSidebar, MobileNav } from '@/features/navigation/AppSidebar';
+import { AppSidebar, MobileBottomNav } from '@/features/navigation/AppSidebar';
 import { TopUtilityBar } from '@/features/navigation/TopUtilityBar';
 import { TooltipProvider } from '@/components/ui/tooltip';
 
@@ -24,14 +24,17 @@ export default function AppShellLayout({ children }: Readonly<{ children: ReactN
             <AppSidebar />
             <div className="flex min-w-0 flex-1 flex-col">
               <header className="sticky top-0 z-30 flex items-center gap-2 border-b border-white/[0.06] bg-[#080808]/95 px-3 py-2.5 backdrop-blur-md sm:gap-3 md:px-5 lg:px-6">
-                <MobileNav />
                 <Suspense fallback={<TopBarFallback />}>
                   <TopUtilityBar />
                 </Suspense>
               </header>
-              <main className="flex-1">{children}</main>
+              {/* Bottom padding clears fixed mobile tab bar */}
+              <main className="flex-1 pb-[calc(4.25rem+env(safe-area-inset-bottom))] lg:pb-0">
+                {children}
+              </main>
             </div>
           </div>
+          <MobileBottomNav />
         </DiscoverQueryProvider>
       </Suspense>
     </TooltipProvider>

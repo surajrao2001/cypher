@@ -3,7 +3,6 @@
 import { routes } from '@cypher/contracts';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
 
 import { BrandLogo } from '@/components/brand/BrandLogo';
 import { ByndIcon } from '@/components/icons/bynd8';
@@ -17,7 +16,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { LEGAL_URLS } from '@/lib/release';
 import { cn } from '@/lib/utils';
 
@@ -155,7 +153,7 @@ function SidebarBody({ onNavigate }: { onNavigate?: () => void }) {
   );
 }
 
-/** Narrow desktop rail — ~15% of a 1440 frame ≈ 200–220px. */
+/** Narrow desktop rail. */
 export function AppSidebar() {
   return (
     <aside className="sticky top-0 hidden h-dvh w-[13.5rem] shrink-0 border-r border-white/[0.06] bg-[#0A0A0A] lg:flex lg:flex-col xl:w-[14.5rem]">
@@ -164,31 +162,47 @@ export function AppSidebar() {
   );
 }
 
-export function MobileNav() {
-  const [open, setOpen] = useState(false);
+/**
+ * Mobile primary nav — fixed bottom tabs (no side drawer).
+ * Safe-area aware for notched phones.
+ */
+export function MobileBottomNav() {
+  const pathname = usePathname();
+
   return (
-    <div className="flex shrink-0 items-center lg:hidden">
-      <Sheet open={open} onOpenChange={setOpen}>
-        <SheetTrigger asChild>
-          <Button
-            variant="outline"
-            size="icon"
-            aria-label="Open menu"
-            className="size-10 border-white/15 bg-[#121212]"
-          >
-            <ByndIcon name="menu" className="size-5" />
-          </Button>
-        </SheetTrigger>
-        <SheetContent side="left" className="w-[min(100%,17rem)] border-white/[0.06] bg-[#0A0A0A] p-0">
-          <SheetHeader className="sr-only">
-            <SheetTitle>BYND8</SheetTitle>
-          </SheetHeader>
-          <div className="border-b border-white/[0.06] px-3 py-4">
-            <BrandLogo variant="mark" size="sm" href={routes.discover} />
-          </div>
-          <SidebarBody onNavigate={() => setOpen(false)} />
-        </SheetContent>
-      </Sheet>
-    </div>
+    <nav
+      aria-label="Primary"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-white/[0.08] bg-[#0A0A0A]/95 backdrop-blur-md lg:hidden"
+      style={{ paddingBottom: 'max(0.35rem, env(safe-area-inset-bottom))' }}
+    >
+      <ul className="mx-auto flex max-w-lg items-stretch justify-between px-1 pt-1.5">
+        {navItems.map((item) => {
+          const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+          return (
+            <li key={item.href} className="min-w-0 flex-1">
+              <Link
+                href={item.href}
+                className={cn(
+                  'relative flex flex-col items-center gap-0.5 px-1 py-1.5 text-[10px] font-medium tracking-wide transition-colors',
+                  active ? 'text-accent' : 'text-white/45 hover:text-white/75',
+                )}
+              >
+                {active ? (
+                  <span
+                    aria-hidden
+                    className="absolute left-1/2 top-0 h-[2px] w-8 -translate-x-1/2 rounded-full bg-accent"
+                  />
+                ) : null}
+                <ByndIcon
+                  name={item.icon}
+                  className={cn('size-5', active ? 'text-accent' : 'text-white/45')}
+                />
+                <span className="truncate">{item.label}</span>
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
   );
 }
