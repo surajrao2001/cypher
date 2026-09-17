@@ -28,29 +28,35 @@ function DiscoverFrame({ children }: { children: ReactNode }) {
 }
 
 function DiscoverHero() {
+  /* Banner 1024×344 — short band; bottom fades into page bg so it merges */
   return (
-    <section className="relative w-full overflow-hidden rounded-lg border border-white/[0.06]">
-      {/* Banner 1024×344 — full content width, natural cinematic ratio */}
-      <div className="relative aspect-[1024/344] w-full min-h-[200px] sm:min-h-[240px]">
+    <section className="relative w-full overflow-hidden">
+      <div className="relative h-[9.5rem] w-full sm:h-[11rem] lg:h-[12.5rem]">
         <Image
           src="/bynd8/discover-hero-banner.jpg"
           alt=""
           fill
           priority
-          sizes="100vw"
+          sizes="(max-width: 1280px) 100vw, 1200px"
           className="object-cover object-center"
         />
+        {/* Left scrim for copy */}
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 bg-gradient-to-r from-black/75 via-black/35 to-transparent"
+          className="pointer-events-none absolute inset-0 bg-gradient-to-r from-black/65 via-black/20 to-transparent"
         />
-        <div className="absolute inset-0 flex flex-col items-start justify-end px-4 pb-4 pt-8 text-left sm:px-6 sm:pb-5 lg:px-8 lg:pb-6">
-          <h1 className="font-display max-w-[14ch] text-[1.85rem] uppercase leading-[0.88] tracking-[0.02em] text-white sm:text-[2.35rem] lg:text-[2.85rem]">
+        {/* Bottom dissolve into page */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-[55%] bg-gradient-to-t from-[#080808] via-[#080808]/75 to-transparent"
+        />
+        <div className="absolute inset-0 flex flex-col items-start justify-center px-4 pb-2 pt-2 text-left sm:px-6 lg:px-8">
+          <h1 className="font-display max-w-[14ch] text-[1.45rem] uppercase leading-[0.88] tracking-[0.02em] text-white sm:text-[1.85rem] lg:text-[2.15rem]">
             More than events
             <br />
             <span className="text-accent">A movement</span>
           </h1>
-          <p className="mt-1.5 max-w-md text-left text-[12px] leading-snug text-white/75 sm:text-[13px]">
+          <p className="mt-1 max-w-md text-left text-[11px] leading-snug text-white/75 sm:text-[12px]">
             Battles. Jams. Workshops. People. Culture.
           </p>
         </div>
