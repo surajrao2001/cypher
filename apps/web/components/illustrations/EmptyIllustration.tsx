@@ -1,4 +1,4 @@
-import type { ReactNode, SVGProps } from 'react';
+import { useId, type ReactNode, type SVGProps } from 'react';
 
 import { cn } from '@/lib/utils';
 
@@ -33,10 +33,17 @@ const L = '#B8FF00';
 const W = '#F4F4F1';
 const M = 'rgba(244,244,241,0.45)';
 
-/** Bare SVG — no banner, no card frame. */
+/**
+ * Empty art with soft stage glow that dissolves into the page (no card/banner frame).
+ */
 export function EmptyIllustration({ kind, className, ...props }: Props) {
+  const uid = useId().replace(/:/g, '');
+  const glow = `${uid}-glow`;
+  const floor = `${uid}-floor`;
+  const haze = `${uid}-haze`;
   const resolved = resolveKind(kind);
   const Art = ART[resolved];
+
   return (
     <svg
       viewBox="0 0 320 240"
@@ -46,6 +53,39 @@ export function EmptyIllustration({ kind, className, ...props }: Props) {
       aria-hidden
       {...props}
     >
+      <defs>
+        <radialGradient id={glow} cx="50%" cy="42%" r="55%">
+          <stop offset="0%" stopColor={O} stopOpacity="0.28" />
+          <stop offset="45%" stopColor={O} stopOpacity="0.1" />
+          <stop offset="100%" stopColor={O} stopOpacity="0" />
+        </radialGradient>
+        <radialGradient id={haze} cx="50%" cy="18%" r="48%">
+          <stop offset="0%" stopColor={O} stopOpacity="0.2" />
+          <stop offset="100%" stopColor={O} stopOpacity="0" />
+        </radialGradient>
+        <radialGradient id={floor} cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor={O} stopOpacity="0.18" />
+          <stop offset="55%" stopColor="#080808" stopOpacity="0.35" />
+          <stop offset="100%" stopColor="#080808" stopOpacity="0" />
+        </radialGradient>
+        <filter id={`${uid}-soft`} x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur stdDeviation="6" />
+        </filter>
+      </defs>
+
+      {/* Atmosphere merges into page bg — no opaque plate */}
+      <ellipse cx="160" cy="118" rx="150" ry="108" fill={`url(#${glow})`} />
+      <ellipse cx="160" cy="36" rx="100" ry="48" fill={`url(#${haze})`} />
+      <ellipse
+        cx="160"
+        cy="208"
+        rx="118"
+        ry="28"
+        fill={`url(#${floor})`}
+        filter={`url(#${uid}-soft)`}
+      />
+      <path d="M118 8 L202 8 L248 200 L72 200 Z" fill={O} fillOpacity="0.06" />
+
       <Art />
     </svg>
   );

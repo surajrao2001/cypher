@@ -99,21 +99,39 @@ export function DancerEmptyState({
   return (
     <div
       className={cn(
-        'flex min-h-[min(70vh,36rem)] w-full flex-col items-center justify-center px-4 py-12 text-center',
+        'relative flex min-h-[min(70vh,36rem)] w-full flex-col items-center justify-center overflow-hidden px-4 py-12 text-center',
         className,
       )}
     >
-      <div className="mb-6 w-full max-w-[20rem]">
-        <EmptyIllustration kind={copy.illustration} />
+      {/* Page-merge atmosphere — soft stage glow behind the SVG */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute left-1/2 top-[18%] h-[22rem] w-[22rem] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,101,0,0.16)_0%,rgba(255,101,0,0.05)_42%,transparent_70%)] blur-2xl"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-[radial-gradient(ellipse_at_50%_0%,rgba(255,101,0,0.08),transparent_70%)]"
+      />
+
+      <div className="relative mb-6 w-full max-w-[20rem]">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute left-1/2 top-1/2 h-[85%] w-[90%] -translate-x-1/2 -translate-y-1/2 rounded-[40%] bg-[radial-gradient(ellipse_at_center,rgba(255,101,0,0.14)_0%,transparent_68%)] blur-xl"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-[12%] bottom-[6%] h-8 rounded-full bg-black/40 blur-md"
+        />
+        <EmptyIllustration kind={copy.illustration} className="relative z-[1] drop-shadow-[0_0_28px_rgba(255,101,0,0.22)]" />
       </div>
-      <h2 className="max-w-[18ch] text-[1.65rem] font-bold leading-tight tracking-tight text-white sm:text-[1.85rem]">
+      <h2 className="relative z-[1] max-w-[18ch] text-[1.65rem] font-bold leading-tight tracking-tight text-white sm:text-[1.85rem]">
         {copy.title}
       </h2>
-      <p className="mt-3 max-w-md text-[14px] leading-relaxed text-white/55 sm:text-[15px]">
+      <p className="relative z-[1] mt-3 max-w-md text-[14px] leading-relaxed text-white/55 sm:text-[15px]">
         {copy.body}
       </p>
       {actions === null ? null : (
-        <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
+        <div className="relative z-[1] mt-7 flex flex-wrap items-center justify-center gap-3">
           {actions ?? <DefaultActions variant={variant} onChangeLocation={onChangeLocation} />}
         </div>
       )}
