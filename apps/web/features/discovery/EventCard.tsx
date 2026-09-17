@@ -28,7 +28,6 @@ export function EventCard({ event, variant = 'poster' }: EventCardProps) {
   const day = eventDayMoment(event.startTime);
   const liveBadge = day === 'tonight' || day === 'today';
   const place = [event.venue, event.city].filter(Boolean).join(', ') || event.city;
-  const tagLine = (event.tags.length ? event.tags : event.styles).slice(0, 3);
 
   if (variant === 'row') {
     return (
@@ -67,68 +66,46 @@ export function EventCard({ event, variant = 'poster' }: EventCardProps) {
     <article className="group">
       <Link
         href={`/events/${event.slug}`}
-        className="block overflow-hidden rounded-lg border border-white/[0.08] bg-[#121212] transition-colors hover:border-white/14"
+        className="relative block aspect-[3/4] overflow-hidden rounded-lg border border-white/[0.08] bg-[#0D0E0D] transition-colors hover:border-white/14"
       >
-        {/* Poster plane — title + chrome live on the image (matches reference cards) */}
-        <div className="relative aspect-[5/4] overflow-hidden bg-[#0D0E0D]">
-          <EventPoster
-            title={event.title}
-            src={event.posterUrl}
-            sizes="(max-width: 640px) 45vw, (max-width: 1280px) 18vw, 160px"
-          />
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-black/35"
-          />
+        <EventPoster
+          title={event.title}
+          src={event.posterUrl}
+          sizes="(max-width: 640px) 45vw, (max-width: 1280px) 18vw, 160px"
+        />
 
-          <span className="absolute left-2 top-2 font-display text-[10px] tracking-[0.08em] text-white/90">
-            BYND8
+        {/* Black fade so meta stays readable over the poster */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black via-black/55 to-transparent"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-[55%] bg-gradient-to-t from-black/95 via-black/50 to-transparent"
+        />
+
+        {liveBadge ? (
+          <span className="absolute left-2 top-2 z-10 rounded-sm bg-accent-2 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-[0.08em] text-bg">
+            Live
           </span>
+        ) : (
+          <span className="absolute left-2 top-2 z-10 rounded-full bg-accent px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-bg">
+            {typeLabel(event.eventType)}
+          </span>
+        )}
 
-          {tagLine.length > 0 ? (
-            <div className="absolute right-2 top-2 flex max-w-[40%] flex-col items-end gap-0.5 text-right">
-              {tagLine.map((tag) => (
-                <span
-                  key={tag}
-                  className="text-[7px] font-semibold uppercase leading-tight tracking-[0.12em] text-white/70"
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
-          ) : null}
-
-          <div className="absolute inset-x-2 bottom-7 top-7 flex items-center justify-center px-1">
-            <p className="display-title line-clamp-3 text-center text-[1.05rem] leading-[0.92] tracking-[0.03em] text-accent sm:text-[1.15rem]">
-              {event.title}
-            </p>
-          </div>
-
+        <div className="absolute inset-x-0 bottom-0 z-10 space-y-1 p-2.5 sm:p-3">
           {liveBadge ? (
-            <span className="absolute bottom-2 left-2 rounded-sm bg-accent-2 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-[0.08em] text-bg">
-              Live
-            </span>
-          ) : null}
-        </div>
-
-        {/* Meta footer — below poster */}
-        <div className="space-y-1 px-2.5 py-2.5">
-          <div className="flex flex-wrap items-center gap-1.5">
-            <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-white/45">
+            <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-white/55">
               {typeLabel(event.eventType)}
             </p>
-            {liveBadge ? (
-              <span className="rounded-sm bg-accent-2 px-1 py-0.5 text-[8px] font-bold uppercase tracking-[0.08em] text-bg">
-                Live
-              </span>
-            ) : null}
-          </div>
-          <h3 className="line-clamp-2 text-[13px] font-semibold leading-snug text-white">
+          ) : null}
+          <h3 className="display-title line-clamp-2 text-[1.05rem] leading-[0.95] tracking-[0.03em] text-white sm:text-[1.2rem]">
             {event.title}
           </h3>
-          <p className="flex items-start gap-1 text-[10px] leading-snug text-white/50">
-            <ByndIcon name="calendar" className="mt-0.5 size-3 shrink-0 opacity-70" />
-            <span>{formatEventDate(event.startTime)}</span>
+          <p className="flex items-start gap-1 text-[10px] leading-snug text-white/65">
+            <ByndIcon name="calendar" className="mt-0.5 size-3 shrink-0 opacity-80" />
+            <span className="line-clamp-1">{formatEventDate(event.startTime)}</span>
           </p>
           <p className={cn('flex items-start gap-1 text-[10px] leading-snug text-accent')}>
             <ByndIcon name="pin" className="mt-0.5 size-3 shrink-0" />

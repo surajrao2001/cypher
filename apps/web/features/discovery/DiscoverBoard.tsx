@@ -22,36 +22,35 @@ const TYPE_CHIPS = [
   { value: 'session', label: 'Session' },
 ] as const;
 
-/** Match reference content width — do not stretch to ultra-wide. */
+/** Full-bleed within the main pane (aligns with top bar padding). */
 function DiscoverFrame({ children }: { children: ReactNode }) {
-  return <div className="mx-auto w-full max-w-[1280px] px-4 sm:px-5 lg:px-6">{children}</div>;
+  return <div className="w-full px-3 sm:px-5 md:px-5 lg:px-6">{children}</div>;
 }
 
 function DiscoverHero() {
   return (
-    <section className="relative overflow-hidden rounded-lg border border-white/[0.06]">
-      {/* Banner is 1024×344 — keep that cinematic ratio; cover crops minimally */}
-      <div className="relative aspect-[1024/344] w-full min-h-[160px] max-h-[280px] sm:min-h-[200px] sm:max-h-[300px] lg:max-h-[320px]">
+    <section className="relative w-full overflow-hidden rounded-lg border border-white/[0.06]">
+      {/* Banner 1024×344 — full content width, natural cinematic ratio */}
+      <div className="relative aspect-[1024/344] w-full min-h-[200px] sm:min-h-[240px]">
         <Image
           src="/bynd8/discover-hero-banner.jpg"
           alt=""
           fill
           priority
-          sizes="(max-width: 1280px) 100vw, 1280px"
+          sizes="100vw"
           className="object-cover object-center"
         />
-        {/* Soft left scrim so overlay copy stays readable without hiding the dancer */}
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 bg-gradient-to-r from-black/75 via-black/35 to-transparent"
         />
-        <div className="absolute inset-0 flex flex-col justify-end px-4 pb-4 pt-8 sm:px-6 sm:pb-5 lg:px-8 lg:pb-6">
-          <h1 className="font-display max-w-[14ch] text-[1.85rem] uppercase leading-[0.88] tracking-[0.02em] text-white sm:text-[2.35rem] lg:text-[2.75rem]">
+        <div className="absolute inset-0 flex flex-col items-start justify-end px-4 pb-4 pt-8 text-left sm:px-6 sm:pb-5 lg:px-8 lg:pb-6">
+          <h1 className="font-display max-w-[14ch] text-[1.85rem] uppercase leading-[0.88] tracking-[0.02em] text-white sm:text-[2.35rem] lg:text-[2.85rem]">
             More than events
             <br />
             <span className="text-accent">A movement</span>
           </h1>
-          <p className="mt-1.5 max-w-md text-[12px] leading-snug text-white/75 sm:text-[13px]">
+          <p className="mt-1.5 max-w-md text-left text-[12px] leading-snug text-white/75 sm:text-[13px]">
             Battles. Jams. Workshops. People. Culture.
           </p>
         </div>
@@ -76,8 +75,8 @@ export function DiscoverBoard({ catalog }: { catalog: EventListResponse }) {
   if (boardEmpty) {
     return (
       <DiscoverFrame>
-        <div className="py-6 md:py-8">
-          <SceneEmptyBoard surface="discover" />
+        <div className="w-full py-6 md:py-8">
+          <SceneEmptyBoard surface="discover" className="mx-0 max-w-none" />
         </div>
       </DiscoverFrame>
     );
@@ -179,7 +178,7 @@ export function DiscoverBoard({ catalog }: { catalog: EventListResponse }) {
 
 function PosterGrid({ children }: { children: ReactNode }) {
   return (
-    <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+    <div className="grid w-full grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7">
       {children}
     </div>
   );
