@@ -10,7 +10,7 @@ export function LoginHeroPanel() {
     <aside className="relative hidden min-h-dvh overflow-hidden bg-[#080808] lg:flex lg:w-full lg:max-w-[40rem] lg:shrink-0 lg:flex-col xl:max-w-[44rem]">
       <div className="relative flex min-h-0 flex-1 items-center justify-center px-3 py-8 pr-0">
         <Image
-          src="/bynd8/login-hero-desktop.jpg"
+          src="/bynd8/login-hero-desktop-v2.jpg"
           alt=""
           width={1280}
           height={960}

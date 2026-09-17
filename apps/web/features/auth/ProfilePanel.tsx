@@ -7,12 +7,11 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 import { BrandHeroBanner } from '@/components/brand/BrandHeroBanner';
-import { BrandLogo } from '@/components/brand/BrandLogo';
-import { EmptyIllustration } from '@/components/illustrations/EmptyIllustration';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toastCopy, toastDismiss, toastPending, toastReject, toastResolve } from '@/components/ui/toaster';
 import { useAuth } from '@/features/auth/AuthProvider';
+import { DancerEmptyState } from '@/features/shell/DancerEmptyState';
 import { PageLoading, SoftError } from '@/features/shell/AsyncState';
 import {
   SignatureMomentOverlay,
@@ -77,8 +76,12 @@ export function ProfilePanel() {
     };
   }, [auth.api, auth.me, auth.status]);
 
-  if (auth.status === 'loading' || auth.status === 'unauthenticated') {
+  if (auth.status === 'loading') {
     return <PageLoading variant="profile" label="Loading profile" />;
+  }
+
+  if (auth.status === 'unauthenticated') {
+    return <DancerEmptyState variant="profileGuest" />;
   }
 
   if (!auth.me) {
@@ -176,24 +179,10 @@ export function ProfilePanel() {
     return (
       <>
         {auth.me.needsOnboarding && !welcomeOpen ? (
-      <div className="relative mx-auto max-w-lg space-y-8">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-x-[-10%] top-[-20%] h-48 rounded-full bg-[radial-gradient(ellipse_at_center,rgba(255,104,0,0.14),transparent_70%)]"
-        />
-        <div className="relative space-y-4">
-          <div className="mb-2 max-w-[14rem]">
-            <EmptyIllustration kind="profile" />
-          </div>
-          <BrandLogo variant="mark" size="lg" href={null} />
-          <p className="kicker text-accent">Enter the scene</p>
-          <h1 className="display-title text-5xl">Who’s on the card?</h1>
-          <p className="text-sm leading-relaxed text-text-secondary">
-            Name + city and you’re on the list. Props for showing up. Crew and styles can wait —
-            no pressure.
-          </p>
-        </div>
+      <div className="relative mx-auto max-w-lg space-y-6 px-3 pb-10">
+        <DancerEmptyState variant="profileSetup" className="min-h-0 py-6" actions={null} />
         <form
+          id="profile-onboarding-form"
           className="relative space-y-4"
           onSubmit={(event) => {
             event.preventDefault();
@@ -281,10 +270,10 @@ export function ProfilePanel() {
           <Button
             type="submit"
             size="lg"
-            className="h-12 w-full rounded-sm text-sm font-semibold uppercase tracking-[0.14em]"
+            className="h-11 w-full rounded-md text-[13px] font-semibold normal-case tracking-normal"
             disabled={pending}
           >
-            {pending ? 'Saving…' : 'Let’s go'}
+            {pending ? 'Saving…' : 'Complete Profile'}
           </Button>
         </form>
       </div>
@@ -324,8 +313,8 @@ export function ProfilePanel() {
   return (
     <div className="w-full space-y-6 px-3 pb-10 sm:px-5 lg:px-6">
       <BrandHeroBanner
-        desktopSrc="/bynd8/profile-hero-banner.jpg"
-        mobileSrc="/bynd8/profile-hero-banner-mobile.jpg"
+        desktopSrc="/bynd8/profile-hero-desktop-v2.jpg"
+        mobileSrc="/bynd8/profile-hero-mobile-v2.jpg"
         priority
       >
         <div

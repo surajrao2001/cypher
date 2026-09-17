@@ -4,12 +4,10 @@ import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { routes } from '@cypher/contracts';
 
-import { ByndIcon } from '@/components/icons/bynd8';
 import { Button } from '@/components/ui/button';
-import { EmptyState } from '@/features/shell/EmptyState';
+import { DancerEmptyState } from '@/features/shell/DancerEmptyState';
 import { PageLoading } from '@/features/shell/AsyncState';
 import { useAuth } from '@/features/auth/AuthProvider';
-import { loginUrl } from '@/lib/auth-routes';
 
 export function OrganizeGate({ children }: { children: ReactNode }) {
   const auth = useAuth();
@@ -19,38 +17,24 @@ export function OrganizeGate({ children }: { children: ReactNode }) {
   }
 
   if (auth.status !== 'authenticated' || !auth.me) {
-    return (
-      <EmptyState
-        kicker="Organize"
-        title="Sign in to create"
-        body="Sign in with Google or email to put events on BYND8."
-        illustration="signIn"
-      >
-        <Button asChild size="lg" className="rounded-md normal-case tracking-normal">
-          <Link href={loginUrl(routes.organize)}>
-            <ByndIcon name="signIn" />
-            Sign in
-          </Link>
-        </Button>
-      </EmptyState>
-    );
+    return <DancerEmptyState variant="organizeGuest" />;
   }
 
   if (auth.me.needsOnboarding) {
     return (
-      <EmptyState
-        kicker="Organize"
-        title="Tell us what to call you first"
-        body="Drop your name and city on Profile, then come back to create."
-        illustration="profile"
-      >
-        <Button asChild size="lg" className="rounded-md normal-case tracking-normal">
-          <Link href={`${routes.profile}?next=${encodeURIComponent(routes.organize)}`}>
-            <ByndIcon name="profile" />
-            Open profile
-          </Link>
-        </Button>
-      </EmptyState>
+      <DancerEmptyState
+        variant="profileSetup"
+        actions={
+          <Button
+            asChild
+            className="h-11 rounded-md bg-accent px-6 text-[13px] font-semibold normal-case tracking-normal text-white hover:bg-accent-hover"
+          >
+            <Link href={`${routes.profile}?next=${encodeURIComponent(routes.organize)}`}>
+              Complete Profile
+            </Link>
+          </Button>
+        }
+      />
     );
   }
 

@@ -25,8 +25,8 @@ function PassesHero() {
   /* Banner already bakes MY PASSES / YOUR TICKETS… — no HTML title overlay */
   return (
     <BrandHeroBanner
-      desktopSrc="/bynd8/passes-hero-banner.jpg"
-      mobileSrc="/bynd8/passes-hero-banner-mobile.jpg"
+      desktopSrc="/bynd8/passes-hero-desktop-v2.jpg"
+      mobileSrc="/bynd8/passes-hero-mobile-v2.jpg"
       priority
     >
       <div
@@ -233,7 +233,7 @@ function PassesAside() {
       <div className="relative overflow-hidden rounded-lg border border-white/[0.08]">
         <div className="relative h-28 w-full">
           <Image
-            src="/bynd8/passes-hero-banner.jpg"
+            src="/bynd8/passes-hero-desktop-v2.jpg"
             alt=""
             fill
             sizes="280px"

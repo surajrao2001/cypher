@@ -22,7 +22,7 @@ export default function LoginPage() {
         */}
         <div aria-hidden className="pointer-events-none absolute inset-0 lg:hidden">
           <Image
-            src="/bynd8/login-hero-mobile.jpg"
+            src="/bynd8/login-hero-mobile-v2.jpg"
             alt=""
             fill
             priority

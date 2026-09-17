@@ -1,8 +1,18 @@
-import { useId, type ReactNode, type SVGProps } from 'react';
+import type { ReactNode, SVGProps } from 'react';
 
 import { cn } from '@/lib/utils';
 
+/** Eight BYND8 empty scenes from the dancer empty-state reference. */
 export type EmptyIllustrationKind =
+  | 'discoverGuest'
+  | 'eventsGuest'
+  | 'organizeGuest'
+  | 'profileGuest'
+  | 'discoverLocation'
+  | 'eventsSaved'
+  | 'organizeCreate'
+  | 'profileSetup'
+  /** Legacy aliases used elsewhere */
   | 'discover'
   | 'filters'
   | 'location'
@@ -18,264 +28,370 @@ type Props = SVGProps<SVGSVGElement> & {
   kind: EmptyIllustrationKind;
 };
 
-const ORANGE = '#FF6500';
-const LIME = '#B8FF00';
-const INK = '#F4F4F1';
-const MUTED = 'rgba(244,244,241,0.35)';
-const STAGE = '#121212';
-const DEEP = '#080908';
+const O = '#FF6500';
+const L = '#B8FF00';
+const W = '#F4F4F1';
+const M = 'rgba(244,244,241,0.45)';
 
-/** Shared stage + spotlight frame for all empties. */
-function StageShell({
-  children,
-  className,
-  uid,
-  ...props
-}: SVGProps<SVGSVGElement> & { children: ReactNode; uid: string }) {
-  const glow = `${uid}-glow`;
-  const cone = `${uid}-cone`;
-  const floor = `${uid}-floor`;
-
+/** Bare SVG — no banner, no card frame. */
+export function EmptyIllustration({ kind, className, ...props }: Props) {
+  const resolved = resolveKind(kind);
+  const Art = ART[resolved];
   return (
     <svg
-      viewBox="0 0 280 200"
+      viewBox="0 0 320 240"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      className={cn('h-auto w-full max-w-[17.5rem]', className)}
+      className={cn('h-auto w-full max-w-[18rem] sm:max-w-[20rem]', className)}
       aria-hidden
       {...props}
     >
-      <defs>
-        <radialGradient id={glow} cx="50%" cy="18%" r="55%">
-          <stop offset="0%" stopColor={ORANGE} stopOpacity="0.45" />
-          <stop offset="55%" stopColor={ORANGE} stopOpacity="0.08" />
-          <stop offset="100%" stopColor={DEEP} stopOpacity="0" />
-        </radialGradient>
-        <linearGradient id={cone} x1="140" y1="8" x2="140" y2="150">
-          <stop offset="0%" stopColor={ORANGE} stopOpacity="0.35" />
-          <stop offset="100%" stopColor={ORANGE} stopOpacity="0" />
-        </linearGradient>
-        <linearGradient id={floor} x1="40" y1="160" x2="240" y2="190">
-          <stop offset="0%" stopColor={STAGE} />
-          <stop offset="50%" stopColor="#1a1410" />
-          <stop offset="100%" stopColor={STAGE} />
-        </linearGradient>
-      </defs>
-
-      <rect width="280" height="200" rx="16" fill={DEEP} />
-      <ellipse cx="140" cy="36" rx="90" ry="34" fill={`url(#${glow})`} />
-      <path d="M110 10 L170 10 L230 158 L50 158 Z" fill={`url(#${cone})`} />
-      <ellipse cx="140" cy="168" rx="98" ry="18" fill={`url(#${floor})`} />
-      <ellipse cx="140" cy="168" rx="72" ry="10" fill={ORANGE} fillOpacity="0.12" />
-
-      <path
-        d="M214 28 L220 18 L226 28 L234 22 L232 36 H206 L204 22 Z"
-        stroke={ORANGE}
-        strokeWidth="1.6"
-        strokeLinejoin="round"
-        fill="none"
-      />
-      <circle cx="220" cy="16" r="1.6" fill={LIME} />
-
-      {children}
+      <Art />
     </svg>
   );
 }
 
-function DiscoverArt() {
+type CoreKind =
+  | 'discoverGuest'
+  | 'eventsGuest'
+  | 'organizeGuest'
+  | 'profileGuest'
+  | 'discoverLocation'
+  | 'eventsSaved'
+  | 'organizeCreate'
+  | 'profileSetup';
+
+function resolveKind(kind: EmptyIllustrationKind): CoreKind {
+  switch (kind) {
+    case 'discoverGuest':
+    case 'discover':
+      return 'discoverGuest';
+    case 'eventsGuest':
+    case 'signIn':
+      return 'eventsGuest';
+    case 'organizeGuest':
+    case 'organize':
+      return 'organizeGuest';
+    case 'profileGuest':
+    case 'profile':
+      return 'profileGuest';
+    case 'discoverLocation':
+    case 'location':
+    case 'filters':
+      return 'discoverLocation';
+    case 'eventsSaved':
+    case 'events':
+    case 'saved':
+    case 'passes':
+    case 'cancelled':
+      return 'eventsSaved';
+    case 'organizeCreate':
+      return 'organizeCreate';
+    case 'profileSetup':
+      return 'profileSetup';
+    default:
+      return 'discoverGuest';
+  }
+}
+
+/** Spotlight floor + “GOOD EVENTS AHEAD” */
+function DiscoverGuestArt() {
   return (
     <g>
-      <circle cx="140" cy="108" r="42" stroke={INK} strokeWidth="3" fill="none" opacity="0.9" />
-      <circle cx="140" cy="108" r="26" stroke={ORANGE} strokeWidth="2.5" fill="none" />
-      <path d="M140 78 V94 M140 122 V138 M110 108 H126 M154 108 H170" stroke={LIME} strokeWidth="2.5" strokeLinecap="square" />
-      <path d="M128 118 L140 98 L152 118" stroke={INK} strokeWidth="2" fill="none" opacity="0.5" />
+      <ellipse cx="160" cy="200" rx="110" ry="18" fill={O} fillOpacity="0.12" />
+      <path d="M120 20 L200 20 L250 200 L70 200 Z" fill={O} fillOpacity="0.08" />
+      <ellipse cx="160" cy="28" rx="28" ry="10" fill={O} fillOpacity="0.35" />
+      <path d="M148 38 L172 38 L190 120 L130 120 Z" fill={O} fillOpacity="0.2" />
+      <text
+        x="160"
+        y="155"
+        textAnchor="middle"
+        fill={O}
+        fontFamily="system-ui,sans-serif"
+        fontSize="18"
+        fontWeight="800"
+        letterSpacing="0.06em"
+      >
+        GOOD EVENTS
+      </text>
+      <text
+        x="160"
+        y="178"
+        textAnchor="middle"
+        fill={O}
+        fontFamily="system-ui,sans-serif"
+        fontSize="18"
+        fontWeight="800"
+        letterSpacing="0.08em"
+      >
+        AHEAD
+      </text>
+      <path d="M160 95 L168 115 L160 110 L152 115 Z" fill={L} />
     </g>
   );
 }
 
-function FiltersArt() {
+/** Locked poster stack */
+function EventsGuestArt() {
   return (
     <g>
-      <rect x="88" y="78" width="104" height="14" rx="3" fill={MUTED} />
-      <rect x="100" y="102" width="80" height="14" rx="3" fill={MUTED} opacity="0.7" />
-      <rect x="112" y="126" width="56" height="14" rx="3" fill={MUTED} opacity="0.45" />
-      <circle cx="178" cy="85" r="10" fill={ORANGE} />
-      <path d="M174 85 H182 M178 81 V89" stroke={DEEP} strokeWidth="2" strokeLinecap="round" />
-      <path d="M96 148 L184 148" stroke={ORANGE} strokeWidth="2" strokeDasharray="4 6" opacity="0.7" />
-    </g>
-  );
-}
-
-function LocationArt() {
-  return (
-    <g>
+      <rect x="70" y="48" width="70" height="95" rx="6" fill="#1a1a1a" stroke={M} strokeWidth="2" transform="rotate(-12 105 95)" />
+      <rect x="120" y="40" width="70" height="95" rx="6" fill="#222" stroke={M} strokeWidth="2" transform="rotate(8 155 87)" />
+      <rect x="95" y="55" width="78" height="105" rx="6" fill="#161616" stroke={W} strokeWidth="2" />
+      <rect x="105" y="68" width="58" height="36" rx="3" fill={M} opacity="0.35" />
+      <circle cx="160" cy="130" r="28" fill={O} />
       <path
-        d="M140 70 C122 70 108 84 108 102 C108 124 140 154 140 154 C140 154 172 124 172 102 C172 84 158 70 140 70 Z"
-        fill={ORANGE}
-        fillOpacity="0.18"
-        stroke={ORANGE}
+        d="M160 118 V124 M148 136 H172 M152 124 H168 V136 C168 142 164 146 160 146 C156 146 152 142 152 136 V124 Z"
+        stroke="#080908"
         strokeWidth="2.5"
-      />
-      <circle cx="140" cy="100" r="12" fill={INK} />
-      <circle cx="140" cy="100" r="5" fill={DEEP} />
-      <path d="M92 158 H188" stroke={MUTED} strokeWidth="2" strokeDasharray="3 5" />
-    </g>
-  );
-}
-
-function EventsArt() {
-  return (
-    <g>
-      <rect x="96" y="72" width="88" height="84" rx="6" fill={STAGE} stroke={INK} strokeWidth="2" opacity="0.95" />
-      <rect x="96" y="72" width="88" height="22" fill={ORANGE} />
-      <rect x="108" y="66" width="8" height="14" rx="2" fill={INK} />
-      <rect x="164" y="66" width="8" height="14" rx="2" fill={INK} />
-      <rect x="110" y="106" width="18" height="14" rx="2" fill={MUTED} />
-      <rect x="134" y="106" width="18" height="14" rx="2" fill={MUTED} />
-      <rect x="158" y="106" width="14" height="14" rx="2" fill={MUTED} />
-      <rect x="110" y="128" width="18" height="14" rx="2" fill={MUTED} />
-      <rect x="134" y="128" width="18" height="14" rx="2" fill={LIME} fillOpacity="0.85" />
-      <rect x="158" y="128" width="14" height="14" rx="2" fill={MUTED} />
-    </g>
-  );
-}
-
-function SavedArt() {
-  return (
-    <g>
-      <path
-        d="M140 148 L108 118 C98 108 98 92 110 84 C120 77 132 80 140 90 C148 80 160 77 170 84 C182 92 182 108 172 118 Z"
-        fill={ORANGE}
-        fillOpacity="0.15"
-        stroke={ORANGE}
-        strokeWidth="2.5"
+        fill="none"
         strokeLinejoin="round"
       />
-      <path d="M128 102 H152 M140 90 V114" stroke={MUTED} strokeWidth="2" strokeLinecap="round" />
+      <circle cx="160" cy="136" r="2.5" fill="#080908" />
     </g>
   );
 }
 
-function PassesArt() {
+/** Gear trunk + IT STARTS WITH YOU */
+function OrganizeGuestArt() {
   return (
     <g>
-      <rect x="78" y="88" width="124" height="64" rx="8" fill={STAGE} stroke={INK} strokeWidth="2" />
-      <path d="M118 88 V152" stroke={MUTED} strokeWidth="2" strokeDasharray="4 4" />
-      <circle cx="118" cy="88" r="6" fill={DEEP} />
-      <circle cx="118" cy="152" r="6" fill={DEEP} />
-      <rect x="88" y="100" width="20" height="12" rx="2" fill={ORANGE} />
-      <rect x="88" y="118" width="22" height="6" rx="1" fill={MUTED} />
-      <rect x="88" y="128" width="16" height="6" rx="1" fill={MUTED} />
-      <rect x="136" y="100" width="50" height="40" rx="3" fill={INK} fillOpacity="0.92" />
+      <ellipse cx="160" cy="205" rx="90" ry="14" fill={O} fillOpacity="0.1" />
+      <path d="M130 16 L190 16 L230 205 L90 205 Z" fill={O} fillOpacity="0.07" />
+      <rect x="78" y="95" width="164" height="95" rx="8" fill="#1c1c1c" stroke={W} strokeWidth="2.5" />
+      <rect x="78" y="95" width="164" height="22" fill="#2a2a2a" stroke={W} strokeWidth="2.5" />
+      <circle cx="100" cy="106" r="4" fill={O} />
+      <circle cx="220" cy="106" r="4" fill={O} />
+      <rect x="98" y="130" width="50" height="40" rx="3" fill="#111" stroke={M} strokeWidth="1.5" />
+      <rect x="172" y="130" width="50" height="40" rx="3" fill="#111" stroke={M} strokeWidth="1.5" />
+      <text
+        x="160"
+        y="70"
+        textAnchor="middle"
+        fill={O}
+        fontFamily="system-ui,sans-serif"
+        fontSize="13"
+        fontWeight="800"
+        letterSpacing="0.1em"
+      >
+        IT STARTS WITH YOU
+      </text>
+      <path d="M150 148 L170 148 M160 138 V158" stroke={L} strokeWidth="2.5" strokeLinecap="round" />
+    </g>
+  );
+}
+
+/** Hoodie silhouette + crown + DANCE CONNECT BELONG */
+function ProfileGuestArt() {
+  return (
+    <g>
       <path
-        d="M144 108 H178 V132 H144 Z M152 116 H162 M168 116 H174 M152 124 H174"
-        stroke={DEEP}
+        d="M214 42 L220 30 L226 42 L236 34 L232 52 H208 L204 34 Z"
+        stroke={O}
         strokeWidth="2"
-      />
-      <circle cx="198" cy="80" r="3" fill={LIME} />
-    </g>
-  );
-}
-
-function ProfileArt() {
-  return (
-    <g>
-      <rect x="100" y="70" width="80" height="96" rx="8" fill={STAGE} stroke={INK} strokeWidth="2" />
-      <circle cx="140" cy="100" r="18" fill={ORANGE} fillOpacity="0.25" stroke={ORANGE} strokeWidth="2" />
-      <circle cx="140" cy="96" r="8" fill={INK} />
-      <path d="M126 116 C126 108 154 108 154 116" stroke={INK} strokeWidth="2" fill="none" />
-      <rect x="114" y="130" width="52" height="6" rx="2" fill={MUTED} />
-      <rect x="122" y="142" width="36" height="6" rx="2" fill={MUTED} opacity="0.7" />
-      <rect x="130" y="154" width="20" height="4" rx="1" fill={LIME} fillOpacity="0.8" />
-    </g>
-  );
-}
-
-function OrganizeArt() {
-  return (
-    <g>
-      <path
-        d="M92 130 L140 78 L188 130 Z"
-        fill={ORANGE}
-        fillOpacity="0.12"
-        stroke={ORANGE}
-        strokeWidth="2.5"
+        fill="none"
         strokeLinejoin="round"
       />
-      <rect x="128" y="118" width="24" height="36" rx="2" fill={INK} opacity="0.85" />
-      <circle cx="140" cy="102" r="10" fill={LIME} />
-      <path d="M140 96 V108 M134 102 H146" stroke={DEEP} strokeWidth="2.5" strokeLinecap="round" />
-      <path d="M108 148 H172" stroke={MUTED} strokeWidth="2" />
+      <circle cx="220" cy="28" r="2" fill={L} />
+      <ellipse cx="160" cy="78" rx="28" ry="30" fill="#2a2a2a" />
+      <path d="M120 100 C120 100 130 88 160 88 C190 88 200 100 200 100 L210 210 H110 Z" fill="#1a1a1a" />
+      <path d="M132 78 H188 V92 C188 100 176 106 160 106 C144 106 132 100 132 92 Z" fill="#111" />
+      <text
+        x="160"
+        y="145"
+        textAnchor="middle"
+        fill={W}
+        fontFamily="system-ui,sans-serif"
+        fontSize="9"
+        fontWeight="700"
+        letterSpacing="0.14em"
+        opacity="0.85"
+      >
+        DANCE
+      </text>
+      <text
+        x="160"
+        y="158"
+        textAnchor="middle"
+        fill={W}
+        fontFamily="system-ui,sans-serif"
+        fontSize="9"
+        fontWeight="700"
+        letterSpacing="0.14em"
+        opacity="0.85"
+      >
+        CONNECT
+      </text>
+      <text
+        x="160"
+        y="171"
+        textAnchor="middle"
+        fill={W}
+        fontFamily="system-ui,sans-serif"
+        fontSize="9"
+        fontWeight="700"
+        letterSpacing="0.14em"
+        opacity="0.85"
+      >
+        BELONG
+      </text>
     </g>
   );
 }
 
-function SignInArt() {
+/** Globe + pin */
+function DiscoverLocationArt() {
   return (
     <g>
-      <rect x="108" y="72" width="64" height="88" rx="6" fill={STAGE} stroke={INK} strokeWidth="2" />
-      <rect x="118" y="86" width="44" height="28" rx="3" fill={MUTED} opacity="0.35" />
-      <circle cx="156" cy="128" r="5" fill={ORANGE} />
+      <circle cx="160" cy="120" r="78" stroke={M} strokeWidth="2" fill="none" />
+      <ellipse cx="160" cy="120" rx="32" ry="78" stroke={M} strokeWidth="1.5" fill="none" />
+      <ellipse cx="160" cy="120" rx="78" ry="28" stroke={M} strokeWidth="1.5" fill="none" />
+      <path d="M82 120 H238 M160 42 V198" stroke={M} strokeWidth="1.2" />
       <path
-        d="M78 112 H104 M96 104 L104 112 L96 120"
-        stroke={LIME}
-        strokeWidth="2.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
+        d="M160 55 C142 55 128 69 128 87 C128 110 160 145 160 145 C160 145 192 110 192 87 C192 69 178 55 160 55 Z"
+        fill={O}
       />
-      <path d="M72 148 H208" stroke={MUTED} strokeWidth="2" strokeDasharray="3 5" />
+      <circle cx="160" cy="86" r="12" fill="#080908" />
     </g>
   );
 }
 
-function CancelledArt() {
+/** Ticket + COLLECT EXPERIENCES */
+function EventsSavedArt() {
   return (
     <g>
-      <rect
-        x="78"
-        y="92"
-        width="124"
-        height="56"
-        rx="8"
-        fill={STAGE}
-        stroke={MUTED}
-        strokeWidth="2"
-        transform="rotate(-6 140 120)"
-      />
-      <path
-        d="M110 100 L170 140 M170 100 L110 140"
-        stroke={ORANGE}
-        strokeWidth="3"
-        strokeLinecap="round"
-        opacity="0.9"
-      />
-      <rect x="92" y="108" width="28" height="8" rx="2" fill={MUTED} transform="rotate(-6 106 112)" />
+      <path d="M70 55 H95 M70 85 H95 M70 115 H95 M225 55 H250 M225 85 H250 M225 115 H250" stroke={O} strokeWidth="2" opacity="0.5" />
+      <rect x="88" y="70" width="144" height="90" rx="10" fill="#161616" stroke={O} strokeWidth="2.5" />
+      <path d="M140 70 V160" stroke={M} strokeWidth="2" strokeDasharray="5 5" />
+      <circle cx="140" cy="70" r="8" fill="#080908" />
+      <circle cx="140" cy="160" r="8" fill="#080908" />
+      <rect x="100" y="90" width="28" height="18" rx="3" fill={O} />
+      <rect x="100" y="118" width="28" height="8" rx="2" fill={M} />
+      <rect x="100" y="132" width="22" height="8" rx="2" fill={M} />
+      <rect x="156" y="92" width="58" height="46" rx="4" fill={W} fillOpacity="0.92" />
+      <path d="M164 100 H206 V130 H164 Z" stroke="#080908" strokeWidth="2" />
+      <text
+        x="160"
+        y="48"
+        textAnchor="middle"
+        fill={O}
+        fontFamily="system-ui,sans-serif"
+        fontSize="11"
+        fontWeight="800"
+        letterSpacing="0.12em"
+      >
+        COLLECT EXPERIENCES
+      </text>
     </g>
   );
 }
 
-const ART: Record<EmptyIllustrationKind, () => ReactNode> = {
-  discover: DiscoverArt,
-  filters: FiltersArt,
-  location: LocationArt,
-  events: EventsArt,
-  saved: SavedArt,
-  passes: PassesArt,
-  profile: ProfileArt,
-  organize: OrganizeArt,
-  signIn: SignInArt,
-  cancelled: CancelledArt,
+/** Clipboard + plus + IDEAS PEOPLE CULTURE */
+function OrganizeCreateArt() {
+  return (
+    <g>
+      <rect x="95" y="45" width="110" height="150" rx="8" fill="#1a1a1a" stroke={W} strokeWidth="2.5" />
+      <rect x="125" y="35" width="50" height="22" rx="6" fill="#2a2a2a" stroke={W} strokeWidth="2" />
+      <rect x="112" y="80" width="76" height="10" rx="2" fill={M} />
+      <rect x="112" y="100" width="76" height="10" rx="2" fill={M} opacity="0.7" />
+      <rect x="112" y="120" width="56" height="10" rx="2" fill={M} opacity="0.5" />
+      <circle cx="210" cy="155" r="28" fill={O} />
+      <path d="M210 140 V170 M195 155 H225" stroke="#080908" strokeWidth="3.5" strokeLinecap="round" />
+      <text
+        x="250"
+        y="90"
+        fill={O}
+        fontFamily="system-ui,sans-serif"
+        fontSize="11"
+        fontWeight="800"
+        letterSpacing="0.08em"
+      >
+        IDEAS
+      </text>
+      <text
+        x="250"
+        y="108"
+        fill={O}
+        fontFamily="system-ui,sans-serif"
+        fontSize="11"
+        fontWeight="800"
+        letterSpacing="0.08em"
+      >
+        PEOPLE
+      </text>
+      <text
+        x="250"
+        y="126"
+        fill={O}
+        fontFamily="system-ui,sans-serif"
+        fontSize="11"
+        fontWeight="800"
+        letterSpacing="0.08em"
+      >
+        CULTURE
+      </text>
+    </g>
+  );
+}
+
+/** ID badge lanyard + MORE THAN A DANCER */
+function ProfileSetupArt() {
+  return (
+    <g>
+      <path d="M130 10 H190" stroke={M} strokeWidth="3" strokeLinecap="round" />
+      <path d="M145 10 L130 55 M175 10 L190 55" stroke={M} strokeWidth="3" />
+      <rect x="100" y="55" width="120" height="150" rx="10" fill="#1a1a1a" stroke={W} strokeWidth="2.5" />
+      <rect x="100" y="55" width="120" height="28" fill={O} />
+      <text
+        x="160"
+        y="74"
+        textAnchor="middle"
+        fill="#080908"
+        fontFamily="system-ui,sans-serif"
+        fontSize="12"
+        fontWeight="900"
+        letterSpacing="0.14em"
+      >
+        BYND8
+      </text>
+      <circle cx="160" cy="120" r="22" fill="#2a2a2a" stroke={M} strokeWidth="2" />
+      <circle cx="160" cy="114" r="9" fill={W} opacity="0.85" />
+      <path d="M145 138 C145 128 175 128 175 138" stroke={W} strokeWidth="2" fill="none" opacity="0.85" />
+      <text
+        x="160"
+        y="170"
+        textAnchor="middle"
+        fill={O}
+        fontFamily="system-ui,sans-serif"
+        fontSize="9"
+        fontWeight="800"
+        letterSpacing="0.06em"
+      >
+        MORE THAN
+      </text>
+      <text
+        x="160"
+        y="184"
+        textAnchor="middle"
+        fill={O}
+        fontFamily="system-ui,sans-serif"
+        fontSize="9"
+        fontWeight="800"
+        letterSpacing="0.06em"
+      >
+        A DANCER
+      </text>
+    </g>
+  );
+}
+
+const ART: Record<CoreKind, () => ReactNode> = {
+  discoverGuest: DiscoverGuestArt,
+  eventsGuest: EventsGuestArt,
+  organizeGuest: OrganizeGuestArt,
+  profileGuest: ProfileGuestArt,
+  discoverLocation: DiscoverLocationArt,
+  eventsSaved: EventsSavedArt,
+  organizeCreate: OrganizeCreateArt,
+  profileSetup: ProfileSetupArt,
 };
-
-/**
- * BYND8 empty-state stage art — orange spotlight, lime accents, stamped shapes.
- */
-export function EmptyIllustration({ kind, className, ...props }: Props) {
-  const uid = useId().replace(/:/g, '');
-  const Art = ART[kind];
-  return (
-    <StageShell className={className} uid={uid} {...props}>
-      <Art />
-    </StageShell>
-  );
-}

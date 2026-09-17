@@ -61,71 +61,69 @@ export function SceneEmptyBoard({ surface = 'discover', className }: SceneEmptyB
         <h1 className="display-title text-5xl text-text-primary md:text-7xl">Tonight starts here.</h1>
       </header>
 
-      <section className="overflow-hidden rounded-xl border border-white/[0.07] bg-[#0C0C0C]">
-        <div className="grid gap-6 p-5 md:grid-cols-[minmax(0,1fr)_auto] md:items-center md:gap-8 md:p-8">
-          <div className="space-y-6">
-            <div className="space-y-3">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-accent">
-                {surface === 'events' ? 'The board' : 'Day one'}
-              </p>
-              <h2 className="display-title text-3xl text-text-primary md:text-5xl">
-                {surface === 'events' ? 'The board is empty. For now.' : 'The scene starts with you.'}
-              </h2>
-              <p className="max-w-2xl text-sm leading-relaxed text-text-secondary md:text-base">
-                {surface === 'events'
-                  ? 'Nothing’s published yet. Follow your city to get ready when the first night drops — or be the one who drops it.'
-                  : 'BYND8 is where Indian battles, jams, and labs get found, entered, and checked in. No nights live yet — host the first one, or set up your dancer card.'}
-              </p>
-            </div>
-
-            <div className="space-y-3">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
-                {surface === 'events' ? 'Get notified for' : 'Follow your city'}
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {CITIES.map((city) => {
-                  const active = picked === city;
-                  return (
-                    <button
-                      key={city}
-                      type="button"
-                      onClick={() => setPicked((prev) => (prev === city ? null : city))}
-                      className={cn(
-                        'inline-flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] transition-colors',
-                        active
-                          ? 'border-accent bg-accent text-bg'
-                          : 'border-border bg-transparent text-text-secondary hover:border-accent/50 hover:text-text-primary',
-                      )}
-                    >
-                      <ByndIcon name="pin" className="size-3.5" />
-                      {city}
-                    </button>
-                  );
-                })}
-              </div>
-              {picked ? (
-                <p className="text-xs text-text-muted">
-                  Got it — {picked}. When nights drop there, they’ll show on this board.
-                </p>
-              ) : null}
-            </div>
-
-            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-              <Button asChild size="lg" className="rounded-md px-7 normal-case tracking-normal">
-                <Link href={organizeHref}>
-                  {surface === 'events' ? 'Organize a night' : 'Organize the first night'}
-                  <span aria-hidden>→</span>
-                </Link>
-              </Button>
-              <Button asChild size="lg" variant="outline" className="rounded-md px-7 normal-case tracking-normal">
-                <Link href={secondaryHref}>{secondaryLabel}</Link>
-              </Button>
-            </div>
+      <section className="grid gap-6 md:grid-cols-[minmax(0,1fr)_auto] md:items-start md:gap-10">
+        <div className="space-y-6">
+          <div className="space-y-3">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-accent">
+              {surface === 'events' ? 'The board' : 'Day one'}
+            </p>
+            <h2 className="display-title text-3xl text-text-primary md:text-5xl">
+              {surface === 'events' ? 'The board is empty. For now.' : 'The scene starts with you.'}
+            </h2>
+            <p className="max-w-2xl text-sm leading-relaxed text-text-secondary md:text-base">
+              {surface === 'events'
+                ? 'Nothing’s published yet. Follow your city to get ready when the first night drops — or be the one who drops it.'
+                : 'BYND8 is where Indian battles, jams, and labs get found, entered, and checked in. No nights live yet — host the first one, or set up your dancer card.'}
+            </p>
           </div>
 
-          <div className="mx-auto w-full max-w-[17.5rem] shrink-0 md:mx-0">
-            <EmptyIllustration kind={surface === 'events' ? 'events' : 'discover'} />
+          <div className="space-y-3">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
+              {surface === 'events' ? 'Get notified for' : 'Follow your city'}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {CITIES.map((city) => {
+                const active = picked === city;
+                return (
+                  <button
+                    key={city}
+                    type="button"
+                    onClick={() => setPicked((prev) => (prev === city ? null : city))}
+                    className={cn(
+                      'inline-flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] transition-colors',
+                      active
+                        ? 'border-accent bg-accent text-bg'
+                        : 'border-border bg-transparent text-text-secondary hover:border-accent/50 hover:text-text-primary',
+                    )}
+                  >
+                    <ByndIcon name="pin" className="size-3.5" />
+                    {city}
+                  </button>
+                );
+              })}
+            </div>
+            {picked ? (
+              <p className="text-xs text-text-muted">
+                Got it — {picked}. When nights drop there, they’ll show on this board.
+              </p>
+            ) : null}
           </div>
+
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+            <Button asChild size="lg" className="rounded-md px-7 normal-case tracking-normal">
+              <Link href={organizeHref}>
+                {surface === 'events' ? 'Organize a night' : 'Organize the first night'}
+                <span aria-hidden>→</span>
+              </Link>
+            </Button>
+            <Button asChild size="lg" variant="outline" className="rounded-md px-7 normal-case tracking-normal">
+              <Link href={secondaryHref}>{secondaryLabel}</Link>
+            </Button>
+          </div>
+        </div>
+
+        <div className="mx-auto w-full max-w-[14rem] shrink-0 md:mx-0">
+          <EmptyIllustration kind={surface === 'events' ? 'events' : 'discover'} />
         </div>
       </section>
 

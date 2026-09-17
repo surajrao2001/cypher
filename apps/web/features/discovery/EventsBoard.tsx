@@ -11,9 +11,8 @@ import { ByndIcon } from '@/components/icons/bynd8';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { EventPoster } from '@/features/discovery/EventPoster';
-import { EmptyState } from '@/features/shell/EmptyState';
+import { DancerEmptyState } from '@/features/shell/DancerEmptyState';
 import { PageLoading, SoftError } from '@/features/shell/AsyncState';
-import { loginUrl } from '@/lib/auth-routes';
 import { cn } from '@/lib/utils';
 
 type EventsTab = 'upcoming' | 'saved' | 'past';
@@ -32,8 +31,8 @@ function EventsHero() {
   /* Banner already bakes EVENTS / YOUR SCENE… — no HTML title overlay */
   return (
     <BrandHeroBanner
-      desktopSrc="/bynd8/events-hero-banner.jpg"
-      mobileSrc="/bynd8/events-hero-banner-mobile.jpg"
+      desktopSrc="/bynd8/events-hero-desktop-v2.jpg"
+      mobileSrc="/bynd8/events-hero-mobile-v2.jpg"
       priority
     >
       <div
@@ -197,6 +196,22 @@ export function EventsBoard({ catalog }: { catalog: EventListResponse }) {
 
   const activeRows = tab === 'upcoming' ? upcomingAll : tab === 'past' ? pastRows : [];
 
+  if (!ready || status === 'loading') {
+    return (
+      <div className="w-full px-3 pb-10 sm:px-5 lg:px-6">
+        <PageLoading variant="list" label="Loading events" />
+      </div>
+    );
+  }
+
+  if (status !== 'authenticated' || !token) {
+    return (
+      <div className="w-full px-3 pb-10 sm:px-5 lg:px-6">
+        <DancerEmptyState variant="eventsGuest" />
+      </div>
+    );
+  }
+
   return (
     <div className="w-full px-3 pb-10 sm:px-5 lg:px-6">
       <div className="flex flex-col gap-5 py-4 sm:gap-6 sm:py-5">
@@ -244,19 +259,8 @@ export function EventsBoard({ catalog }: { catalog: EventListResponse }) {
             </p>
           </div>
 
-          {!ready || status === 'loading' || (token && loading) ? (
+          {token && loading ? (
             <PageLoading variant="list" label="Loading events" />
-          ) : status !== 'authenticated' || !token ? (
-            <EmptyState
-              kicker="Events"
-              title="Sign in to see your events"
-              body="Upcoming registrations and past nights live here once you’re in."
-              illustration="signIn"
-            >
-              <Button asChild className="h-10 rounded-md normal-case tracking-normal">
-                <Link href={loginUrl(routes.events)}>Sign in</Link>
-              </Button>
-            </EmptyState>
           ) : error ? (
             <SoftError
               title="Couldn’t load your events"
@@ -265,32 +269,8 @@ export function EventsBoard({ catalog }: { catalog: EventListResponse }) {
                 void refresh().then(() => load());
               }}
             />
-          ) : tab === 'saved' ? (
-            <EmptyState
-              kicker="Saved"
-              title="Nothing saved yet"
-              body="Saving comes next — for now, browse Discover and register for nights you care about."
-              illustration="saved"
-            >
-              <Button asChild className="h-10 rounded-md normal-case tracking-normal">
-                <Link href={routes.discover}>Browse Discover</Link>
-              </Button>
-            </EmptyState>
-          ) : activeRows.length === 0 ? (
-            <EmptyState
-              kicker={tab === 'upcoming' ? 'Upcoming' : 'Past'}
-              title={tab === 'upcoming' ? 'No upcoming events' : 'No past events yet'}
-              body={
-                tab === 'upcoming'
-                  ? 'When you register or get a pass, it shows up here.'
-                  : 'After a night ends, it archives here.'
-              }
-              illustration="events"
-            >
-              <Button asChild className="h-10 rounded-md normal-case tracking-normal">
-                <Link href={routes.discover}>Find a cypher</Link>
-              </Button>
-            </EmptyState>
+          ) : tab === 'saved' || activeRows.length === 0 ? (
+            <DancerEmptyState variant="eventsSaved" className="min-h-[24rem] py-8" />
           ) : (
             <ul className="space-y-3">
               {activeRows.map((row) => (

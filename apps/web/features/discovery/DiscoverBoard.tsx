@@ -6,12 +6,11 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 
 import { BrandHeroBanner } from '@/components/brand/BrandHeroBanner';
-import { Button } from '@/components/ui/button';
+import { useAuth } from '@/features/auth/AuthProvider';
 import { EventCard } from '@/features/discovery/EventCard';
 import { applyDiscoverFilters } from '@/features/discovery/filter-events';
 import { useDiscoverQuery } from '@/features/discovery/use-discover-query';
-import { EmptyState } from '@/features/shell/EmptyState';
-import { SceneEmptyBoard } from '@/features/discovery/SceneEmptyBoard';
+import { DancerEmptyState } from '@/features/shell/DancerEmptyState';
 import { cn } from '@/lib/utils';
 
 const TYPE_CHIPS = [
@@ -30,8 +29,8 @@ function DiscoverFrame({ children }: { children: ReactNode }) {
 function DiscoverHero() {
   return (
     <BrandHeroBanner
-      desktopSrc="/bynd8/discover-hero-banner.jpg"
-      mobileSrc="/bynd8/discover-hero-banner-mobile.jpg"
+      desktopSrc="/bynd8/discover-hero-desktop-v2.jpg"
+      mobileSrc="/bynd8/discover-hero-mobile-v2.jpg"
       priority
     >
       <div
@@ -57,6 +56,7 @@ function DiscoverHero() {
 }
 
 export function DiscoverBoard({ catalog }: { catalog: EventListResponse }) {
+  const auth = useAuth();
   const { searchParams, setParams } = useDiscoverQuery();
   const filters = {
     q: searchParams.get('q'),
@@ -68,13 +68,19 @@ export function DiscoverBoard({ catalog }: { catalog: EventListResponse }) {
   const filtered = applyDiscoverFilters(catalog.items, filters);
   const activeCity = filters.city && filters.city !== 'all' ? filters.city : null;
   const activeType = filters.type && filters.type !== 'all' ? filters.type : 'all';
+  const guest = auth.status !== 'authenticated';
 
   if (boardEmpty) {
     return (
       <DiscoverFrame>
-        <div className="w-full py-6 md:py-8">
-          <SceneEmptyBoard surface="discover" className="mx-0 max-w-none" />
-        </div>
+        {guest ? (
+          <DancerEmptyState variant="discoverGuest" />
+        ) : (
+          <DancerEmptyState
+            variant="discoverLocation"
+            onChangeLocation={() => setParams({ city: null })}
+          />
+        )}
       </DiscoverFrame>
     );
   }
@@ -123,21 +129,10 @@ export function DiscoverBoard({ catalog }: { catalog: EventListResponse }) {
         ) : null}
 
         {filtered.length === 0 ? (
-          <EmptyState
-            kicker="Filters"
-            title="Nothing matches that cut"
-            body="Widen the net — clear type, city, or tags and the floor comes back."
-            illustration={activeCity ? 'location' : 'filters'}
-          >
-            <Button
-              type="button"
-              variant="outline"
-              className="rounded-md normal-case tracking-normal"
-              onClick={() => setParams({ q: null, city: null, tag: null, type: null })}
-            >
-              Clear filters
-            </Button>
-          </EmptyState>
+          <DancerEmptyState
+            variant="discoverLocation"
+            onChangeLocation={() => setParams({ q: null, city: null, tag: null, type: null })}
+          />
         ) : (
           <div className="space-y-7 sm:space-y-8">
             <Section title="Featured events" href={routes.events}>

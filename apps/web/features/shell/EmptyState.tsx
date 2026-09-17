@@ -13,12 +13,13 @@ interface EmptyStateProps {
   body: string;
   className?: string;
   children?: ReactNode;
-  /** BYND8 stage illustration — artwork-first empties */
+  /** BYND8 stage illustration — bare SVG, no card chrome */
   illustration?: EmptyIllustrationKind;
   /** Centered artwork layout (default when illustration is set) */
   align?: 'start' | 'center';
 }
 
+/** Flat empty — illustration + copy only. No banner, no bordered container. */
 export function EmptyState({
   kicker,
   title,
@@ -33,26 +34,21 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        'relative overflow-hidden rounded-xl border border-white/[0.07] bg-[#0C0C0C]',
+        'relative flex w-full flex-col',
         centered
-          ? 'flex flex-col items-center px-5 py-10 text-center sm:px-8 sm:py-12'
-          : 'flex flex-col items-start gap-4 px-6 py-10 md:px-10 md:py-14',
+          ? 'items-center py-8 text-center sm:py-10'
+          : 'items-start gap-3 py-8 md:py-10',
         className,
       )}
     >
-      {/* Soft stage wash */}
       <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_0%,rgba(255,101,0,0.14),transparent_55%)]"
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-[#080808] to-transparent"
-      />
-
-      <div className={cn('relative z-[1] flex w-full flex-col', centered ? 'items-center gap-4' : 'items-start gap-4')}>
+        className={cn(
+          'relative z-[1] flex w-full flex-col',
+          centered ? 'items-center gap-3' : 'items-start gap-3',
+        )}
+      >
         {illustration ? (
-          <div className="mb-1 w-full max-w-[17.5rem] animate-in fade-in zoom-in-95 duration-500">
+          <div className="mb-1 w-full max-w-[12.5rem] sm:max-w-[14rem]">
             <EmptyIllustration kind={illustration} />
           </div>
         ) : null}
@@ -82,7 +78,9 @@ export function EmptyState({
           {body}
         </p>
         {children ? (
-          <div className={cn('mt-1 flex flex-wrap gap-3', centered && 'justify-center')}>{children}</div>
+          <div className={cn('mt-1 flex flex-wrap gap-3', centered && 'justify-center')}>
+            {children}
+          </div>
         ) : null}
       </div>
     </div>
