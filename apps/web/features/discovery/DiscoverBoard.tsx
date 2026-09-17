@@ -2,10 +2,10 @@
 
 import type { EventListResponse } from '@cypher/contracts';
 import { routes } from '@cypher/contracts';
-import Image from 'next/image';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 
+import { BrandHeroBanner } from '@/components/brand/BrandHeroBanner';
 import { Button } from '@/components/ui/button';
 import { EventCard } from '@/features/discovery/EventCard';
 import { applyDiscoverFilters } from '@/features/discovery/filter-events';
@@ -28,40 +28,31 @@ function DiscoverFrame({ children }: { children: ReactNode }) {
 }
 
 function DiscoverHero() {
-  /* Banner 1024×344 — short band; bottom fades into page bg so it merges */
   return (
-    <section className="relative w-full overflow-hidden">
-      <div className="relative h-[9.5rem] w-full sm:h-[11rem] lg:h-[12.5rem]">
-        <Image
-          src="/bynd8/discover-hero-banner.jpg"
-          alt=""
-          fill
-          priority
-          sizes="(max-width: 1280px) 100vw, 1200px"
-          className="object-cover object-center"
-        />
-        {/* Left scrim for copy */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 bg-gradient-to-r from-black/65 via-black/20 to-transparent"
-        />
-        {/* Bottom dissolve into page */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-x-0 bottom-0 h-[55%] bg-gradient-to-t from-[#080808] via-[#080808]/75 to-transparent"
-        />
-        <div className="absolute inset-0 flex flex-col items-start justify-center px-4 pb-2 pt-2 text-left sm:px-6 lg:px-8">
-          <h1 className="font-display max-w-[14ch] text-[1.45rem] uppercase leading-[0.88] tracking-[0.02em] text-white sm:text-[1.85rem] lg:text-[2.15rem]">
-            More than events
-            <br />
-            <span className="text-accent">A movement</span>
-          </h1>
-          <p className="mt-1 max-w-md text-left text-[11px] leading-snug text-white/75 sm:text-[12px]">
-            Battles. Jams. Workshops. People. Culture.
-          </p>
-        </div>
+    <BrandHeroBanner
+      desktopSrc="/bynd8/discover-hero-banner.jpg"
+      mobileSrc="/bynd8/discover-hero-banner-mobile.jpg"
+      priority
+    >
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 bg-gradient-to-r from-black/65 via-black/20 to-transparent"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-[55%] bg-gradient-to-t from-[#080808] via-[#080808]/75 to-transparent"
+      />
+      <div className="absolute inset-0 flex flex-col items-start justify-center px-4 pb-2 pt-2 text-left sm:px-6 lg:px-8">
+        <h1 className="font-display max-w-[14ch] text-[1.45rem] uppercase leading-[0.88] tracking-[0.02em] text-white sm:text-[1.85rem] lg:text-[2.15rem]">
+          More than events
+          <br />
+          <span className="text-accent">A movement</span>
+        </h1>
+        <p className="mt-1 max-w-md text-left text-[11px] leading-snug text-white/75 sm:text-[12px]">
+          Battles. Jams. Workshops. People. Culture.
+        </p>
       </div>
-    </section>
+    </BrandHeroBanner>
   );
 }
 
@@ -136,11 +127,12 @@ export function DiscoverBoard({ catalog }: { catalog: EventListResponse }) {
             kicker="Filters"
             title="Nothing matches that cut"
             body="Widen the net — clear type, city, or tags and the floor comes back."
+            illustration={activeCity ? 'location' : 'filters'}
           >
             <Button
               type="button"
               variant="outline"
-              className="rounded-full"
+              className="rounded-md normal-case tracking-normal"
               onClick={() => setParams({ q: null, city: null, tag: null, type: null })}
             >
               Clear filters

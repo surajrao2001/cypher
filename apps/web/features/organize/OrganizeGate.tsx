@@ -24,8 +24,9 @@ export function OrganizeGate({ children }: { children: ReactNode }) {
         kicker="Organize"
         title="Sign in to create"
         body="Sign in with Google or email to put events on BYND8."
+        illustration="signIn"
       >
-        <Button asChild size="lg">
+        <Button asChild size="lg" className="rounded-md normal-case tracking-normal">
           <Link href={loginUrl(routes.organize)}>
             <ByndIcon name="signIn" />
             Sign in
@@ -41,8 +42,9 @@ export function OrganizeGate({ children }: { children: ReactNode }) {
         kicker="Organize"
         title="Tell us what to call you first"
         body="Drop your name and city on Profile, then come back to create."
+        illustration="profile"
       >
-        <Button asChild size="lg">
+        <Button asChild size="lg" className="rounded-md normal-case tracking-normal">
           <Link href={`${routes.profile}?next=${encodeURIComponent(routes.organize)}`}>
             <ByndIcon name="profile" />
             Open profile

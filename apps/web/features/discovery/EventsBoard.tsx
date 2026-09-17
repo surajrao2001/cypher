@@ -3,10 +3,10 @@
 import type { EventCardDto, EventListResponse, RegistrationDto } from '@cypher/contracts';
 import { formatEventDate, partitionRegistrationsForTickets } from '@cypher/utils';
 import { routes } from '@cypher/contracts';
-import Image from 'next/image';
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
+import { BrandHeroBanner } from '@/components/brand/BrandHeroBanner';
 import { ByndIcon } from '@/components/icons/bynd8';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/features/auth/AuthProvider';
@@ -31,22 +31,16 @@ function typeLabel(eventType: string | undefined): string {
 function EventsHero() {
   /* Banner already bakes EVENTS / YOUR SCENE… — no HTML title overlay */
   return (
-    <section className="relative w-full overflow-hidden">
-      <div className="relative h-[9.5rem] w-full sm:h-[11rem] lg:h-[12.5rem]">
-        <Image
-          src="/bynd8/events-hero-banner.jpg"
-          alt=""
-          fill
-          priority
-          sizes="(max-width: 1280px) 100vw, 1200px"
-          className="object-cover object-center"
-        />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-x-0 bottom-0 h-[50%] bg-gradient-to-t from-[#080808] via-[#080808]/70 to-transparent"
-        />
-      </div>
-    </section>
+    <BrandHeroBanner
+      desktopSrc="/bynd8/events-hero-banner.jpg"
+      mobileSrc="/bynd8/events-hero-banner-mobile.jpg"
+      priority
+    >
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-[50%] bg-gradient-to-t from-[#080808] via-[#080808]/70 to-transparent"
+      />
+    </BrandHeroBanner>
   );
 }
 
@@ -257,6 +251,7 @@ export function EventsBoard({ catalog }: { catalog: EventListResponse }) {
               kicker="Events"
               title="Sign in to see your events"
               body="Upcoming registrations and past nights live here once you’re in."
+              illustration="signIn"
             >
               <Button asChild className="h-10 rounded-md normal-case tracking-normal">
                 <Link href={loginUrl(routes.events)}>Sign in</Link>
@@ -275,6 +270,7 @@ export function EventsBoard({ catalog }: { catalog: EventListResponse }) {
               kicker="Saved"
               title="Nothing saved yet"
               body="Saving comes next — for now, browse Discover and register for nights you care about."
+              illustration="saved"
             >
               <Button asChild className="h-10 rounded-md normal-case tracking-normal">
                 <Link href={routes.discover}>Browse Discover</Link>
@@ -289,6 +285,7 @@ export function EventsBoard({ catalog }: { catalog: EventListResponse }) {
                   ? 'When you register or get a pass, it shows up here.'
                   : 'After a night ends, it archives here.'
               }
+              illustration="events"
             >
               <Button asChild className="h-10 rounded-md normal-case tracking-normal">
                 <Link href={routes.discover}>Find a cypher</Link>

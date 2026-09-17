@@ -9,6 +9,7 @@ import { useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import QRCode from 'qrcode';
 
+import { BrandHeroBanner } from '@/components/brand/BrandHeroBanner';
 import { ByndIcon } from '@/components/icons/bynd8';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/features/auth/AuthProvider';
@@ -23,22 +24,16 @@ type PassTab = 'upcoming' | 'used' | 'cancelled';
 function PassesHero() {
   /* Banner already bakes MY PASSES / YOUR TICKETS… — no HTML title overlay */
   return (
-    <section className="relative w-full overflow-hidden">
-      <div className="relative h-[9.5rem] w-full sm:h-[11rem] lg:h-[12.5rem]">
-        <Image
-          src="/bynd8/passes-hero-banner.jpg"
-          alt=""
-          fill
-          priority
-          sizes="(max-width: 1280px) 100vw, 1200px"
-          className="object-cover object-center"
-        />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-x-0 bottom-0 h-[50%] bg-gradient-to-t from-[#080808] via-[#080808]/70 to-transparent"
-        />
-      </div>
-    </section>
+    <BrandHeroBanner
+      desktopSrc="/bynd8/passes-hero-banner.jpg"
+      mobileSrc="/bynd8/passes-hero-banner-mobile.jpg"
+      priority
+    >
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-[50%] bg-gradient-to-t from-[#080808] via-[#080808]/70 to-transparent"
+      />
+    </BrandHeroBanner>
   );
 }
 
@@ -371,6 +366,7 @@ export function TicketsBoard() {
             kicker="Passes"
             title="Sign in for your passes"
             body="Confirmed entries show here as a BYND8 Pass — name, category, and door QR."
+            illustration="signIn"
           >
             <Button asChild className="h-10 rounded-md normal-case tracking-normal">
               <Link href={`${routes.login}?next=${routes.tickets}`}>Sign in</Link>
@@ -428,6 +424,7 @@ export function TicketsBoard() {
                         ? 'After a night ends, used passes archive here.'
                         : 'Cancelled entries will show up here.'
                   }
+                  illustration={tab === 'cancelled' ? 'cancelled' : 'passes'}
                   className="py-10"
                 >
                   <Button asChild variant="outline" className="h-10 rounded-md normal-case tracking-normal">

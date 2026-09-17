@@ -3,17 +3,17 @@ import Image from 'next/image';
 import { BrandLogo } from '@/components/brand/BrandLogo';
 
 /**
- * Desktop left panel — artwork 1024×682, width-capped, contain, right edge fades into form bg.
+ * Desktop left panel — sharp login artwork; width-capped, contain, right edge fades into form bg.
  */
 export function LoginHeroPanel() {
   return (
     <aside className="relative hidden min-h-dvh overflow-hidden bg-[#080808] lg:flex lg:w-full lg:max-w-[40rem] lg:shrink-0 lg:flex-col xl:max-w-[44rem]">
       <div className="relative flex min-h-0 flex-1 items-center justify-center px-3 py-8 pr-0">
         <Image
-          src="/bynd8/login-hero.jpg"
+          src="/bynd8/login-hero-desktop.jpg"
           alt=""
-          width={1024}
-          height={682}
+          width={1280}
+          height={960}
           priority
           sizes="(min-width: 1024px) 40rem, 100vw"
           className="h-auto w-full max-h-[min(100dvh-4rem,42rem)] object-contain"

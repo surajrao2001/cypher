@@ -22,12 +22,12 @@ export default function LoginPage() {
         */}
         <div aria-hidden className="pointer-events-none absolute inset-0 lg:hidden">
           <Image
-            src="/bynd8/login-hero.jpg"
+            src="/bynd8/login-hero-mobile.jpg"
             alt=""
             fill
             priority
             sizes="100vw"
-            className="object-cover object-[center_25%] opacity-[0.22]"
+            className="object-cover object-[center_20%] opacity-[0.28]"
           />
           <div className="absolute inset-0 bg-[#080808]/82" />
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_0%,rgba(255,104,0,0.16),transparent_55%)]" />

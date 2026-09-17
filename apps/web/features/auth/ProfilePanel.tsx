@@ -6,7 +6,9 @@ import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
+import { BrandHeroBanner } from '@/components/brand/BrandHeroBanner';
 import { BrandLogo } from '@/components/brand/BrandLogo';
+import { EmptyIllustration } from '@/components/illustrations/EmptyIllustration';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toastCopy, toastDismiss, toastPending, toastReject, toastResolve } from '@/components/ui/toaster';
@@ -180,6 +182,9 @@ export function ProfilePanel() {
           className="pointer-events-none absolute inset-x-[-10%] top-[-20%] h-48 rounded-full bg-[radial-gradient(ellipse_at_center,rgba(255,104,0,0.14),transparent_70%)]"
         />
         <div className="relative space-y-4">
+          <div className="mb-2 max-w-[14rem]">
+            <EmptyIllustration kind="profile" />
+          </div>
           <BrandLogo variant="mark" size="lg" href={null} />
           <p className="kicker text-accent">Enter the scene</p>
           <h1 className="display-title text-5xl">Who’s on the card?</h1>
@@ -317,7 +322,19 @@ export function ProfilePanel() {
   const stylesLine = profile.styles.length ? profile.styles.join(' · ') : null;
 
   return (
-    <div className="mx-auto max-w-5xl space-y-8">
+    <div className="w-full space-y-6 px-3 pb-10 sm:px-5 lg:px-6">
+      <BrandHeroBanner
+        desktopSrc="/bynd8/profile-hero-banner.jpg"
+        mobileSrc="/bynd8/profile-hero-banner-mobile.jpg"
+        priority
+      >
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-[50%] bg-gradient-to-t from-[#080808] via-[#080808]/70 to-transparent"
+        />
+      </BrandHeroBanner>
+
+      <div className="mx-auto max-w-5xl space-y-8">
       <header className="flex items-center gap-5 border-b border-border pb-7">
         <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-elevated font-display text-3xl text-text-secondary">
           {profile.avatarUrl ? (
@@ -496,6 +513,7 @@ export function ProfilePanel() {
             Sign out
           </Button>
         </aside>
+      </div>
       </div>
     </div>
   );
