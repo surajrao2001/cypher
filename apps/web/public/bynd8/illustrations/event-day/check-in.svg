@@ -1,0 +1,117 @@
+<svg viewBox="0 0 800 520" xmlns="http://www.w3.org/2000/svg" role="img" aria-hidden="true" fill="none">
+  <title>Event check-in venue access</title>
+  <defs>
+    <radialGradient id="ci-haze" cx="45%" cy="40%" r="55%">
+      <stop offset="0%" stop-color="#FF6500" stop-opacity=".16"/>
+      <stop offset="50%" stop-color="#FF6500" stop-opacity=".04"/>
+      <stop offset="100%" stop-color="#FF6500" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="ci-pass" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1c1d1c"/>
+      <stop offset="100%" stop-color="#0F100F"/>
+    </linearGradient>
+    <linearGradient id="ci-beam" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#FF6500" stop-opacity="0"/>
+      <stop offset="40%" stop-color="#FF6500" stop-opacity=".35"/>
+      <stop offset="60%" stop-color="#FF6500" stop-opacity=".35"/>
+      <stop offset="100%" stop-color="#FF6500" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="ci-lime" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#B8FF00" stop-opacity="0"/>
+      <stop offset="50%" stop-color="#B8FF00" stop-opacity=".55"/>
+      <stop offset="100%" stop-color="#B8FF00" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="ci-soft" x="-25%" y="-25%" width="150%" height="150%" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="8"/>
+    </filter>
+    <filter id="ci-grain" x="-4%" y="-4%" width="108%" height="108%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency="0.88" numOctaves="2" stitchTiles="stitch" result="n"/>
+      <feColorMatrix in="n" type="matrix" values="0 0 0 0 .95 0 0 0 0 .95 0 0 0 0 .93 0 0 0 .08 0" result="g"/>
+      <feComposite in="g" in2="SourceGraphic" operator="in"/>
+    </filter>
+    <filter id="ci-rough" x="-6%" y="-6%" width="112%" height="112%" color-interpolation-filters="sRGB">
+      <feTurbulence type="turbulence" baseFrequency="0.05" numOctaves="2" seed="12" result="t"/>
+      <feDisplacementMap in="SourceGraphic" in2="t" scale="1.2" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+  </defs>
+
+  <ellipse cx="380" cy="270" rx="320" ry="210" fill="url(#ci-haze)" filter="url(#ci-soft)"/>
+
+  <!-- Checkpoint boundary / floor line -->
+  <g aria-hidden="true">
+    <path d="M80 400 L720 400" stroke="#F4F4F1" stroke-opacity=".1" stroke-width="3"/>
+    <path d="M200 400 L200 180" stroke="#F4F4F1" stroke-opacity=".08" stroke-width="4"/>
+    <path d="M200 180 H280" stroke="#F4F4F1" stroke-opacity=".1" stroke-width="3"/>
+    <!-- Floor threshold stripe -->
+    <rect x="200" y="392" width="120" height="16" fill="#FF6500" fill-opacity=".25"/>
+    <rect x="320" y="392" width="40" height="16" fill="#B8FF00" fill-opacity=".35"/>
+  </g>
+
+  <!-- Venue post / access marker -->
+  <g aria-hidden="true">
+    <rect x="188" y="200" width="24" height="200" fill="#161716" stroke="#F4F4F1" stroke-opacity=".12"/>
+    <rect x="175" y="190" width="50" height="20" rx="2" fill="#111211" stroke="#FF6500" stroke-opacity=".4" stroke-width="1.5"/>
+    <circle cx="200" cy="200" r="6" fill="#B8FF00" fill-opacity=".7"/>
+  </g>
+
+  <!-- PRIMARY: event pass crossing checkpoint -->
+  <g transform="translate(260 170) rotate(-8)" aria-hidden="true">
+    <rect width="260" height="160" rx="8" fill="url(#ci-pass)" stroke="#F4F4F1" stroke-opacity=".2" stroke-width="2"/>
+    <rect x="18" y="18" width="140" height="30" fill="#FF6500" fill-opacity=".2"/>
+    <!-- Abstract QR block -->
+    <g transform="translate(175 20)" fill="#F4F4F1" fill-opacity=".25">
+      <rect width="50" height="50"/>
+      <rect x="8" y="8" width="14" height="14" fill="#0D0E0D"/>
+      <rect x="28" y="8" width="14" height="14" fill="#0D0E0D"/>
+      <rect x="8" y="28" width="14" height="14" fill="#0D0E0D"/>
+      <rect x="28" y="28" width="10" height="10" fill="#0D0E0D"/>
+      <rect x="40" y="40" width="6" height="6"/>
+    </g>
+    <path d="M18 70 H160" stroke="#F4F4F1" stroke-opacity=".12" stroke-width="2" stroke-dasharray="4 5"/>
+    <path d="M18 90 H130 M18 108 H110" stroke="#F4F4F1" stroke-opacity=".12" stroke-width="3"/>
+    <circle cx="50" cy="135" r="16" stroke="#FF6500" stroke-opacity=".4" stroke-width="2" fill="none"/>
+    <!-- Entry number fragment -->
+    <g fill="#F4F4F1" fill-opacity=".2" filter="url(#ci-rough)">
+      <g transform="translate(90 125) scale(0.35)">
+        <path d="M0 0 H24 V6 H0 Z M32 0 H56 V6 H32 Z M64 0 H100 V6 H64 Z"/>
+      </g>
+    </g>
+  </g>
+
+  <!-- Orange scan beam across pass -->
+  <g filter="url(#ci-soft)" aria-hidden="true">
+    <rect x="240" y="200" width="320" height="18" fill="url(#ci-beam)" transform="rotate(-8 400 209)"/>
+  </g>
+  <!-- Tiny lime confirmation at beam tip -->
+  <rect x="520" y="248" width="60" height="4" fill="url(#ci-lime)" transform="rotate(-8 550 250)"/>
+  <circle cx="575" cy="255" r="5" fill="#B8FF00" fill-opacity=".75"/>
+
+  <!-- Environmental: CHECK IN / ENTRY / FLOOR ACCESS -->
+  <g fill="#F4F4F1" fill-opacity=".12" filter="url(#ci-rough)" aria-hidden="true">
+    <g transform="translate(520 140) scale(0.45)">
+      <path d="M0 2 H28 V10 H10 V22 H28 V30 H0 Z"/>
+      <path d="M36 0 H46 V12 H60 V0 H70 V32 H60 V20 H46 V32 H36 Z"/>
+      <path d="M78 0 H104 V8 H88 V12 H100 V20 H88 V24 H104 V32 H78 Z"/>
+      <path d="M112 2 H140 V10 H122 V22 H140 V30 H112 Z"/>
+      <path d="M148 0 H158 V32 H148 Z"/>
+      <path d="M166 0 H176 V12 H190 V0 H200 V32 H190 V20 H176 V32 H166 Z"/>
+    </g>
+  </g>
+  <g fill="#FF6500" fill-opacity=".35" filter="url(#ci-rough)" aria-hidden="true">
+    <g transform="translate(100 140) scale(0.4)">
+      <path d="M0 0 H90 V6 H0 Z"/>
+      <path d="M0 14 H50 V20 H0 Z"/>
+    </g>
+  </g>
+  <g fill="#B8FF00" fill-opacity=".35" filter="url(#ci-rough)" aria-hidden="true">
+    <g transform="translate(100 360) scale(0.35)">
+      <path d="M0 0 H80 V5 H0 Z M0 12 H100 V17 H0 Z"/>
+    </g>
+  </g>
+
+  <ellipse cx="400" cy="455" rx="180" ry="16" fill="#000" fill-opacity=".3" filter="url(#ci-soft)"/>
+
+  <g filter="url(#ci-grain)" opacity=".4" pointer-events="none" aria-hidden="true">
+    <ellipse cx="400" cy="280" rx="320" ry="210" fill="#F4F4F1"/>
+  </g>
+</svg>
