@@ -1,0 +1,296 @@
+<svg
+  viewBox="0 0 800 520"
+  xmlns="http://www.w3.org/2000/svg"
+  role="img"
+  aria-hidden="true"
+  fill="none"
+>
+  <title>Empty dance floor - good events ahead</title>
+  <defs>
+    <!-- Warm overhead spotlight -->
+    <radialGradient id="spotCore" cx="58%" cy="18%" r="42%">
+      <stop offset="0%" stop-color="#FF6500" stop-opacity=".34"/>
+      <stop offset="28%" stop-color="#FF6500" stop-opacity=".14"/>
+      <stop offset="62%" stop-color="#FF6500" stop-opacity=".04"/>
+      <stop offset="100%" stop-color="#FF6500" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="beamFall" x1="0.55" y1="0" x2="0.62" y2="1">
+      <stop offset="0%" stop-color="#FF6500" stop-opacity=".22"/>
+      <stop offset="45%" stop-color="#FF6500" stop-opacity=".08"/>
+      <stop offset="100%" stop-color="#FF6500" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="floorPool" cx="56%" cy="72%" r="38%">
+      <stop offset="0%" stop-color="#FF6500" stop-opacity=".22"/>
+      <stop offset="40%" stop-color="#FF6500" stop-opacity=".08"/>
+      <stop offset="100%" stop-color="#FF6500" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="wallDepth" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#161716" stop-opacity=".55"/>
+      <stop offset="100%" stop-color="#0D0E0D" stop-opacity=".15"/>
+    </linearGradient>
+    <linearGradient id="floorFade" x1="0.5" y1="0" x2="0.5" y2="1">
+      <stop offset="0%" stop-color="#111211" stop-opacity=".0"/>
+      <stop offset="35%" stop-color="#111211" stop-opacity=".35"/>
+      <stop offset="100%" stop-color="#0D0E0D" stop-opacity=".55"/>
+    </linearGradient>
+    <linearGradient id="arrowFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FF8A33"/>
+      <stop offset="55%" stop-color="#FF6500"/>
+      <stop offset="100%" stop-color="#C24A00"/>
+    </linearGradient>
+    <linearGradient id="arrowReflect" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FF6500" stop-opacity=".28"/>
+      <stop offset="100%" stop-color="#FF6500" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="posterWash" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#F4F4F1" stop-opacity=".06"/>
+      <stop offset="100%" stop-color="#F4F4F1" stop-opacity=".02"/>
+    </linearGradient>
+    <!-- Soft haze for spotlight edge -->
+    <filter id="softGlow" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="10" result="b"/>
+      <feMerge>
+        <feMergeNode in="b"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <!-- Restrained screen-print grain -->
+    <filter id="grain" x="-5%" y="-5%" width="110%" height="110%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch" result="n"/>
+      <feColorMatrix in="n" type="matrix" values="
+        0 0 0 0 0.96
+        0 0 0 0 0.96
+        0 0 0 0 0.94
+        0 0 0 0.09 0" result="g"/>
+      <feComposite in="g" in2="SourceGraphic" operator="in"/>
+    </filter>
+    <filter id="stencilRough" x="-8%" y="-8%" width="116%" height="116%" color-interpolation-filters="sRGB">
+      <feTurbulence type="turbulence" baseFrequency="0.045" numOctaves="2" seed="7" result="t"/>
+      <feDisplacementMap in="SourceGraphic" in2="t" scale="1.6" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <clipPath id="floorClip">
+      <path d="M70 320 L400 248 L730 320 L640 500 L160 500 Z"/>
+    </clipPath>
+  </defs>
+
+  <!-- ========== BACKGROUND: warehouse structure ========== -->
+  <g opacity=".55" aria-hidden="true">
+    <!-- Back wall plane -->
+    <path d="M90 40 L710 40 L690 310 L110 310 Z" fill="url(#wallDepth)"/>
+    <!-- Ceiling / roof pitch hint -->
+    <path d="M60 70 L400 18 L740 70 L710 40 L400 8 L90 40 Z" fill="#111211" fill-opacity=".7"/>
+    <!-- Horizontal venue beams -->
+    <path d="M120 95 H680" stroke="#F4F4F1" stroke-opacity=".07" stroke-width="3"/>
+    <path d="M130 130 H670" stroke="#F4F4F1" stroke-opacity=".05" stroke-width="2"/>
+    <path d="M140 165 H660" stroke="#F4F4F1" stroke-opacity=".04" stroke-width="2"/>
+    <!-- Vertical columns -->
+    <path d="M168 48 V300" stroke="#F4F4F1" stroke-opacity=".06" stroke-width="5"/>
+    <path d="M400 28 V290" stroke="#F4F4F1" stroke-opacity=".05" stroke-width="4"/>
+    <path d="M632 48 V300" stroke="#F4F4F1" stroke-opacity=".06" stroke-width="5"/>
+    <!-- Side wall recession (left) -->
+    <path d="M40 80 L110 48 L110 310 L50 360 Z" fill="#0D0E0D" fill-opacity=".65"/>
+    <!-- Side wall recession (right) -->
+    <path d="M760 80 L690 48 L690 310 L750 360 Z" fill="#0D0E0D" fill-opacity=".5"/>
+  </g>
+
+  <!-- Faint brick / panel rhythm on back wall -->
+  <g opacity=".12" stroke="#F4F4F1" stroke-width="1" aria-hidden="true">
+    <path d="M200 190 H360 M220 210 H380 M190 230 H350"/>
+    <path d="M450 185 H620 M470 205 H600 M455 225 H610"/>
+    <path d="M210 250 H300 M480 248 H570"/>
+  </g>
+
+  <!-- ========== LEFT: subdued venue details ========== -->
+  <g opacity=".42" aria-hidden="true">
+    <!-- Speaker stack -->
+    <rect x="78" y="248" width="54" height="72" rx="3" fill="#161716" stroke="#F4F4F1" stroke-opacity=".14" stroke-width="1.5"/>
+    <rect x="86" y="258" width="38" height="22" rx="2" fill="#111211" stroke="#F4F4F1" stroke-opacity=".1"/>
+    <circle cx="105" cy="269" r="7" stroke="#FF6500" stroke-opacity=".35" stroke-width="1.5"/>
+    <rect x="86" y="286" width="38" height="22" rx="2" fill="#111211" stroke="#F4F4F1" stroke-opacity=".1"/>
+    <circle cx="105" cy="297" r="7" stroke="#F4F4F1" stroke-opacity=".12" stroke-width="1.5"/>
+    <!-- Flight case -->
+    <path d="M142 318 L198 308 L210 348 L152 360 Z" fill="#111211" stroke="#F4F4F1" stroke-opacity=".12" stroke-width="1.25"/>
+    <path d="M152 330 H190" stroke="#FF6500" stroke-opacity=".25" stroke-width="1.5"/>
+    <!-- Tilted poster silhouettes -->
+    <g transform="translate(55 145) rotate(-8)">
+      <rect width="48" height="68" rx="2" fill="#161716" stroke="#F4F4F1" stroke-opacity=".1"/>
+      <rect x="8" y="10" width="32" height="18" fill="url(#posterWash)"/>
+      <path d="M10 40 H38 M10 48 H30" stroke="#F4F4F1" stroke-opacity=".12" stroke-width="2"/>
+    </g>
+    <g transform="translate(95 160) rotate(6)" opacity=".75">
+      <rect width="40" height="56" rx="2" fill="#111211" stroke="#F4F4F1" stroke-opacity=".08"/>
+      <rect x="6" y="8" width="28" height="14" fill="#FF6500" fill-opacity=".12"/>
+    </g>
+  </g>
+
+  <!-- Barricade hint (low) -->
+  <g opacity=".28" stroke="#F4F4F1" stroke-width="2" aria-hidden="true">
+    <path d="M210 360 L250 348 L290 358"/>
+    <path d="M220 360 V378 M250 348 V366 M280 358 V376"/>
+  </g>
+
+  <!-- ========== FLOOR ========== -->
+  <g clip-path="url(#floorClip)" aria-hidden="true">
+    <path d="M70 320 L400 248 L730 320 L640 500 L160 500 Z" fill="url(#floorFade)"/>
+    <!-- Perspective floor lines -->
+    <g stroke="#F4F4F1" stroke-opacity=".08" stroke-width="1.25">
+      <path d="M400 250 L200 500"/>
+      <path d="M400 250 L320 500"/>
+      <path d="M400 250 L400 500"/>
+      <path d="M400 250 L480 500"/>
+      <path d="M400 250 L600 500"/>
+      <path d="M160 360 H640"/>
+      <path d="M140 400 H660"/>
+      <path d="M130 440 H670"/>
+      <path d="M120 480 H680"/>
+    </g>
+    <!-- Center floor mark (cypher circle, very faint) -->
+    <ellipse cx="430" cy="390" rx="78" ry="28" stroke="#F4F4F1" stroke-opacity=".1" stroke-width="2" stroke-dasharray="6 8"/>
+    <ellipse cx="430" cy="390" rx="18" ry="7" stroke="#FF6500" stroke-opacity=".18" stroke-width="1.5"/>
+  </g>
+
+  <!-- Spotlight pool on floor -->
+  <ellipse cx="450" cy="385" rx="160" ry="55" fill="url(#floorPool)"/>
+
+  <!-- ========== OVERHEAD LIGHT + BEAM ========== -->
+  <g filter="url(#softGlow)" aria-hidden="true">
+    <!-- Fixture -->
+    <ellipse cx="455" cy="58" rx="36" ry="10" fill="#161716" stroke="#F4F4F1" stroke-opacity=".2" stroke-width="1.5"/>
+    <path d="M430 58 L438 78 L472 78 L480 58" fill="#111211" stroke="#FF6500" stroke-opacity=".45" stroke-width="1.25"/>
+    <ellipse cx="455" cy="78" rx="18" ry="5" fill="#FF6500" fill-opacity=".55"/>
+  </g>
+  <!-- Light cone -->
+  <path d="M438 78 L360 390 L540 390 L472 78 Z" fill="url(#beamFall)" opacity=".9"/>
+  <ellipse cx="455" cy="70" rx="120" ry="90" fill="url(#spotCore)"/>
+
+  <!-- ========== WALL GRAFFITI: GOOD EVENTS AHEAD (stencil paths) ========== -->
+  <g
+    transform="translate(248 168)"
+    fill="#FF6500"
+    filter="url(#stencilRough)"
+    opacity=".72"
+    aria-hidden="true"
+  >
+    <!-- GOOD -->
+    <g transform="translate(0 0)" fill-opacity=".9">
+      <!-- G -->
+      <path d="M0 2 H28 V10 H10 V22 H20 V16 H28 V34 H0 V2 Z M10 26 H18 V28 H10 Z"/>
+      <!-- O -->
+      <path d="M36 2 H64 V34 H36 V2 Z M46 10 H54 V26 H46 Z"/>
+      <!-- O -->
+      <path d="M72 2 H100 V34 H72 V2 Z M82 10 H90 V26 H82 Z"/>
+      <!-- D -->
+      <path d="M108 2 H132 L140 10 V26 L132 34 H108 V2 Z M118 10 H128 L132 14 V22 L128 26 H118 Z"/>
+    </g>
+    <!-- EVENTS -->
+    <g transform="translate(8 44)" fill-opacity=".85">
+      <!-- E -->
+      <path d="M0 0 H26 V8 H10 V12 H22 V20 H10 V24 H26 V32 H0 Z"/>
+      <!-- V -->
+      <path d="M32 0 H42 L50 24 L58 0 H68 L54 32 H46 Z"/>
+      <!-- E -->
+      <path d="M74 0 H100 V8 H84 V12 H96 V20 H84 V24 H100 V32 H74 Z"/>
+      <!-- N -->
+      <path d="M108 0 H118 V18 L130 0 H140 V32 H130 V14 L118 32 H108 Z"/>
+      <!-- T -->
+      <path d="M148 0 H178 V8 H168 V32 H158 V8 H148 Z"/>
+      <!-- S -->
+      <path d="M186 0 H214 V10 H196 V12 H214 V32 H186 V22 H204 V20 H186 Z"/>
+    </g>
+    <!-- AHEAD -->
+    <g transform="translate(16 88)" fill-opacity=".78">
+      <!-- A -->
+      <path d="M0 32 H10 L14 20 H26 L30 32 H40 L28 0 H12 Z M16 14 H24 L22 8 H18 Z"/>
+      <!-- H -->
+      <path d="M48 0 H58 V12 H72 V0 H82 V32 H72 V20 H58 V32 H48 Z"/>
+      <!-- E -->
+      <path d="M90 0 H116 V8 H100 V12 H112 V20 H100 V24 H116 V32 H90 Z"/>
+      <!-- A -->
+      <path d="M124 32 H134 L138 20 H150 L154 32 H164 L152 0 H136 Z M140 14 H148 L146 8 H142 Z"/>
+      <!-- D -->
+      <path d="M172 0 H196 L204 8 V24 L196 32 H172 Z M182 8 H192 L196 12 V20 L192 24 H182 Z"/>
+    </g>
+  </g>
+
+  <!-- Tape / distress marks near graffiti -->
+  <g opacity=".2" stroke="#F4F4F1" stroke-width="3" stroke-linecap="square" aria-hidden="true">
+    <path d="M230 160 L250 156"/>
+    <path d="M560 175 L578 182"/>
+    <path d="M240 300 L268 296"/>
+  </g>
+
+  <!-- Left column distressed strips -->
+  <g transform="translate(148 200) rotate(-90)" opacity=".1" fill="#F4F4F1" aria-hidden="true">
+    <rect width="52" height="3"/>
+    <rect y="8" width="38" height="3"/>
+    <rect y="16" width="44" height="3"/>
+  </g>
+  <!-- Subtle environmental words: DANCE / CONNECT / BELONG -->
+  <g fill="#F4F4F1" fill-opacity=".1" filter="url(#stencilRough)" aria-hidden="true">
+    <g transform="translate(615 200) scale(0.42)">
+      <path d="M0 0 H18 L26 8 V24 L18 32 H0 Z M8 8 H16 L18 10 V22 L16 24 H8 Z"/>
+      <path d="M32 0 H42 L48 24 L54 0 H64 L54 32 H42 Z"/>
+      <path d="M70 0 H92 V8 H80 V12 H90 V20 H80 V24 H92 V32 H70 Z"/>
+      <path d="M100 0 H110 V12 H124 V0 H134 V32 H124 V20 H110 V32 H100 Z"/>
+      <path d="M142 0 H168 V8 H152 V12 H164 V20 H152 V24 H168 V32 H142 Z"/>
+    </g>
+    <g transform="translate(615 230) scale(0.36)">
+      <path d="M0 2 H28 V10 H10 V22 H28 V30 H0 Z"/>
+      <path d="M36 2 H64 V30 H36 V2 Z M46 10 H54 V22 H46 Z"/>
+      <path d="M72 0 H82 V12 H96 V0 H106 V32 H96 V20 H82 V32 H72 Z"/>
+      <path d="M114 0 H124 V12 H138 V0 H148 V32 H138 V20 H124 V32 H114 Z"/>
+      <path d="M156 0 H182 V8 H166 V12 H178 V20 H166 V24 H182 V32 H156 Z"/>
+      <path d="M190 2 H218 V10 H200 V22 H218 V30 H190 Z"/>
+      <path d="M226 0 H256 V8 H246 V32 H236 V8 H226 Z"/>
+    </g>
+    <g transform="translate(615 258) scale(0.36)">
+      <path d="M0 0 H22 L28 6 V12 L22 16 L28 20 V26 L22 32 H0 Z M8 8 H18 V12 H8 Z M8 20 H18 V24 H8 Z"/>
+      <path d="M36 0 H62 V8 H46 V12 H58 V20 H46 V24 H62 V32 H36 Z"/>
+      <path d="M70 0 H98 V8 H80 V24 H98 V32 H70 Z"/>
+      <path d="M106 2 H134 V30 H106 V2 Z M116 10 H124 V22 H116 Z"/>
+      <path d="M142 0 H152 V12 H166 V0 H176 V32 H166 V20 H152 V32 H142 Z"/>
+      <path d="M184 2 H212 V10 H194 V22 H204 V16 H212 V30 H184 Z M194 22 H202 V24 H194 Z"/>
+    </g>
+  </g>
+
+  <!-- ========== PRIMARY: illuminated discovery arrow ========== -->
+  <g aria-hidden="true">
+    <!-- Soft bloom under arrow -->
+    <ellipse cx="455" cy="352" rx="70" ry="18" fill="#FF6500" fill-opacity=".16" filter="url(#softGlow)"/>
+    <!-- Arrow body + head (pointing into the lit floor / ahead) -->
+    <g transform="translate(455 300)">
+      <path
+        d="M-18 -70 L18 -70 L18 8 L48 8 L0 78 L-48 8 L-18 8 Z"
+        fill="url(#arrowFill)"
+        stroke="#F4F4F1"
+        stroke-opacity=".18"
+        stroke-width="1.5"
+        filter="url(#softGlow)"
+      />
+      <!-- Inner cut for stencil energy -->
+      <path
+        d="M-8 -58 L8 -58 L8 14 L22 14 L0 54 L-22 14 L-8 14 Z"
+        fill="#080908"
+        fill-opacity=".22"
+      />
+      <!-- Edge highlight -->
+      <path d="M-14 -66 L14 -66 L14 -58 L-14 -58 Z" fill="#F4F4F1" fill-opacity=".2"/>
+    </g>
+    <!-- Floor reflection of arrow -->
+    <g transform="translate(455 418) scale(1 -0.42)" opacity=".55">
+      <path
+        d="M-18 -70 L18 -70 L18 8 L48 8 L0 78 L-48 8 L-18 8 Z"
+        fill="url(#arrowReflect)"
+      />
+    </g>
+  </g>
+
+  <!-- Floor sheen / reflection ellipse -->
+  <ellipse cx="455" cy="410" rx="95" ry="14" fill="#FF6500" fill-opacity=".08"/>
+  <ellipse cx="455" cy="408" rx="40" ry="5" fill="#F4F4F1" fill-opacity=".05"/>
+
+  <!-- ========== Atmospheric grain overlay (clipped to scene silhouette) ========== -->
+  <g filter="url(#grain)" opacity=".55" pointer-events="none" aria-hidden="true">
+    <path d="M90 40 L710 40 L750 360 L640 500 L160 500 L50 360 Z" fill="#F4F4F1"/>
+  </g>
+</svg>

@@ -13,7 +13,7 @@ export default function NotFound() {
         body="That battle isn’t on the board. Head back to Discover and pick a floor that’s still open."
         className="w-full max-w-2xl"
       >
-        <Button asChild>
+        <Button asChild className="rounded-md normal-case tracking-normal">
           <Link href={routes.discover}>Back to Discover</Link>
         </Button>
       </EmptyState>

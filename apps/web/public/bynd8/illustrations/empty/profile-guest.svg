@@ -1,0 +1,111 @@
+<svg viewBox="0 0 800 520" xmlns="http://www.w3.org/2000/svg" role="img" aria-hidden="true" fill="none">
+  <title>Anonymous dancer silhouette</title>
+  <defs>
+    <radialGradient id="pg-haze" cx="48%" cy="40%" r="50%">
+      <stop offset="0%" stop-color="#FF6500" stop-opacity=".18"/>
+      <stop offset="50%" stop-color="#FF6500" stop-opacity=".05"/>
+      <stop offset="100%" stop-color="#FF6500" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="pg-body" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1a1b1a"/>
+      <stop offset="100%" stop-color="#0D0E0D"/>
+    </linearGradient>
+    <filter id="pg-soft" x="-25%" y="-25%" width="150%" height="150%" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="10"/>
+    </filter>
+    <filter id="pg-grain" x="-4%" y="-4%" width="108%" height="108%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency="0.88" numOctaves="2" stitchTiles="stitch" result="n"/>
+      <feColorMatrix in="n" type="matrix" values="0 0 0 0 .95 0 0 0 0 .95 0 0 0 0 .93 0 0 0 .08 0" result="g"/>
+      <feComposite in="g" in2="SourceGraphic" operator="in"/>
+    </filter>
+    <filter id="pg-rough" x="-8%" y="-8%" width="116%" height="116%" color-interpolation-filters="sRGB">
+      <feTurbulence type="turbulence" baseFrequency="0.04" numOctaves="2" seed="5" result="t"/>
+      <feDisplacementMap in="SourceGraphic" in2="t" scale="1.8" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+  </defs>
+
+  <ellipse cx="400" cy="250" rx="280" ry="200" fill="url(#pg-haze)" filter="url(#pg-soft)"/>
+
+  <!-- Poster fragments behind -->
+  <g opacity=".28" aria-hidden="true">
+    <rect x="120" y="140" width="70" height="100" rx="2" fill="#161716" stroke="#F4F4F1" stroke-opacity=".1" transform="rotate(-8 155 190)"/>
+    <rect x="610" y="160" width="64" height="90" rx="2" fill="#111211" stroke="#F4F4F1" stroke-opacity=".08" transform="rotate(7 642 205)"/>
+    <path d="M140 360 H220 M150 372 H200" stroke="#F4F4F1" stroke-opacity=".08" stroke-width="3"/>
+  </g>
+
+  <!-- Floor marks -->
+  <g stroke="#F4F4F1" stroke-opacity=".08" stroke-width="2" aria-hidden="true">
+    <ellipse cx="400" cy="430" rx="90" ry="16" stroke-dasharray="6 8"/>
+    <path d="M310 440 L490 440" stroke-opacity=".1"/>
+  </g>
+
+  <!-- Hand-painted crown (stencil, not gaming) -->
+  <g fill="#FF6500" filter="url(#pg-rough)" aria-hidden="true">
+    <path d="M330 118 L350 158 L370 128 L390 158 L410 122 L430 158 L450 128 L470 158 L490 118 L470 175 L330 175 Z" fill-opacity=".55"/>
+    <path d="M345 175 H455" stroke="#FF6500" stroke-opacity=".4" stroke-width="3" fill="none"/>
+  </g>
+
+  <!-- Small hand-drawn arrows -->
+  <g stroke="#FF6500" stroke-opacity=".35" stroke-width="2.5" stroke-linecap="round" fill="none" aria-hidden="true">
+    <path d="M250 210 L280 200 L270 215"/>
+    <path d="M530 230 L560 215 L555 235"/>
+    <path d="M280 320 L255 340"/>
+  </g>
+
+  <!-- PRIMARY: back-facing dancer silhouette -->
+  <g aria-hidden="true">
+    <!-- Cap / head -->
+    <ellipse cx="400" cy="200" rx="36" ry="34" fill="url(#pg-body)"/>
+    <path d="M364 195 Q400 170 436 195 L430 205 Q400 188 370 205 Z" fill="#111211"/>
+    <!-- Oversized jacket -->
+    <path d="M310 230
+      C300 250 295 300 300 360
+      L340 370 L360 300 L400 310 L440 300 L460 370 L500 360
+      C505 300 500 250 490 230
+      C460 210 440 220 400 225
+      C360 220 340 210 310 230 Z" fill="url(#pg-body)" stroke="#F4F4F1" stroke-opacity=".1" stroke-width="1.5"/>
+    <!-- Jacket shoulders -->
+    <path d="M320 245 C350 235 380 240 400 242 C420 240 450 235 480 245" stroke="#F4F4F1" stroke-opacity=".08" stroke-width="2"/>
+    <!-- Legs / stance -->
+    <path d="M360 365 L345 440 L375 440 L385 375 Z" fill="#111211"/>
+    <path d="M440 365 L415 375 L425 440 L455 440 Z" fill="#0D0E0D"/>
+    <!-- Shoes -->
+    <ellipse cx="355" cy="442" rx="28" ry="7" fill="#161716"/>
+    <ellipse cx="445" cy="442" rx="28" ry="7" fill="#161716"/>
+  </g>
+
+  <!-- Jacket typography: DANCE CONNECT BELONG -->
+  <g fill="#F4F4F1" filter="url(#pg-rough)" aria-hidden="true">
+    <g transform="translate(352 268) scale(0.38)" fill-opacity=".35">
+      <path d="M0 0 H18 L26 8 V24 L18 32 H0 Z M8 8 H16 L18 10 V22 L16 24 H8 Z"/>
+      <path d="M32 0 H42 L48 24 L54 0 H64 L54 32 H42 Z"/>
+      <path d="M70 0 H92 V8 H80 V12 H90 V20 H80 V24 H92 V32 H70 Z"/>
+      <path d="M100 0 H110 V12 H124 V0 H134 V32 H124 V20 H110 V32 H100 Z"/>
+      <path d="M142 0 H168 V8 H152 V12 H164 V20 H152 V24 H168 V32 H142 Z"/>
+    </g>
+    <g transform="translate(345 292) scale(0.32)" fill-opacity=".28">
+      <path d="M0 2 H28 V10 H10 V22 H28 V30 H0 Z"/>
+      <path d="M36 2 H64 V30 H36 V2 Z M46 10 H54 V22 H46 Z"/>
+      <path d="M72 0 H82 V12 H96 V0 H106 V32 H96 V20 H82 V32 H72 Z"/>
+      <path d="M114 0 H124 V12 H138 V0 H148 V32 H138 V20 H124 V32 H114 Z"/>
+      <path d="M156 0 H182 V8 H166 V12 H178 V20 H166 V24 H182 V32 H156 Z"/>
+      <path d="M190 2 H218 V10 H200 V22 H218 V30 H190 Z"/>
+      <path d="M226 0 H256 V8 H246 V32 H236 V8 H226 Z"/>
+    </g>
+    <g transform="translate(355 316) scale(0.32)" fill-opacity=".22">
+      <path d="M0 0 H22 L28 6 V12 L22 16 L28 20 V26 L22 32 H0 Z M8 8 H18 V12 H8 Z M8 20 H18 V24 H8 Z"/>
+      <path d="M36 0 H62 V8 H46 V12 H58 V20 H46 V24 H62 V32 H36 Z"/>
+      <path d="M70 0 H98 V8 H80 V24 H98 V32 H70 Z"/>
+      <path d="M106 2 H134 V30 H106 V2 Z M116 10 H124 V22 H116 Z"/>
+      <path d="M142 0 H152 V12 H166 V0 H176 V32 H166 V20 H152 V32 H142 Z"/>
+      <path d="M184 2 H212 V10 H194 V22 H204 V16 H212 V30 H184 Z M194 22 H202 V24 H194 Z"/>
+    </g>
+  </g>
+
+  <!-- Soft ground shadow -->
+  <ellipse cx="400" cy="455" rx="110" ry="14" fill="#000" fill-opacity=".4" filter="url(#pg-soft)"/>
+
+  <g filter="url(#pg-grain)" opacity=".45" pointer-events="none" aria-hidden="true">
+    <ellipse cx="400" cy="280" rx="290" ry="200" fill="#F4F4F1"/>
+  </g>
+</svg>

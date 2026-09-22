@@ -3,7 +3,6 @@
 import { routes } from '@cypher/contracts';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
 
 import { BrandLogo } from '@/components/brand/BrandLogo';
 import { ByndIcon } from '@/components/icons/bynd8';
@@ -17,10 +16,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { useAuth } from '@/features/auth/AuthProvider';
-import { AuthSlotLoading } from '@/features/shell/AsyncState';
-import { ReleaseBadge } from '@/features/shell/ReleaseBadge';
 import { LEGAL_URLS } from '@/lib/release';
 import { cn } from '@/lib/utils';
 
@@ -35,9 +30,10 @@ const navItems = [
 function BrandMark() {
   return (
     <div className="px-1">
-      <BrandLogo variant="lockup" size="md" href={routes.discover} />
-      <p className="kicker mt-2 px-0.5 text-[10px]">Everything beyond the count</p>
-      <ReleaseBadge className="mt-3" />
+      <BrandLogo variant="lockup" size="md" href={routes.discover} priority />
+      <p className="mt-1.5 px-0.5 text-[9px] font-semibold uppercase tracking-[0.18em] text-white/45">
+        Everything beyond the count
+      </p>
     </div>
   );
 }
@@ -46,7 +42,7 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
 
   return (
-    <nav className="flex flex-col gap-1" aria-label="Primary">
+    <nav className="flex flex-col gap-0.5" aria-label="Primary">
       {navItems.map((item) => {
         const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
         return (
@@ -55,15 +51,21 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
             href={item.href}
             onClick={onNavigate}
             className={cn(
-              'flex items-center gap-3 rounded-md px-3 py-2.5 font-body text-sm font-medium tracking-wide transition-colors',
+              'relative flex items-center gap-3 rounded-md px-3 py-2.5 text-[13px] font-medium tracking-wide transition-colors',
               active
-                ? 'bg-elevated text-text-primary shadow-[inset_3px_0_0_0_var(--accent-primary)]'
-                : 'text-text-secondary hover:bg-elevated hover:text-text-primary',
+                ? 'bg-transparent text-accent'
+                : 'text-white/55 hover:bg-white/[0.04] hover:text-white/85',
             )}
           >
+            {active ? (
+              <span
+                aria-hidden
+                className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-full bg-accent"
+              />
+            ) : null}
             <ByndIcon
               name={item.icon}
-              className={cn('size-[1.15rem]', active ? 'text-accent' : 'text-text-muted')}
+              className={cn('size-[1.1rem]', active ? 'text-accent' : 'text-white/45')}
             />
             {item.label}
           </Link>
@@ -77,10 +79,13 @@ function SupportSlot() {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="ghost" className="w-full justify-start gap-3 px-3 normal-case tracking-normal">
-          <ByndIcon name="help" className="size-[1.15rem] text-text-muted" />
+        <button
+          type="button"
+          className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-left text-[13px] font-medium text-white/45 transition-colors hover:bg-white/[0.04] hover:text-white/75"
+        >
+          <ByndIcon name="help" className="size-[1.1rem]" />
           Help & support
-        </Button>
+        </button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
@@ -136,79 +141,68 @@ function SupportSlot() {
   );
 }
 
-function AuthSlot({ onNavigate }: { onNavigate?: () => void }) {
-  const auth = useAuth();
-  const name = auth.me?.profile.dancerName ?? auth.me?.profile.name;
-
-  if (auth.status === 'loading') {
-    return <AuthSlotLoading />;
-  }
-
-  if (auth.status !== 'authenticated') {
-    return (
-      <Button asChild variant="default" className="w-full">
-        <Link href={routes.login} onClick={onNavigate}>
-          <ByndIcon name="signIn" />
-          Sign in
-        </Link>
-      </Button>
-    );
-  }
-
-  return (
-    <Link
-      href={routes.profile}
-      onClick={onNavigate}
-      className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-text-secondary hover:bg-elevated hover:text-text-primary"
-    >
-      <ByndIcon name="profile" className="size-[1.15rem] text-accent" />
-      <span className="min-w-0">
-        <span className="kicker block text-[10px] text-accent">Signed in</span>
-        <span className="truncate">{name ?? 'Dancer'}</span>
-      </span>
-    </Link>
-  );
-}
-
 function SidebarBody({ onNavigate }: { onNavigate?: () => void }) {
   return (
-    <div className="flex h-full flex-col gap-6 p-4">
+    <div className="flex h-full flex-col gap-7 px-3 py-5">
       <BrandMark />
       <NavLinks onNavigate={onNavigate} />
-      <div className="mt-auto space-y-3">
+      <div className="mt-auto">
         <SupportSlot />
-        <AuthSlot onNavigate={onNavigate} />
       </div>
     </div>
   );
 }
 
+/** Narrow desktop rail. */
 export function AppSidebar() {
   return (
-    <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 border-r border-border/70 bg-surface lg:flex lg:flex-col">
+    <aside className="sticky top-0 hidden h-dvh w-[13.5rem] shrink-0 border-r border-white/[0.06] bg-[#0A0A0A] lg:flex lg:flex-col xl:w-[14.5rem]">
       <SidebarBody />
     </aside>
   );
 }
 
-export function MobileNav() {
-  const [open, setOpen] = useState(false);
+/**
+ * Mobile primary nav — fixed bottom tabs (no side drawer).
+ * Safe-area aware for notched phones.
+ */
+export function MobileBottomNav() {
+  const pathname = usePathname();
+
   return (
-    <div className="flex items-center justify-between border-b border-border bg-surface px-3 py-2 lg:hidden">
-      <BrandLogo variant="mark" size="sm" href={routes.discover} />
-      <Sheet open={open} onOpenChange={setOpen}>
-        <SheetTrigger asChild>
-          <Button variant="outline" size="icon" aria-label="Open menu">
-            <ByndIcon name="menu" className="size-5" />
-          </Button>
-        </SheetTrigger>
-        <SheetContent side="left" className="w-[min(100%,20rem)] p-0">
-          <SheetHeader className="border-b border-border px-4 py-3">
-            <SheetTitle>BYND8</SheetTitle>
-          </SheetHeader>
-          <SidebarBody onNavigate={() => setOpen(false)} />
-        </SheetContent>
-      </Sheet>
-    </div>
+    <nav
+      aria-label="Primary"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-white/[0.08] bg-[#0A0A0A]/95 backdrop-blur-md lg:hidden"
+      style={{ paddingBottom: 'max(0.35rem, env(safe-area-inset-bottom))' }}
+    >
+      <ul className="mx-auto flex max-w-lg items-stretch justify-between px-1 pt-1.5">
+        {navItems.map((item) => {
+          const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+          return (
+            <li key={item.href} className="min-w-0 flex-1">
+              <Link
+                href={item.href}
+                className={cn(
+                  'relative flex flex-col items-center gap-0.5 px-1 py-1.5 text-[10px] font-medium tracking-wide transition-colors',
+                  active ? 'text-accent' : 'text-white/45 hover:text-white/75',
+                )}
+              >
+                {active ? (
+                  <span
+                    aria-hidden
+                    className="absolute left-1/2 top-0 h-[2px] w-8 -translate-x-1/2 rounded-full bg-accent"
+                  />
+                ) : null}
+                <ByndIcon
+                  name={item.icon}
+                  className={cn('size-5', active ? 'text-accent' : 'text-white/45')}
+                />
+                <span className="truncate">{item.label}</span>
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
   );
 }

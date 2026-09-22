@@ -191,8 +191,9 @@ function OrganizerDashboardInner({ slug }: { slug: string }) {
                 ? 'Create something happening, then put it up when you’re ready.'
                 : 'Switch tabs, or create another event for this host.'
             }
+            illustration="organize"
           >
-            <Button asChild>
+            <Button asChild className="rounded-md normal-case tracking-normal">
               <Link href={createHref}>{events.length === 0 ? 'Create' : '+ Create'}</Link>
             </Button>
           </EmptyState>

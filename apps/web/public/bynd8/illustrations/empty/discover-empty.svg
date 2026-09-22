@@ -1,0 +1,88 @@
+<svg viewBox="0 0 800 520" xmlns="http://www.w3.org/2000/svg" role="img" aria-hidden="true" fill="none">
+  <title>Scene search location signal</title>
+  <defs>
+    <radialGradient id="de-glow" cx="50%" cy="48%" r="50%">
+      <stop offset="0%" stop-color="#FF6500" stop-opacity=".16"/>
+      <stop offset="55%" stop-color="#FF6500" stop-opacity=".04"/>
+      <stop offset="100%" stop-color="#FF6500" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="de-signal" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FF6500" stop-opacity=".85"/>
+      <stop offset="40%" stop-color="#FF6500" stop-opacity=".35"/>
+      <stop offset="100%" stop-color="#FF6500" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="de-orb" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#161716" stop-opacity=".9"/>
+      <stop offset="100%" stop-color="#0D0E0D" stop-opacity=".5"/>
+    </linearGradient>
+    <filter id="de-soft" x="-30%" y="-30%" width="160%" height="160%" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="8"/>
+    </filter>
+    <filter id="de-grain" x="-4%" y="-4%" width="108%" height="108%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch" result="n"/>
+      <feColorMatrix in="n" type="matrix" values="0 0 0 0 .95 0 0 0 0 .95 0 0 0 0 .93 0 0 0 .08 0" result="g"/>
+      <feComposite in="g" in2="SourceGraphic" operator="in"/>
+    </filter>
+    <filter id="de-rough" x="-6%" y="-6%" width="112%" height="112%" color-interpolation-filters="sRGB">
+      <feTurbulence type="turbulence" baseFrequency="0.05" numOctaves="2" seed="9" result="t"/>
+      <feDisplacementMap in="SourceGraphic" in2="t" scale="1.2" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+  </defs>
+
+  <ellipse cx="400" cy="270" rx="300" ry="210" fill="url(#de-glow)" filter="url(#de-soft)"/>
+
+  <!-- Abstract globe / orbit system (not Earth) -->
+  <g aria-hidden="true">
+    <ellipse cx="400" cy="270" rx="150" ry="150" fill="url(#de-orb)" stroke="#F4F4F1" stroke-opacity=".14" stroke-width="2"/>
+    <!-- Coordinate curves -->
+    <ellipse cx="400" cy="270" rx="150" ry="55" stroke="#F4F4F1" stroke-opacity=".12" stroke-width="1.5"/>
+    <ellipse cx="400" cy="270" rx="150" ry="100" stroke="#F4F4F1" stroke-opacity=".08" stroke-width="1.25"/>
+    <ellipse cx="400" cy="270" rx="55" ry="150" stroke="#F4F4F1" stroke-opacity=".1" stroke-width="1.5"/>
+    <ellipse cx="400" cy="270" rx="100" ry="150" stroke="#F4F4F1" stroke-opacity=".07" stroke-width="1.25"/>
+    <path d="M250 270 H550 M400 120 V420" stroke="#F4F4F1" stroke-opacity=".08" stroke-width="1.25"/>
+    <!-- Orbit fragments -->
+    <ellipse cx="400" cy="270" rx="210" ry="78" stroke="#F4F4F1" stroke-opacity=".1" stroke-width="1.5" stroke-dasharray="10 14" transform="rotate(-18 400 270)"/>
+    <ellipse cx="400" cy="270" rx="230" ry="90" stroke="#FF6500" stroke-opacity=".15" stroke-width="1.25" stroke-dasharray="4 16" transform="rotate(28 400 270)"/>
+    <!-- City nodes -->
+    <circle cx="340" cy="230" r="3.5" fill="#F4F4F1" fill-opacity=".25"/>
+    <circle cx="455" cy="300" r="3" fill="#F4F4F1" fill-opacity=".2"/>
+    <circle cx="380" cy="330" r="2.5" fill="#F4F4F1" fill-opacity=".18"/>
+    <circle cx="470" cy="220" r="2.5" fill="#F4F4F1" fill-opacity=".18"/>
+    <circle cx="320" cy="290" r="2" fill="#F4F4F1" fill-opacity=".15"/>
+  </g>
+
+  <!-- Strong orange location signal -->
+  <g aria-hidden="true">
+    <circle cx="448" cy="248" r="42" fill="url(#de-signal)" filter="url(#de-soft)"/>
+    <path d="M448 218 C430 218 418 232 418 248 C418 272 448 298 448 298 C448 298 478 272 478 248 C478 232 466 218 448 218 Z" fill="#FF6500" fill-opacity=".9"/>
+    <circle cx="448" cy="246" r="10" fill="#080908" fill-opacity=".55"/>
+    <circle cx="448" cy="246" r="5" fill="#F4F4F1" fill-opacity=".85"/>
+    <!-- Pulse rings -->
+    <circle cx="448" cy="248" r="28" stroke="#FF6500" stroke-opacity=".35" stroke-width="2"/>
+    <circle cx="448" cy="248" r="48" stroke="#FF6500" stroke-opacity=".15" stroke-width="1.5"/>
+  </g>
+
+  <!-- Micro environmental labels -->
+  <g fill="#F4F4F1" fill-opacity=".14" filter="url(#de-rough)" aria-hidden="true">
+    <g transform="translate(140 160) scale(0.45)">
+      <path d="M0 0 H20 L28 8 V24 L20 32 H0 Z M8 8 H18 L20 10 V22 L18 24 H8 Z"/>
+      <path d="M36 0 H46 V24 H56 V0 H66 V32 H36 Z"/>
+      <path d="M74 0 H104 V8 H88 V24 H104 V32 H74 Z"/>
+    </g>
+    <g transform="translate(520 380) scale(0.35)" fill-opacity=".9">
+      <path d="M0 0 H110 V6 H0 Z M0 14 H72 V20 H0 Z M0 28 H90 V34 H0 Z"/>
+    </g>
+  </g>
+  <g fill="#FF6500" fill-opacity=".3" filter="url(#de-rough)" aria-hidden="true">
+    <g transform="translate(155 200) scale(0.32)">
+      <path d="M0 0 H48 V5 H0 Z"/>
+      <path d="M0 12 H36 V17 H0 Z"/>
+    </g>
+  </g>
+
+  <ellipse cx="400" cy="450" rx="140" ry="16" fill="#000" fill-opacity=".3" filter="url(#de-soft)"/>
+
+  <g filter="url(#de-grain)" opacity=".4" pointer-events="none" aria-hidden="true">
+    <ellipse cx="400" cy="270" rx="300" ry="210" fill="#F4F4F1"/>
+  </g>
+</svg>

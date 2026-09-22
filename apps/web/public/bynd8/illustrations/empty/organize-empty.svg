@@ -1,0 +1,99 @@
+<svg viewBox="0 0 800 520" xmlns="http://www.w3.org/2000/svg" role="img" aria-hidden="true" fill="none">
+  <title>Event production clipboard</title>
+  <defs>
+    <radialGradient id="oe-haze" cx="50%" cy="40%" r="55%">
+      <stop offset="0%" stop-color="#FF6500" stop-opacity=".14"/>
+      <stop offset="50%" stop-color="#FF6500" stop-opacity=".04"/>
+      <stop offset="100%" stop-color="#FF6500" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="oe-board" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1c1d1c"/>
+      <stop offset="100%" stop-color="#111211"/>
+    </linearGradient>
+    <linearGradient id="oe-paper" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1a1a18"/>
+      <stop offset="100%" stop-color="#121311"/>
+    </linearGradient>
+    <filter id="oe-soft" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="8"/>
+    </filter>
+    <filter id="oe-grain" x="-4%" y="-4%" width="108%" height="108%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency="0.88" numOctaves="2" stitchTiles="stitch" result="n"/>
+      <feColorMatrix in="n" type="matrix" values="0 0 0 0 .95 0 0 0 0 .95 0 0 0 0 .93 0 0 0 .08 0" result="g"/>
+      <feComposite in="g" in2="SourceGraphic" operator="in"/>
+    </filter>
+    <filter id="oe-rough" x="-6%" y="-6%" width="112%" height="112%" color-interpolation-filters="sRGB">
+      <feTurbulence type="turbulence" baseFrequency="0.05" numOctaves="2" seed="8" result="t"/>
+      <feDisplacementMap in="SourceGraphic" in2="t" scale="1.4" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+  </defs>
+
+  <ellipse cx="400" cy="260" rx="300" ry="210" fill="url(#oe-haze)" filter="url(#oe-soft)"/>
+
+  <!-- Perspective floor tape -->
+  <path d="M180 450 L320 380" stroke="#FF6500" stroke-opacity=".3" stroke-width="5"/>
+  <path d="M480 380 L620 450" stroke="#F4F4F1" stroke-opacity=".08" stroke-width="4"/>
+
+  <!-- Secondary: marker + wristband + cable -->
+  <g opacity=".4" aria-hidden="true">
+    <rect x="140" y="300" width="14" height="70" rx="3" fill="#161716" stroke="#FF6500" stroke-opacity=".35" stroke-width="1.5" transform="rotate(-25 147 335)"/>
+    <path d="M620 300 C650 330 640 370 610 390" stroke="#F4F4F1" stroke-opacity=".2" stroke-width="3" stroke-linecap="round"/>
+    <rect x="580" y="400" width="70" height="14" rx="7" fill="#111211" stroke="#FF6500" stroke-opacity=".3" stroke-width="1.5" transform="rotate(-8 615 407)"/>
+  </g>
+
+  <!-- PRIMARY: clipboard with perspective -->
+  <g transform="translate(250 90) rotate(-4)" aria-hidden="true">
+    <!-- Board -->
+    <rect width="300" height="360" rx="10" fill="url(#oe-board)" stroke="#F4F4F1" stroke-opacity=".14" stroke-width="2"/>
+    <!-- Clip -->
+    <rect x="105" y="-8" width="90" height="36" rx="4" fill="#161716" stroke="#F4F4F1" stroke-opacity=".25" stroke-width="1.5"/>
+    <rect x="120" y="4" width="60" height="12" rx="2" fill="#FF6500" fill-opacity=".35"/>
+    <!-- Paper -->
+    <rect x="24" y="40" width="252" height="290" rx="3" fill="url(#oe-paper)" stroke="#F4F4F1" stroke-opacity=".1"/>
+    <!-- Layout lines -->
+    <g stroke="#F4F4F1" stroke-opacity=".12" stroke-width="2">
+      <path d="M48 80 H250"/>
+      <path d="M48 110 H220"/>
+      <path d="M48 140 H240"/>
+      <rect x="48" y="170" width="100" height="70" fill="none" stroke-opacity=".15"/>
+      <rect x="160" y="170" width="90" height="70" fill="none" stroke-opacity=".12"/>
+      <path d="M48 265 H250 M48 290 H200 M48 315 H230"/>
+    </g>
+    <!-- Checklist boxes -->
+    <g stroke="#F4F4F1" stroke-opacity=".2" stroke-width="1.75" fill="none">
+      <rect x="48" y="78" width="14" height="14"/>
+      <rect x="48" y="108" width="14" height="14"/>
+      <rect x="48" y="138" width="14" height="14"/>
+    </g>
+    <!-- Small plus mark -->
+    <g transform="translate(210 195)" stroke="#FF6500" stroke-opacity=".7" stroke-width="3" stroke-linecap="square">
+      <path d="M0 -12 V12 M-12 0 H12"/>
+    </g>
+    <!-- Tape on paper -->
+    <rect x="200" y="50" width="50" height="12" fill="#FF6500" fill-opacity=".25" transform="rotate(8 225 56)"/>
+    <!-- Production marks -->
+    <circle cx="70" cy="300" r="10" stroke="#FF6500" stroke-opacity=".35" stroke-width="2" fill="none"/>
+  </g>
+
+  <!-- IDEAS PEOPLE CULTURE -->
+  <g fill="#FF6500" filter="url(#oe-rough)" aria-hidden="true">
+    <g transform="translate(290 160) rotate(-4) scale(0.5)" fill-opacity=".7">
+      <path d="M0 0 H8 V24 H0 Z M12 0 H36 V6 H20 V10 H32 V16 H20 V18 H36 V24 H12 Z M42 0 H66 V6 H50 V18 H66 V24 H42 Z M74 0 H98 V6 H82 V10 H94 V16 H82 V18 H98 V24 H74 Z M106 0 H138 V6 H122 V18 H138 V24 H106 Z"/>
+    </g>
+    <g transform="translate(290 195) rotate(-4) scale(0.45)" fill-opacity=".55">
+      <path d="M0 0 H28 V6 H10 V18 H28 V24 H0 Z M36 0 H62 V6 H46 V10 H58 V16 H46 V18 H62 V24 H36 Z M70 0 H96 V6 H80 V10 H92 V16 H80 V18 H96 V24 H70 Z M104 0 H130 V6 H114 V10 H126 V16 H114 V18 H130 V24 H104 Z M138 0 H162 V6 H146 V18 H162 V24 H138 Z"/>
+    </g>
+    <g transform="translate(290 228) rotate(-4) scale(0.45)" fill-opacity=".45">
+      <path d="M0 2 H28 V10 H10 V22 H28 V30 H0 Z M36 0 H64 V8 H44 V24 H64 V32 H36 Z M72 0 H100 V8 H80 V8"/>
+      <path d="M72 0 H100 V8 H84 V24 H100 V32 H72 Z M108 0 H136 V8 H116 V8"/>
+      <path d="M108 0 H136 V8 H120 V18 H136 V32 H108 V24 H118 V8 H108 Z M144 0 H168 V8 H152 V12 H164 V20 H152 V24 H168 V32 H144 Z M176 0 H204 V8 H184 V8"/>
+      <path d="M176 0 H204 V8 H188 V18 H204 V32 H176 V24 H186 V8 H176 Z"/>
+    </g>
+  </g>
+
+  <ellipse cx="400" cy="455" rx="160" ry="18" fill="#000" fill-opacity=".35" filter="url(#oe-soft)"/>
+
+  <g filter="url(#oe-grain)" opacity=".45" pointer-events="none" aria-hidden="true">
+    <ellipse cx="400" cy="280" rx="300" ry="210" fill="#F4F4F1"/>
+  </g>
+</svg>

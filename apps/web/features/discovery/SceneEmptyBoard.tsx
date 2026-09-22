@@ -6,6 +6,7 @@ import { useState } from 'react';
 
 import { ByndIcon } from '@/components/icons/bynd8';
 import { Button } from '@/components/ui/button';
+import { EmptyIllustration } from '@/components/illustrations/EmptyIllustration';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { CITIES } from '@/features/discovery/catalog';
 import { cn } from '@/lib/utils';
@@ -60,8 +61,8 @@ export function SceneEmptyBoard({ surface = 'discover', className }: SceneEmptyB
         <h1 className="display-title text-5xl text-text-primary md:text-7xl">Tonight starts here.</h1>
       </header>
 
-      <section className="overflow-hidden rounded-xl border border-border bg-surface">
-        <div className="space-y-6 p-5 md:p-8">
+      <section className="grid gap-6 md:grid-cols-[minmax(0,1fr)_auto] md:items-start md:gap-10">
+        <div className="space-y-6">
           <div className="space-y-3">
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-accent">
               {surface === 'events' ? 'The board' : 'Day one'}
@@ -109,16 +110,20 @@ export function SceneEmptyBoard({ surface = 'discover', className }: SceneEmptyB
           </div>
 
           <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-            <Button asChild size="lg" className="rounded-full px-7">
+            <Button asChild size="lg" className="rounded-md px-7 normal-case tracking-normal">
               <Link href={organizeHref}>
                 {surface === 'events' ? 'Organize a night' : 'Organize the first night'}
                 <span aria-hidden>→</span>
               </Link>
             </Button>
-            <Button asChild size="lg" variant="outline" className="rounded-full px-7">
+            <Button asChild size="lg" variant="outline" className="rounded-md px-7 normal-case tracking-normal">
               <Link href={secondaryHref}>{secondaryLabel}</Link>
             </Button>
           </div>
+        </div>
+
+        <div className="mx-auto w-full max-w-[14rem] shrink-0 md:mx-0">
+          <EmptyIllustration kind={surface === 'events' ? 'events' : 'discover'} />
         </div>
       </section>
 

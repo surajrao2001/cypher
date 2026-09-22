@@ -31,14 +31,14 @@ export function SearchBar() {
       <div className="relative min-w-0 flex-1">
         <ByndIcon
           name="search"
-          className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-text-muted"
+          className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-white/40"
         />
         <Input
           name="q"
           defaultValue={query}
           key={query}
           placeholder="Search battles, crews, venues…"
-          className="h-11 border-border/70 bg-surface/80 pl-10"
+          className="h-10 rounded-md border-transparent bg-[#171717] pl-10 text-[13px] text-white placeholder:text-white/40 focus-visible:border-white/15 focus-visible:ring-0"
           aria-label="Search events"
         />
       </div>
@@ -46,13 +46,13 @@ export function SearchBar() {
         <DropdownTrigger asChild>
           <Button
             variant="outline"
-            className="h-11 shrink-0 gap-2 border-border/70 bg-surface/80 px-3 normal-case tracking-normal"
+            className="h-10 shrink-0 gap-1.5 rounded-full border-white/15 bg-[#171717] px-3 text-[13px] font-medium normal-case tracking-normal text-white/85 hover:bg-[#1c1c1c]"
           >
-            <ByndIcon name="pin" className="size-4 text-accent" />
-            <span className="hidden max-w-28 truncate font-medium sm:inline">
+            <ByndIcon name="pin" className="size-3.5 text-accent" />
+            <span className="hidden max-w-[7.5rem] truncate sm:inline">
               {city === 'all' ? 'All cities' : city}
             </span>
-            <ByndIcon name="chevronDown" className="size-4 text-text-muted" />
+            <ByndIcon name="chevronDown" className="size-3.5 text-white/40" />
           </Button>
         </DropdownTrigger>
         <DropdownContent align="end" className="w-44">

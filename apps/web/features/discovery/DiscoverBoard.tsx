@@ -5,19 +5,58 @@ import { routes } from '@cypher/contracts';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 
-import { ByndIcon } from '@/components/icons/bynd8';
-import { Button } from '@/components/ui/button';
+import { BrandHeroBanner } from '@/components/brand/BrandHeroBanner';
+import { useAuth } from '@/features/auth/AuthProvider';
 import { EventCard } from '@/features/discovery/EventCard';
-import { EmptyState } from '@/features/shell/EmptyState';
-import { EventTypeTabs } from '@/features/discovery/EventTypeTabs';
-import { SceneEmptyBoard } from '@/features/discovery/SceneEmptyBoard';
-import { TrustBadgesFooter } from '@/features/discovery/TrustBadgesFooter';
-import { CITIES } from '@/features/discovery/catalog';
 import { applyDiscoverFilters } from '@/features/discovery/filter-events';
 import { useDiscoverQuery } from '@/features/discovery/use-discover-query';
+import { DancerEmptyState } from '@/features/shell/DancerEmptyState';
 import { cn } from '@/lib/utils';
 
+const TYPE_CHIPS = [
+  { value: 'all', label: 'All' },
+  { value: 'battle', label: 'Battle' },
+  { value: 'jam', label: 'Jam / Cypher' },
+  { value: 'workshop', label: 'Workshop' },
+  { value: 'session', label: 'Session' },
+] as const;
+
+/** Full-bleed within the main pane (aligns with top bar padding). */
+function DiscoverFrame({ children }: { children: ReactNode }) {
+  return <div className="w-full px-3 sm:px-5 md:px-5 lg:px-6">{children}</div>;
+}
+
+function DiscoverHero() {
+  return (
+    <BrandHeroBanner
+      desktopSrc="/bynd8/discover-hero-desktop-v2.jpg"
+      mobileSrc="/bynd8/discover-hero-mobile-v2.jpg"
+      priority
+    >
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 bg-gradient-to-r from-black/65 via-black/20 to-transparent"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-[55%] bg-gradient-to-t from-[#080808] via-[#080808]/75 to-transparent"
+      />
+      <div className="absolute inset-0 flex flex-col items-start justify-center px-4 pb-2 pt-2 text-left sm:px-6 lg:px-8">
+        <h1 className="font-display max-w-[14ch] text-[1.45rem] uppercase leading-[0.88] tracking-[0.02em] text-white sm:text-[1.85rem] lg:text-[2.15rem]">
+          More than events
+          <br />
+          <span className="text-accent">A movement</span>
+        </h1>
+        <p className="mt-1 max-w-md text-left text-[11px] leading-snug text-white/75 sm:text-[12px]">
+          Battles. Jams. Workshops. People. Culture.
+        </p>
+      </div>
+    </BrandHeroBanner>
+  );
+}
+
 export function DiscoverBoard({ catalog }: { catalog: EventListResponse }) {
+  const auth = useAuth();
   const { searchParams, setParams } = useDiscoverQuery();
   const filters = {
     q: searchParams.get('q'),
@@ -28,149 +67,113 @@ export function DiscoverBoard({ catalog }: { catalog: EventListResponse }) {
   const boardEmpty = catalog.items.length === 0;
   const filtered = applyDiscoverFilters(catalog.items, filters);
   const activeCity = filters.city && filters.city !== 'all' ? filters.city : null;
+  const activeType = filters.type && filters.type !== 'all' ? filters.type : 'all';
+  const guest = auth.status !== 'authenticated';
 
   if (boardEmpty) {
     return (
-      <div className="flex min-h-full flex-col">
-        <div className="flex flex-1 flex-col px-4 py-6 md:px-6 md:py-8">
-          <SceneEmptyBoard surface="discover" />
-        </div>
-        <TrustBadgesFooter />
-      </div>
+      <DiscoverFrame>
+        {guest ? (
+          <DancerEmptyState variant="discoverGuest" />
+        ) : (
+          <DancerEmptyState
+            variant="discoverLocation"
+            onChangeLocation={() => setParams({ city: null })}
+          />
+        )}
+      </DiscoverFrame>
     );
   }
 
-  const battles = filtered.filter((e) => e.eventType.toLowerCase().includes('battle'));
-  const jams = filtered.filter((e) => {
-    const t = e.eventType.toLowerCase();
-    return t.includes('jam') || t.includes('cypher') || t.includes('session');
-  });
-  const battleIds = new Set(battles.map((e) => e.id));
-  const jamIds = new Set(jams.map((e) => e.id));
-  const rest = filtered.filter((e) => !battleIds.has(e.id) && !jamIds.has(e.id));
+  const featured = filtered.slice(0, 6);
+  const trending = filtered.slice(6, 12);
+  const more = filtered.slice(12);
 
   return (
-    <div className="flex min-h-full flex-col">
-      <div className="flex flex-1 flex-col gap-7 px-4 py-6 md:gap-9 md:px-6 md:py-8">
-        <header className="space-y-5">
-          <div>
-            <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-text-muted">
-              <span className="size-1.5 rounded-full bg-accent" aria-hidden />
-              The operating layer for the Indian dance scene
-            </p>
-            <h1 className="display-title mt-2 text-5xl text-text-primary md:text-7xl">
-              Tonight starts here.
-            </h1>
-          </div>
+    <DiscoverFrame>
+      <div className="flex flex-col gap-4 py-4 sm:gap-5 sm:py-5">
+        <DiscoverHero />
 
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => setParams({ city: null })}
-              className={cn(
-                'rounded-full border px-3.5 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] transition-colors',
-                !activeCity
-                  ? 'border-accent bg-accent text-bg'
-                  : 'border-border text-text-secondary hover:border-accent/40 hover:text-text-primary',
-              )}
-            >
-              All cities
-            </button>
-            {CITIES.map((city) => (
+        <div className="flex flex-wrap gap-2">
+          {TYPE_CHIPS.map((chip) => {
+            const selected = activeType === chip.value || (chip.value === 'all' && !filters.type);
+            return (
               <button
-                key={city}
+                key={chip.value}
                 type="button"
-                onClick={() => setParams({ city })}
+                onClick={() => setParams({ type: chip.value === 'all' ? null : chip.value })}
                 className={cn(
-                  'inline-flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] transition-colors',
-                  activeCity === city
-                    ? 'border-accent bg-accent text-bg'
-                    : 'border-border text-text-secondary hover:border-accent/40 hover:text-text-primary',
+                  'rounded-full border px-3.5 py-1.5 text-[12px] font-medium tracking-[0.01em] transition-colors',
+                  selected
+                    ? 'border-accent text-accent'
+                    : 'border-white/15 bg-transparent text-white/70 hover:border-white/30 hover:text-white',
                 )}
               >
-                <ByndIcon name="pin" className="size-3.5" />
-                {city}
+                {chip.label}
               </button>
-            ))}
-          </div>
+            );
+          })}
+        </div>
 
-          <EventTypeTabs />
-        </header>
+        {activeCity ? (
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/45">
+            Showing · {activeCity}
+            <button
+              type="button"
+              className="ml-2 text-accent hover:underline"
+              onClick={() => setParams({ city: null })}
+            >
+              Clear
+            </button>
+          </p>
+        ) : null}
 
         {filtered.length === 0 ? (
-          <EmptyState
-            kicker="Filters"
-            title="Nothing matches that cut"
-            body="Widen the net — clear type, city, or tags and the floor comes back."
-          >
-            <Button
-              type="button"
-              variant="outline"
-              className="rounded-full"
-              onClick={() => setParams({ q: null, city: null, tag: null, type: null })}
-            >
-              Clear filters
-            </Button>
-          </EmptyState>
+          <DancerEmptyState
+            variant="discoverLocation"
+            onChangeLocation={() => setParams({ q: null, city: null, tag: null, type: null })}
+          />
         ) : (
-          <div className="space-y-10">
-            {battles.length > 0 ? (
-              <Section title="Battles" href={routes.events}>
+          <div className="space-y-7 sm:space-y-8">
+            <Section title="Featured events" href={routes.events}>
+              <PosterGrid>
+                {featured.map((event) => (
+                  <EventCard key={event.id} event={event} />
+                ))}
+              </PosterGrid>
+            </Section>
+
+            {trending.length > 0 ? (
+              <Section title="Trending" href={routes.events}>
                 <PosterGrid>
-                  {battles.map((event) => (
-                    <EventCard key={event.id} event={event} />
-                  ))}
-                </PosterGrid>
-              </Section>
-            ) : null}
-            {jams.length > 0 ? (
-              <Section title="Jams & sessions" href={routes.events}>
-                <PosterGrid>
-                  {jams.map((event) => (
-                    <EventCard key={event.id} event={event} />
-                  ))}
-                </PosterGrid>
-              </Section>
-            ) : null}
-            {rest.length > 0 || (battles.length === 0 && jams.length === 0) ? (
-              <Section
-                title={battles.length || jams.length ? 'More nights' : 'Happening soon'}
-                href={routes.events}
-              >
-                <PosterGrid>
-                  {(battles.length || jams.length ? rest : filtered).map((event) => (
+                  {trending.map((event) => (
                     <EventCard key={event.id} event={event} />
                   ))}
                 </PosterGrid>
               </Section>
             ) : null}
 
-            <aside className="flex flex-col gap-4 border-t border-border pt-8 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <p className="font-display text-2xl uppercase tracking-[0.04em] text-text-primary">
-                  Got something happening?
-                </p>
-                <p className="mt-1 max-w-md text-sm text-text-secondary">
-                  Put it up — registrations, passes, and check-in in one place.
-                </p>
-              </div>
-              <Button asChild className="rounded-full shrink-0">
-                <Link href={routes.organize}>
-                  Organize <span aria-hidden>→</span>
-                </Link>
-              </Button>
-            </aside>
+            {more.length > 0 ? (
+              <Section title="More nights" href={routes.events}>
+                <PosterGrid>
+                  {more.map((event) => (
+                    <EventCard key={event.id} event={event} />
+                  ))}
+                </PosterGrid>
+              </Section>
+            ) : null}
           </div>
         )}
       </div>
-      <TrustBadgesFooter />
-    </div>
+    </DiscoverFrame>
   );
 }
 
 function PosterGrid({ children }: { children: ReactNode }) {
   return (
-    <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-4">{children}</div>
+    <div className="grid w-full grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7">
+      {children}
+    </div>
   );
 }
 
@@ -184,14 +187,13 @@ function Section({
   children: ReactNode;
 }) {
   return (
-    <section className="space-y-4">
+    <section className="space-y-3">
       <div className="flex items-end justify-between gap-3">
-        <h2 className="display-title text-3xl md:text-4xl">{title}</h2>
-        <Link
-          href={href}
-          className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted hover:text-accent"
-        >
-          See all
+        <h2 className="text-[1.05rem] font-semibold tracking-[-0.01em] text-white sm:text-[1.15rem]">
+          {title}
+        </h2>
+        <Link href={href} className="text-[12px] font-medium text-accent hover:underline">
+          View all →
         </Link>
       </div>
       {children}

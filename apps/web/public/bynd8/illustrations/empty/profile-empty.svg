@@ -1,0 +1,100 @@
+<svg viewBox="0 0 800 520" xmlns="http://www.w3.org/2000/svg" role="img" aria-hidden="true" fill="none">
+  <title>Unfinished dancer credential</title>
+  <defs>
+    <radialGradient id="pe-haze" cx="50%" cy="35%" r="55%">
+      <stop offset="0%" stop-color="#FF6500" stop-opacity=".14"/>
+      <stop offset="50%" stop-color="#FF6500" stop-opacity=".04"/>
+      <stop offset="100%" stop-color="#FF6500" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="pe-badge" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1a1b1a"/>
+      <stop offset="100%" stop-color="#0F100F"/>
+    </linearGradient>
+    <linearGradient id="pe-lanyard" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FF6500" stop-opacity=".55"/>
+      <stop offset="100%" stop-color="#FF6500" stop-opacity=".15"/>
+    </linearGradient>
+    <filter id="pe-soft" x="-25%" y="-25%" width="150%" height="150%" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="9"/>
+    </filter>
+    <filter id="pe-grain" x="-4%" y="-4%" width="108%" height="108%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency="0.88" numOctaves="2" stitchTiles="stitch" result="n"/>
+      <feColorMatrix in="n" type="matrix" values="0 0 0 0 .95 0 0 0 0 .95 0 0 0 0 .93 0 0 0 .08 0" result="g"/>
+      <feComposite in="g" in2="SourceGraphic" operator="in"/>
+    </filter>
+    <filter id="pe-rough" x="-6%" y="-6%" width="112%" height="112%" color-interpolation-filters="sRGB">
+      <feTurbulence type="turbulence" baseFrequency="0.05" numOctaves="2" seed="6" result="t"/>
+      <feDisplacementMap in="SourceGraphic" in2="t" scale="1.4" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+  </defs>
+
+  <ellipse cx="400" cy="260" rx="280" ry="210" fill="url(#pe-haze)" filter="url(#pe-soft)"/>
+
+  <!-- Lanyard disappearing upward -->
+  <g aria-hidden="true">
+    <path d="M370 0 C360 60 355 100 370 140" stroke="url(#pe-lanyard)" stroke-width="10" stroke-linecap="round"/>
+    <path d="M430 0 C440 60 445 100 430 140" stroke="url(#pe-lanyard)" stroke-width="10" stroke-linecap="round"/>
+    <path d="M370 140 H430" stroke="#FF6500" stroke-opacity=".4" stroke-width="4"/>
+  </g>
+
+  <!-- Stickers around -->
+  <g opacity=".4" aria-hidden="true">
+    <rect x="160" y="220" width="44" height="44" rx="4" fill="#161716" stroke="#FF6500" stroke-opacity=".3" transform="rotate(-12 182 242)"/>
+    <circle cx="620" cy="260" r="22" fill="#111211" stroke="#F4F4F1" stroke-opacity=".15"/>
+    <rect x="580" y="340" width="50" height="22" rx="3" fill="#161716" stroke="#FF6500" stroke-opacity=".25" transform="rotate(8 605 351)"/>
+  </g>
+
+  <!-- PRIMARY: hanging credential -->
+  <g transform="translate(310 145)" aria-hidden="true">
+    <!-- Clip -->
+    <rect x="70" y="0" width="40" height="18" rx="3" fill="#161716" stroke="#F4F4F1" stroke-opacity=".25" stroke-width="1.5"/>
+    <!-- Badge body -->
+    <rect y="16" width="180" height="250" rx="10" fill="url(#pe-badge)" stroke="#F4F4F1" stroke-opacity=".18" stroke-width="2"/>
+    <!-- Photo placeholder silhouette -->
+    <rect x="50" y="40" width="80" height="90" rx="4" fill="#0D0E0D" stroke="#F4F4F1" stroke-opacity=".12"/>
+    <ellipse cx="90" cy="70" rx="18" ry="20" fill="#161716"/>
+    <path d="M60 120 C60 100 120 100 120 120 Z" fill="#161716"/>
+    <!-- Placeholder lines (not personal data) -->
+    <path d="M30 150 H150" stroke="#F4F4F1" stroke-opacity=".12" stroke-width="6"/>
+    <path d="M40 170 H140" stroke="#F4F4F1" stroke-opacity=".08" stroke-width="4"/>
+    <path d="M50 188 H130" stroke="#F4F4F1" stroke-opacity=".06" stroke-width="3"/>
+    <!-- Category marks -->
+    <rect x="28" y="210" width="40" height="18" rx="2" fill="#FF6500" fill-opacity=".2" stroke="#FF6500" stroke-opacity=".4"/>
+    <rect x="76" y="210" width="40" height="18" rx="2" fill="#F4F4F1" fill-opacity=".06" stroke="#F4F4F1" stroke-opacity=".15"/>
+    <rect x="124" y="210" width="28" height="18" rx="2" fill="#F4F4F1" fill-opacity=".05" stroke="#F4F4F1" stroke-opacity=".12"/>
+    <!-- Registration numbering abstract -->
+    <g fill="#F4F4F1" fill-opacity=".2" filter="url(#pe-rough)">
+      <g transform="translate(30 240) scale(0.35)">
+        <path d="M0 0 H16 V6 H0 Z M24 0 H40 V6 H24 Z M48 0 H80 V6 H48 Z M88 0 H120 V6 H88 Z"/>
+      </g>
+    </g>
+    <!-- Progression ticks -->
+    <g stroke="#FF6500" stroke-opacity=".4" stroke-width="2">
+      <path d="M30 255 H50 M58 255 H78 M86 255 H106"/>
+    </g>
+  </g>
+
+  <!-- MORE THAN / A DANCER -->
+  <g fill="#FF6500" filter="url(#pe-rough)" aria-hidden="true">
+    <g transform="translate(200 380) scale(0.5)" fill-opacity=".65">
+      <path d="M0 0 H40 V5 H0 Z M0 12 H28 V17 H0 Z M48 0 H90 V5 H48 Z M48 12 H80 V17 H48 Z"/>
+    </g>
+    <g transform="translate(200 415) scale(0.55)" fill-opacity=".55">
+      <path d="M0 0 H16 V24 H0 Z"/>
+      <path d="M24 0 H52 V6 H32 V18 H52 V24 H24 Z"/>
+      <path d="M60 0 H68 V24 H60 Z M72 0 H100 V6 H80 V6"/>
+      <path d="M72 0 H100 V6 H84 V18 H100 V24 H72 Z"/>
+      <path d="M108 0 H116 V8 H130 V0 H138 V24 H130 V14 H116 V24 H108 Z"/>
+      <path d="M146 2 H174 V10 H156 V22 H174 V30 H146 Z"/>
+      <path d="M182 0 H210 V6 H190 V18 H210 V24 H182 Z"/>
+      <path d="M218 0 H246 V6 H226 V6"/>
+      <path d="M218 0 H246 V6 H230 V18 H246 V24 H218 Z"/>
+    </g>
+  </g>
+
+  <ellipse cx="400" cy="455" rx="100" ry="14" fill="#000" fill-opacity=".35" filter="url(#pe-soft)"/>
+
+  <g filter="url(#pe-grain)" opacity=".45" pointer-events="none" aria-hidden="true">
+    <ellipse cx="400" cy="280" rx="280" ry="210" fill="#F4F4F1"/>
+  </g>
+</svg>
