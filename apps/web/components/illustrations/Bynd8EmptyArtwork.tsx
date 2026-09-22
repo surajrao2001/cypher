@@ -16,7 +16,6 @@ export function Bynd8EmptyArtwork({ kind, className, sizesClassName }: Props) {
   const src = resolveEmptyArtworkSrc(kind);
 
   return (
-    // eslint-disable-next-line @next/next/no-img-element -- static public SVG; avoids next/image SVG quirks
     <img
       src={src}
       alt=""

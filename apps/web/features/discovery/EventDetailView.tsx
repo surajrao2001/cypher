@@ -333,7 +333,6 @@ export function EventDetailView({ event }: { event: EventDetailDto }) {
                     ) : null}
                     {update.posterUrl ? (
                       <div className="mt-2 overflow-hidden rounded-lg border border-white/[0.08]">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={update.posterUrl} alt="" className="max-h-80 w-full object-cover" />
                       </div>
                     ) : null}

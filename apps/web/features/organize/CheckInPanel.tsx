@@ -207,7 +207,6 @@ export function CheckInPanel({ slug, eventId }: { slug: string; eventId: string 
           />
           {!cameraOn ? (
             <div className="flex aspect-[4/3] flex-col items-center justify-center gap-5 px-6 text-center">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/bynd8/illustrations/event-day/check-in.svg"
                 alt=""

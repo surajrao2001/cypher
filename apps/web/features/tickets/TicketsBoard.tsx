@@ -138,7 +138,6 @@ function PassRowCard({
 
         <div className="flex shrink-0 flex-col items-center justify-center gap-2 lg:w-[9.5rem]">
           {qr ? (
-            // eslint-disable-next-line @next/next/no-img-element
             <img
               src={qr}
               alt={`QR for ${ticket.registrationCode}`}

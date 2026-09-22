@@ -126,7 +126,6 @@ export default function SvgGalleryPage() {
                             aria-hidden
                             className="pointer-events-none absolute h-[70%] w-[85%] rounded-full bg-[radial-gradient(circle,rgba(255,101,0,0.14)_0%,transparent_70%)] blur-2xl"
                           />
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
                             src={asset.src}
                             alt=""
