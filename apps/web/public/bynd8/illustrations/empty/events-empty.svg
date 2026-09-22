@@ -1,0 +1,127 @@
+<svg viewBox="0 0 800 520" xmlns="http://www.w3.org/2000/svg" role="img" aria-hidden="true" fill="none">
+  <title>Collectible event ticket</title>
+  <defs>
+    <radialGradient id="ee-haze" cx="48%" cy="45%" r="55%">
+      <stop offset="0%" stop-color="#FF6500" stop-opacity=".14"/>
+      <stop offset="55%" stop-color="#FF6500" stop-opacity=".03"/>
+      <stop offset="100%" stop-color="#FF6500" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="ee-ticket" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1a1b1a"/>
+      <stop offset="100%" stop-color="#0F100F"/>
+    </linearGradient>
+    <linearGradient id="ee-fade" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#161716"/>
+      <stop offset="100%" stop-color="#0D0E0D" stop-opacity=".4"/>
+    </linearGradient>
+    <filter id="ee-soft" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="8"/>
+    </filter>
+    <filter id="ee-grain" x="-4%" y="-4%" width="108%" height="108%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch" result="n"/>
+      <feColorMatrix in="n" type="matrix" values="0 0 0 0 .95 0 0 0 0 .95 0 0 0 0 .93 0 0 0 .08 0" result="g"/>
+      <feComposite in="g" in2="SourceGraphic" operator="in"/>
+    </filter>
+    <filter id="ee-rough" x="-6%" y="-6%" width="112%" height="112%" color-interpolation-filters="sRGB">
+      <feTurbulence type="turbulence" baseFrequency="0.048" numOctaves="2" seed="4" result="t"/>
+      <feDisplacementMap in="SourceGraphic" in2="t" scale="1.3" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+  </defs>
+
+  <ellipse cx="400" cy="270" rx="320" ry="200" fill="url(#ee-haze)" filter="url(#ee-soft)"/>
+
+  <!-- Paper fragments -->
+  <g opacity=".3" aria-hidden="true">
+    <path d="M120 360 L180 340 L200 400 L130 410 Z" fill="#161716" stroke="#F4F4F1" stroke-opacity=".08"/>
+    <path d="M620 120 L680 110 L690 170 L625 175 Z" fill="#111211" stroke="#F4F4F1" stroke-opacity=".08" transform="rotate(8 655 140)"/>
+  </g>
+
+  <!-- Secondary faded ticket -->
+  <g transform="translate(455 145) rotate(12)" opacity=".32" aria-hidden="true">
+    <rect width="240" height="120" rx="6" fill="url(#ee-fade)" stroke="#F4F4F1" stroke-opacity=".1"/>
+    <path d="M200 0 V120" stroke="#F4F4F1" stroke-opacity=".12" stroke-width="1.5" stroke-dasharray="4 5"/>
+  </g>
+
+  <!-- PRIMARY: oversized collectible ticket -->
+  <g transform="translate(170 160) rotate(-6)" aria-hidden="true">
+    <rect width="460" height="210" rx="8" fill="url(#ee-ticket)" stroke="#F4F4F1" stroke-opacity=".18" stroke-width="2"/>
+    <!-- Perforation -->
+    <path d="M360 8 V202" stroke="#F4F4F1" stroke-opacity=".2" stroke-width="2" stroke-dasharray="5 7"/>
+    <!-- Stub notches -->
+    <circle cx="360" cy="0" r="10" fill="#080908" fill-opacity=".9"/>
+    <circle cx="360" cy="210" r="10" fill="#080908" fill-opacity=".9"/>
+    <!-- Header bar -->
+    <rect x="24" y="24" width="300" height="36" fill="#FF6500" fill-opacity=".15"/>
+    <!-- COLLECT EXPERIENCES (stencil paths) -->
+    <g fill="#FF6500" filter="url(#ee-rough)">
+      <g transform="translate(32 32) scale(0.55)" fill-opacity=".9">
+        <path d="M0 2 H28 V10 H10 V22 H28 V30 H0 Z"/>
+        <path d="M36 2 H64 V30 H36 V2 Z M46 10 H54 V22 H46 Z"/>
+        <path d="M72 0 H102 V8 H86 V24 H102 V32 H72 Z"/>
+        <path d="M110 0 H138 V8 H118 V8"/>
+        <path d="M110 0 H138 V8 H122 V24 H138 V32 H110 Z"/>
+        <path d="M146 0 H172 V8 H156 V12 H168 V20 H156 V24 H172 V32 H146 Z"/>
+        <path d="M180 0 H208 V8 H188 V8"/>
+        <path d="M180 0 H208 V8 H192 V18 H208 V32 H180 V24 H190 V8 H180 Z"/>
+      </g>
+      <g transform="translate(32 70) scale(0.48)" fill-opacity=".75">
+        <path d="M0 0 H26 V8 H10 V12 H22 V20 H10 V24 H26 V32 H0 Z"/>
+        <path d="M34 0 H62 V8 H42 V8"/>
+        <path d="M34 0 H62 V32 H34 V24 H52 V8 H34 Z" opacity="0"/>
+        <path d="M34 0 H50 L58 16 L50 32 H34 V24 H42 L46 16 L42 8 H34 Z"/>
+        <path d="M66 0 H90 V8 H74 V24 H90 V32 H66 Z"/>
+        <path d="M98 0 H122 V8 H106 V12 H118 V20 H106 V24 H122 V32 H98 Z"/>
+        <path d="M130 0 H154 V8 H138 V12 H150 V20 H138 V24 H154 V32 H130 Z"/>
+        <path d="M162 0 H186 V8 H170 V12 H182 V20 H170 V24 H186 V32 H162 Z"/>
+        <path d="M194 0 H210 V8 H202 V32 H194 Z M214 0 H238 V8 H222 V12 H234 V20 H222 V24 H238 V32 H214 Z"/>
+        <path d="M246 0 H258 V12 H272 V0 H282 V32 H272 V20 H258 V32 H246 Z"/>
+        <path d="M290 2 H318 V10 H300 V22 H318 V30 H290 Z"/>
+        <path d="M326 0 H354 V8 H338 V18 H354 V32 H326 V24 H336 V8 H326 Z"/>
+      </g>
+    </g>
+    <!-- Event numbering / marks -->
+    <g fill="#F4F4F1" fill-opacity=".2">
+      <path d="M32 130 H180" stroke="#F4F4F1" stroke-opacity=".12" stroke-width="2" fill="none"/>
+      <path d="M32 148 H140" stroke="#F4F4F1" stroke-opacity=".1" stroke-width="2" fill="none"/>
+      
+    </g>
+    <g fill="#F4F4F1" fill-opacity=".22" filter="url(#ee-rough)">
+      <g transform="translate(32 155) scale(0.4)">
+        <path d="M0 0 H20 V6 H0 Z M28 0 H60 V6 H28 Z M68 0 H100 V6 H68 Z"/>
+      </g>
+    </g>
+    <!-- Orange event stamp -->
+    <g transform="translate(250 125)">
+      <circle r="36" stroke="#FF6500" stroke-opacity=".55" stroke-width="3" fill="#FF6500" fill-opacity=".08"/>
+      <circle r="28" stroke="#FF6500" stroke-opacity=".35" stroke-width="1.5" stroke-dasharray="3 4" fill="none"/>
+      <path d="M-14 -6 H14 M-10 6 H10" stroke="#FF6500" stroke-opacity=".6" stroke-width="3"/>
+    </g>
+    <!-- Stub: barcode-like + abstract QR geometry -->
+    <g transform="translate(380 30)">
+      <g stroke="#F4F4F1" stroke-opacity=".25" stroke-width="2">
+        <path d="M8 20 V160 M14 20 V160 M22 20 V160 M26 20 V160 M34 20 V160 M40 20 V160 M46 20 V160 M54 20 V160"/>
+      </g>
+      <g transform="translate(8 20)" fill="#F4F4F1" fill-opacity=".2">
+        <rect width="22" height="22"/>
+        <rect x="28" width="10" height="10"/>
+        <rect x="28" y="14" width="10" height="8"/>
+        <rect y="28" width="10" height="10"/>
+        <rect x="14" y="28" width="18" height="6"/>
+        <rect x="4" y="42" width="8" height="8"/>
+        <rect x="16" y="40" width="14" height="14"/>
+        <rect x="4" y="56" width="26" height="6"/>
+        <rect x="36" y="20" width="12" height="12"/>
+        <rect x="36" y="40" width="8" height="20"/>
+      </g>
+    </g>
+    <!-- Bracket fragment -->
+    <path d="M40 185 H90 V195" stroke="#F4F4F1" stroke-opacity=".15" stroke-width="2"/>
+    <path d="M100 185 H130" stroke="#FF6500" stroke-opacity=".3" stroke-width="2"/>
+  </g>
+
+  <ellipse cx="400" cy="430" rx="180" ry="20" fill="#000" fill-opacity=".35" filter="url(#ee-soft)"/>
+
+  <g filter="url(#ee-grain)" opacity=".45" pointer-events="none" aria-hidden="true">
+    <ellipse cx="400" cy="270" rx="320" ry="200" fill="#F4F4F1"/>
+  </g>
+</svg>

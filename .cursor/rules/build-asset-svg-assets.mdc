@@ -1,0 +1,787 @@
+---
+description: BYND8 SVG illustration, empty-state, icon and graphic asset system
+alwaysApply: true
+---
+
+# BYND8 SVG & GRAPHIC ASSET DESIGN SYSTEM
+
+You are responsible for creating production-quality SVG illustrations,
+empty-state graphics, decorative graphics, diagrams and custom icons for BYND8.
+
+Do not approach SVG creation as merely drawing shapes with code.
+
+Treat every SVG as a designed visual asset that belongs to the existing
+BYND8 visual identity.
+
+==================================================
+1. BYND8 VISUAL IDENTITY
+==================================================
+
+BYND8 is a platform for underground and competitive dance culture.
+
+The visual language is:
+
+- underground
+- cinematic
+- editorial
+- gritty
+- energetic
+- urban
+- dance-culture driven
+- dark
+- high contrast
+- premium rather than cartoonish
+- expressive without becoming visually chaotic
+
+The product should NOT resemble:
+
+- generic SaaS dashboards
+- corporate illustrations
+- startup onboarding illustrations
+- pastel vector art
+- childish cartoons
+- generic flat illustrations
+- stock icon packs
+- crypto/gaming dashboards
+- neon cyberpunk overload
+
+Core palette:
+
+Background:
+#080908
+
+Secondary dark:
+#0D0E0D
+
+Surface:
+#111211
+#161716
+
+Primary orange:
+#FF6500
+
+Accent lime:
+#B8FF00
+
+Primary text:
+#F4F4F1
+
+Secondary:
+rgba(255,255,255,0.65)
+
+Muted:
+rgba(255,255,255,0.42)
+
+Borders:
+rgba(255,255,255,0.08)
+to
+rgba(255,255,255,0.12)
+
+Use orange as the primary energy color.
+
+Use lime sparingly for:
+- live states
+- success
+- active event signals
+- occasional progression highlights
+
+Do not flood illustrations with lime.
+
+==================================================
+2. EMPTY-STATE ILLUSTRATION STYLE
+==================================================
+
+Empty states should feel like small scenes from the dance world.
+
+They should NOT be generic illustrations floating in space.
+
+Think in terms of:
+
+warehouse
+battle venue
+dance floor
+stage
+backstage
+street poster wall
+equipment cases
+spotlights
+venue entrance
+barricades
+speaker stacks
+ticket/pass objects
+arrows
+floor markings
+graffiti
+bracket markings
+tape
+stickers
+venue signage
+
+The illustration should communicate the meaning of the state.
+
+Examples:
+
+DISCOVER EMPTY
+An empty venue/dance floor waiting for something to happen.
+Directional arrow.
+Subtle wall graffiti:
+GOOD EVENTS AHEAD
+
+EVENTS EMPTY
+An empty event board / ticket wall / venue schedule area.
+Visual suggestion that events will appear here.
+
+ORGANIZE EMPTY
+Flight case / equipment case / venue setup elements.
+Feels like:
+"the stage is waiting for you."
+
+PASSES EMPTY
+Ticket/pass/QR-inspired object.
+Should communicate access rather than generic documents.
+
+PROFILE EMPTY
+Dancer identity / ID-card / silhouette / locker-room or poster-wall idea.
+Should communicate:
+"your dance identity starts here."
+
+LOCATION EMPTY
+Map/location/environment motif without becoming a generic Google Maps illustration.
+
+==================================================
+3. SVG BACKGROUND RULE
+==================================================
+
+Never fake transparency using:
+
+- checkerboard patterns
+- white backgrounds
+- grey backgrounds
+- baked rectangles
+
+SVGs must have genuinely transparent unused areas.
+
+The SVG root should normally contain no full-background rectangle.
+
+BAD:
+
+<rect width="100%" height="100%" fill="#ffffff" />
+
+BAD:
+
+checkerboard transparency imitation
+
+GOOD:
+
+transparent SVG canvas with only the actual artwork.
+
+The application background must show naturally behind the illustration.
+
+If the design requires a black environmental background, either:
+
+A. intentionally include #080908 as part of a complete scene asset
+
+OR preferably
+
+B. allow the application's #080908 background to provide it.
+
+Never accidentally introduce white/light rectangles.
+
+==================================================
+4. DESIGN SVG FOR RESPONSIVE SCALING
+==================================================
+
+Every illustration must have a correct viewBox.
+
+Example:
+
+<svg
+  viewBox="0 0 800 520"
+  xmlns="http://www.w3.org/2000/svg"
+  role="img"
+>
+
+Do NOT hard-code layout dimensions into the SVG element itself unless required.
+
+Prefer application CSS:
+
+width: 100%;
+height: auto;
+
+SVG geometry should scale through viewBox.
+
+Artwork must remain usable approximately at:
+
+Mobile:
+180–260px wide
+
+Tablet:
+260–360px
+
+Laptop:
+300–420px
+
+Large desktop:
+340–480px
+
+Test visual readability at all four scales.
+
+Fine decorative detail may disappear at small sizes.
+The primary silhouette must remain recognizable.
+
+==================================================
+5. COMPOSITION RULE
+==================================================
+
+Every illustration needs:
+
+PRIMARY SUBJECT
+
++
+SECONDARY ENVIRONMENT
+
++
+ATMOSPHERIC DETAIL
+
+Example:
+
+Organize:
+
+PRIMARY:
+equipment flight case
+
+SECONDARY:
+stage floor + speaker / cables
+
+ATMOSPHERE:
+orange spotlight + subtle graffiti + floor markings
+
+Do not create random collections of shapes.
+
+The illustration must have a clear visual hierarchy.
+
+==================================================
+6. DEPTH
+
+Avoid completely flat vector art.
+
+Create depth using:
+
+- opacity
+- overlapping silhouettes
+- soft gradients
+- subtle shadows
+- perspective lines
+- atmospheric haze
+- floor reflections
+- foreground/background separation
+
+Example:
+
+background structure:
+opacity .12
+
+environment:
+opacity .25
+
+secondary object:
+opacity .55
+
+primary object:
+opacity 1
+
+highlight:
+orange
+
+This creates cinematic depth while preserving SVG performance.
+
+==================================================
+7. LIGHTING
+
+BYND8 illustrations frequently use directional lighting.
+
+Preferred:
+
+warm orange spotlight
+
+Example SVG gradient:
+
+<radialGradient id="orangeGlow">
+  <stop offset="0%" stop-color="#FF6500" stop-opacity=".28"/>
+  <stop offset="45%" stop-color="#FF6500" stop-opacity=".10"/>
+  <stop offset="100%" stop-color="#FF6500" stop-opacity="0"/>
+</radialGradient>
+
+Keep glows restrained.
+
+Do NOT create huge glowing blobs.
+
+Lighting should appear to originate from something:
+
+lamp
+stage light
+sign
+floor strip
+arrow
+venue lighting
+
+==================================================
+8. GRAIN / TEXTURE
+
+BYND8 is intentionally imperfect.
+
+Use restrained SVG texture when beneficial:
+
+feTurbulence
+feDisplacementMap
+feBlend
+opacity masks
+
+But use them carefully.
+
+Do not create extremely expensive SVG filters.
+
+Texture should resemble:
+
+photocopy
+screen print
+concrete
+worn poster
+paint
+dust
+film grain
+
+NOT:
+
+digital noise everywhere.
+
+==================================================
+9. GRAFFITI AND ENVIRONMENTAL GRAPHICS
+
+Use environmental typography sparingly.
+
+Allowed examples:
+
+CYPHER
+1V1
+TOP 16
+PRELIMS
+SESSION
+BATTLE
+GOOD EVENTS AHEAD
+THE FLOOR IS YOURS
+BLR://012
+03/16
+QUALIFIER
+
+These should behave like environmental graphics.
+
+They should be:
+
+partially obscured
+low opacity
+distressed
+cropped
+painted/stencilled
+
+They must NOT compete with actual UI copy.
+
+==================================================
+10. DO NOT BAKE PRIMARY UI TEXT INTO ILLUSTRATIONS
+==================================================
+
+Critical rule.
+
+Empty-state headline and description should normally be HTML.
+
+Example:
+
+SVG:
+venue + arrow + environmental graphics
+
+HTML:
+Nothing happening here yet
+Explore events happening around you.
+
+Button:
+EXPLORE EVENTS
+
+Do NOT bake:
+
+headline
+paragraph
+button
+dynamic city
+user name
+event name
+prices
+
+into the SVG.
+
+Environmental words are allowed because they are decorative.
+
+This preserves:
+
+accessibility
+responsiveness
+localization
+copy changes
+SEO
+
+==================================================
+11. SVG TEXT
+
+Avoid <text> for important visual lettering where exact font rendering matters.
+
+For decorative custom lettering:
+
+prefer vector paths if necessary.
+
+For ordinary application text:
+
+use HTML outside the SVG.
+
+Never embed external font files in SVG.
+
+==================================================
+12. CUSTOM ICON POLICY
+
+Before creating an icon, determine whether it is FUNCTIONAL or BRAND/DECORATIVE.
+
+FUNCTIONAL ICON:
+
+search
+close
+calendar
+map pin
+settings
+chevron
+user
+ticket
+share
+heart
+filter
+plus
+minus
+menu
+
+Use the project's existing icon library, preferably Lucide.
+
+DO NOT redraw these unnecessarily.
+
+CUSTOM SVG ICON:
+
+achievement badges
+XP symbols
+battle-format marks
+BYND8-specific competition symbols
+event collectible badges
+special check-in graphics
+Seven to Smoke symbol
+custom progression visuals
+
+These may use custom SVG.
+
+==================================================
+13. ICON SYSTEM
+
+Custom icons should share:
+
+24x24 default viewBox
+
+stroke:
+1.75–2px
+
+round caps where appropriate
+
+consistent optical weight
+
+They should work at:
+
+16px
+18px
+20px
+24px
+32px
+
+Icons should use currentColor whenever possible.
+
+Example:
+
+stroke="currentColor"
+
+instead of:
+
+stroke="#ffffff"
+
+This allows UI state styling.
+
+==================================================
+14. ACHIEVEMENT BADGES
+
+Phase G introduces achievements.
+
+Achievement artwork should have a consistent visual family.
+
+Possible structure:
+
+outer badge silhouette
++
+category symbol
++
+small BYND8 environmental detail
++
+tier/state treatment
+
+Examples:
+
+EARLY BIRD
+stylized stage light / sunrise / venue arrow
+
+FIRST STEP
+dance floor footprint / floor marker
+
+TOP 8
+bracket + 8
+
+FINALIST
+bracket convergence
+
+CHAMPION
+crown / floor winner mark
+
+SEVEN TO SMOKE
+7 + smoke / circular challenger motif
+
+Locked:
+
+mostly monochrome
+low contrast
+
+Unlocked:
+
+orange/lime highlight
+stronger contrast
+
+Do not make them look like mobile-game loot icons.
+
+They should feel like collectible underground-event patches/stickers.
+
+==================================================
+15. FILE STRUCTURE
+
+Keep custom artwork organized.
+
+Suggested:
+
+apps/web/public/bynd8/
+  illustrations/
+    empty/
+      discover.svg
+      events.svg
+      organize.svg
+      passes.svg
+      profile.svg
+      location.svg
+
+    event-day/
+      check-in.svg
+      prelims.svg
+      bracket.svg
+      results.svg
+
+    achievements/
+      early-bird.svg
+      first-step.svg
+      top-8.svg
+      finalist.svg
+      champion.svg
+      seven-to-smoke.svg
+
+    decorative/
+      bracket-lines.svg
+      venue-grid.svg
+      graffiti.svg
+
+Do not dump assets randomly into /public.
+
+==================================================
+16. NAMING
+
+Use semantic names.
+
+GOOD:
+
+empty-organize.svg
+achievement-early-bird.svg
+battle-seven-to-smoke.svg
+decorative-bracket-grid.svg
+
+BAD:
+
+asset1.svg
+image-new.svg
+vector-final2.svg
+shape.svg
+
+==================================================
+17. SVG OPTIMIZATION
+
+SVG output must be production ready.
+
+Avoid:
+
+thousands of unnecessary path nodes
+base64 raster images inside SVG
+embedded fonts
+unused defs
+duplicate gradients
+massive filter regions
+invisible geometry
+editor metadata
+
+Keep paths reasonably simple.
+
+Prefer reusable groups and defs.
+
+Use:
+
+<defs>
+<linearGradient>
+<radialGradient>
+<filter>
+<clipPath>
+<mask>
+
+where they improve maintainability.
+
+==================================================
+18. ACCESSIBILITY
+
+Decorative SVG:
+
+aria-hidden="true"
+
+Meaningful SVG:
+
+role="img"
+aria-labelledby
+
+Do not duplicate text read by screen readers if the adjacent HTML already communicates the meaning.
+
+==================================================
+19. REACT USAGE
+
+For illustrations stored in public:
+
+<img
+  src="/bynd8/illustrations/empty/organize.svg"
+  alt=""
+  aria-hidden="true"
+/>
+
+For interactive/currentColor icons:
+
+prefer React SVG components or the existing icon system.
+
+Do not paste a 200-line SVG directly into page components.
+
+==================================================
+20. EMPTY STATE COMPONENT
+
+Use a shared application component such as:
+
+<DancerEmptyState
+  artwork="/bynd8/illustrations/empty/organize.svg"
+  title="Got an event in mind?"
+  description="Create your first event and bring the scene together."
+  primaryAction={...}
+/>
+
+The illustration provides visual storytelling.
+
+The component provides layout.
+
+Do not duplicate entire empty-state layouts per page.
+
+==================================================
+21. VISUAL QA
+
+Every new illustration must be previewed against the actual BYND8 background:
+
+#080908
+
+Never review an SVG only against a white browser/file preview.
+
+Test it at:
+
+390px
+768px
+1024px
+1440px
+1920px
+
+Check:
+
+- silhouette readability
+- no white rectangle
+- no fake checkerboard
+- no clipping
+- no stretched artwork
+- no unreadable decorative text
+- no excessive glow
+- no tiny details dominating file size
+- no broken gradients
+- no unexpected background
+
+==================================================
+22. BEFORE CREATING AN SVG
+
+Always inspect:
+
+1. Existing BYND8 visual references.
+2. Existing related assets.
+3. Existing design tokens.
+4. Intended screen and dimensions.
+5. Whether SVG is actually the correct medium.
+
+Then briefly define:
+
+PURPOSE
+VISUAL METAPHOR
+PRIMARY SUBJECT
+ENVIRONMENT
+ACCENT COLOR
+RESPONSIVE BEHAVIOR
+
+before creating the asset.
+
+==================================================
+23. AFTER CREATING AN SVG
+
+Do not assume valid XML means good artwork.
+
+Render it.
+
+Open the actual page.
+
+Compare it against the supplied visual reference.
+
+If it looks like generic developer art, redesign it.
+
+Visual quality matters as much as technical validity.
+
+==================================================
+24. DO NOT MODIFY PRODUCT BEHAVIOR
+
+Creating/replacing artwork must not change:
+
+authentication
+navigation
+event logic
+registration
+payment
+organizer behavior
+competition behavior
+
+SVG work is visual unless the task explicitly says otherwise.

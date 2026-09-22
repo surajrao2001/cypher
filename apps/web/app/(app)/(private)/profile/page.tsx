@@ -8,7 +8,7 @@ export const metadata: Metadata = { title: 'Profile' };
 
 export default function ProfilePage() {
   return (
-    <div className="px-4 py-8 md:px-8 md:py-12">
+    <div className="pb-8 pt-2 md:pb-12 md:pt-3">
       <Suspense fallback={<PageLoading variant="profile" label="Loading profile" />}>
         <ProfilePanel />
       </Suspense>

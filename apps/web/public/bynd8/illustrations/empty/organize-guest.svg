@@ -1,0 +1,139 @@
+<svg viewBox="0 0 800 520" xmlns="http://www.w3.org/2000/svg" role="img" aria-hidden="true" fill="none">
+  <title>Event flight case under stage light</title>
+  <defs>
+    <radialGradient id="og-spot" cx="50%" cy="20%" r="45%">
+      <stop offset="0%" stop-color="#FF6500" stop-opacity=".32"/>
+      <stop offset="35%" stop-color="#FF6500" stop-opacity=".12"/>
+      <stop offset="100%" stop-color="#FF6500" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="og-beam" x1=".5" y1="0" x2=".5" y2="1">
+      <stop offset="0%" stop-color="#FF6500" stop-opacity=".2"/>
+      <stop offset="55%" stop-color="#FF6500" stop-opacity=".06"/>
+      <stop offset="100%" stop-color="#FF6500" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="og-case" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1c1d1c"/>
+      <stop offset="45%" stop-color="#141514"/>
+      <stop offset="100%" stop-color="#0D0E0D"/>
+    </linearGradient>
+    <linearGradient id="og-metal" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#F4F4F1" stop-opacity=".35"/>
+      <stop offset="50%" stop-color="#F4F4F1" stop-opacity=".12"/>
+      <stop offset="100%" stop-color="#F4F4F1" stop-opacity=".05"/>
+    </linearGradient>
+    <radialGradient id="og-floor" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FF6500" stop-opacity=".2"/>
+      <stop offset="55%" stop-color="#FF6500" stop-opacity=".05"/>
+      <stop offset="100%" stop-color="#FF6500" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="og-soft" x="-25%" y="-25%" width="150%" height="150%" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="9"/>
+    </filter>
+    <filter id="og-grain" x="-4%" y="-4%" width="108%" height="108%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch" result="n"/>
+      <feColorMatrix in="n" type="matrix" values="0 0 0 0 .95 0 0 0 0 .95 0 0 0 0 .93 0 0 0 .09 0" result="g"/>
+      <feComposite in="g" in2="SourceGraphic" operator="in"/>
+    </filter>
+    <filter id="og-rough" x="-6%" y="-6%" width="112%" height="112%" color-interpolation-filters="sRGB">
+      <feTurbulence type="turbulence" baseFrequency="0.045" numOctaves="2" seed="11" result="t"/>
+      <feDisplacementMap in="SourceGraphic" in2="t" scale="1.3" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+  </defs>
+
+  <!-- Atmosphere -->
+  <ellipse cx="400" cy="90" rx="180" ry="110" fill="url(#og-spot)"/>
+  <path d="M340 70 L300 360 L500 360 L460 70 Z" fill="url(#og-beam)"/>
+  <ellipse cx="400" cy="390" rx="170" ry="48" fill="url(#og-floor)"/>
+
+  <!-- Stage edge + perspective -->
+  <g stroke="#F4F4F1" stroke-opacity=".07" stroke-width="1.25" aria-hidden="true">
+    <path d="M120 400 L400 330 L680 400"/>
+    <path d="M160 440 L400 360 L640 440"/>
+    <path d="M400 330 V480"/>
+    <path d="M250 480 L400 360 L550 480"/>
+  </g>
+  <!-- Floor tape -->
+  <path d="M210 430 L290 405" stroke="#FF6500" stroke-opacity=".35" stroke-width="5" stroke-linecap="square"/>
+  <path d="M510 405 L590 430" stroke="#F4F4F1" stroke-opacity=".1" stroke-width="4"/>
+
+  <!-- Fixture -->
+  <g filter="url(#og-soft)" aria-hidden="true">
+    <ellipse cx="400" cy="52" rx="34" ry="9" fill="#161716" stroke="#F4F4F1" stroke-opacity=".18" stroke-width="1.5"/>
+    <path d="M378 52 L386 70 L414 70 L422 52" fill="#111211" stroke="#FF6500" stroke-opacity=".4" stroke-width="1.25"/>
+    <ellipse cx="400" cy="70" rx="16" ry="4" fill="#FF6500" fill-opacity=".5"/>
+  </g>
+
+  <!-- Speaker silhouette (secondary) -->
+  <g opacity=".28" aria-hidden="true">
+    <rect x="118" y="250" width="58" height="120" rx="3" fill="#161716" stroke="#F4F4F1" stroke-opacity=".15"/>
+    <circle cx="147" cy="290" r="16" stroke="#F4F4F1" stroke-opacity=".2" stroke-width="2"/>
+    <circle cx="147" cy="340" r="12" stroke="#F4F4F1" stroke-opacity=".15" stroke-width="2"/>
+    <path d="M176 310 C210 300 230 330 250 350" stroke="#F4F4F1" stroke-opacity=".2" stroke-width="2" stroke-linecap="round"/>
+  </g>
+
+  <!-- PRIMARY: flight case -->
+  <g aria-hidden="true">
+    <!-- Case body with slight perspective -->
+    <path d="M250 250 L550 250 L570 360 L230 360 Z" fill="url(#og-case)" stroke="#F4F4F1" stroke-opacity=".16" stroke-width="2"/>
+    <!-- Top lid edge -->
+    <path d="M255 250 L545 250 L535 220 L265 220 Z" fill="#1a1b1a" stroke="#F4F4F1" stroke-opacity=".14" stroke-width="1.5"/>
+    <!-- Framing ribs -->
+    <path d="M280 250 V360 M400 250 V360 M520 250 V360" stroke="#F4F4F1" stroke-opacity=".08" stroke-width="2"/>
+    <path d="M250 290 H550" stroke="#F4F4F1" stroke-opacity=".07" stroke-width="2"/>
+    <!-- Metal corners -->
+    <path d="M250 250 H275 V265 H250 Z" fill="url(#og-metal)"/>
+    <path d="M525 250 H550 V265 H525 Z" fill="url(#og-metal)"/>
+    <path d="M230 345 H255 V360 H230 Z" fill="url(#og-metal)"/>
+    <path d="M545 345 H570 V360 H545 Z" fill="url(#og-metal)"/>
+    <!-- Latches -->
+    <rect x="310" y="242" width="28" height="14" rx="2" fill="#111211" stroke="#F4F4F1" stroke-opacity=".25" stroke-width="1.5"/>
+    <rect x="462" y="242" width="28" height="14" rx="2" fill="#111211" stroke="#F4F4F1" stroke-opacity=".25" stroke-width="1.5"/>
+    <!-- Handle -->
+    <path d="M360 218 H440" stroke="#F4F4F1" stroke-opacity=".3" stroke-width="5" stroke-linecap="round"/>
+    <path d="M368 218 V232 M432 218 V232" stroke="#F4F4F1" stroke-opacity=".2" stroke-width="3"/>
+    <!-- Wear scratches -->
+    <path d="M290 310 L340 305 M480 320 L520 315" stroke="#F4F4F1" stroke-opacity=".06" stroke-width="1.5"/>
+    <!-- Stickers -->
+    <rect x="270" y="300" width="40" height="28" rx="2" fill="#FF6500" fill-opacity=".2" stroke="#FF6500" stroke-opacity=".35" stroke-width="1"/>
+    <rect x="480" y="275" width="46" height="22" rx="2" fill="#F4F4F1" fill-opacity=".06" stroke="#F4F4F1" stroke-opacity=".12" transform="rotate(-6 503 286)"/>
+    <!-- Tape -->
+    <rect x="395" y="268" width="14" height="70" fill="#FF6500" fill-opacity=".25"/>
+  </g>
+
+  <!-- Stencil on case: IT STARTS / WITH YOU -->
+  <g fill="#FF6500" filter="url(#og-rough)" aria-hidden="true">
+    <g transform="translate(318 278) scale(0.72)" fill-opacity=".85">
+      <path d="M0 0 H8 V24 H0 Z M12 0 H36 V6 H20 V10 H32 V16 H20 V18 H36 V24 H12 Z M42 0 H50 V10 H60 V0 H68 V24 H60 V16 H50 V24 H42 Z"/>
+      <path d="M78 0 H110 V6 H94 V10 H106 V16 H94 V18 H110 V24 H78 Z"/>
+      <path d="M118 0 H126 V8 H140 V0 H148 V24 H140 V14 H126 V24 H118 Z"/>
+      <path d="M156 0 H180 V6 H164 V10 H176 V16 H164 V18 H180 V24 H156 Z"/>
+      <path d="M188 0 H220 V6 H204 V18 H220 V24 H188 V18 H202 V6 H188 Z"/>
+    </g>
+    <g transform="translate(330 310) scale(0.72)" fill-opacity=".75">
+      <path d="M0 0 H28 V6 H10 V18 H28 V24 H0 Z"/>
+      <path d="M36 0 H44 V8 H58 V0 H66 V24 H58 V14 H44 V24 H36 Z"/>
+      <path d="M74 0 H98 V6 H82 V10 H94 V16 H82 V18 H98 V24 H74 Z"/>
+      <path d="M108 0 H116 V24 H108 Z M120 0 H148 V6 H134 V18 H148 V24 H120 V18 H132 V6 H120 Z"/>
+      <path d="M168 0 H200 V6 H184 V8 H196 V14 H184 V16 H200 V24 H168 Z" transform="translate(-12)"/>
+      <path d="M156 0 H184 V6 H166 V8 H178 V14 H166 V16 H184 V24 H156 Z"/>
+      <path d="M192 0 H220 V6 H200 V18 H220 V24 H192 Z"/>
+      <path d="M228 0 H256 V6 H236 V8 H248 V14 H236 V16 H256 V24 H228 Z"/>
+    </g>
+  </g>
+
+  <!-- Case shadow -->
+  <ellipse cx="400" cy="385" rx="175" ry="22" fill="#000" fill-opacity=".4" filter="url(#og-soft)"/>
+
+  <!-- Dust motes -->
+  <g fill="#F4F4F1" fill-opacity=".15" aria-hidden="true">
+    <circle cx="320" cy="140" r="1.5"/>
+    <circle cx="460" cy="160" r="1.2"/>
+    <circle cx="380" cy="120" r="1"/>
+    <circle cx="500" cy="200" r="1.3"/>
+    <circle cx="300" cy="210" r="1"/>
+  </g>
+
+  <g filter="url(#og-grain)" opacity=".45" pointer-events="none" aria-hidden="true">
+    <ellipse cx="400" cy="280" rx="300" ry="200" fill="#F4F4F1"/>
+  </g>
+</svg>

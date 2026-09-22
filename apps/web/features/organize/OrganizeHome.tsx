@@ -38,6 +38,7 @@ import {
 } from '@/features/organize/event-type-copy';
 import { OrganizeGate } from '@/features/organize/OrganizeGate';
 import { ensurePersonalOrganizer } from '@/features/organize/ensure-personal-organizer';
+import { DancerEmptyState } from '@/features/shell/DancerEmptyState';
 import {
   OrganizerEmptyBlock,
   OrganizerManageShell,
@@ -279,6 +280,24 @@ function OrganizeHomeInner() {
 
   function prefetchCard(orgId: string, eventId: string) {
     void prefetchOrganizerEvent(queryClient, auth.api, orgId, eventId);
+  }
+
+  if (rows !== null && rows.length === 0 && !loadError) {
+    return (
+      <DancerEmptyState
+        variant="organizeCreate"
+        actions={
+          <Button
+            type="button"
+            disabled={creating}
+            onClick={() => void onCreate()}
+            className="h-11 rounded-md bg-accent px-6 text-[13px] font-semibold normal-case tracking-normal text-white hover:bg-accent-hover"
+          >
+            {creating ? 'Starting…' : 'Create an Event'}
+          </Button>
+        }
+      />
+    );
   }
 
   return (

@@ -28,8 +28,16 @@ export function applyDiscoverFilters(events: EventCardDto[], filters: DiscoverFi
     if (city && city !== 'all' && event.city !== city) {
       return false;
     }
-    if (type && type !== 'all' && event.eventType !== type) {
-      return false;
+    if (type && type !== 'all') {
+      const et = event.eventType.toLowerCase();
+      const want = type.toLowerCase();
+      const match =
+        want === 'jam'
+          ? et.includes('jam') || et.includes('cypher')
+          : want === 'session'
+            ? et.includes('session')
+            : et === want || et.includes(want);
+      if (!match) return false;
     }
     if (tag && !styleMatches(tag, event.styles, event.tags)) {
       return false;

@@ -206,8 +206,16 @@ export function CheckInPanel({ slug, eventId }: { slug: string; eventId: string 
             playsInline
           />
           {!cameraOn ? (
-            <div className="flex aspect-[4/3] items-center justify-center px-6 text-center text-sm text-text-muted">
-              Camera off — start scan for door QR, or use the field below.
+            <div className="flex aspect-[4/3] flex-col items-center justify-center gap-5 px-6 text-center">
+              <img
+                src="/bynd8/illustrations/event-day/check-in.svg"
+                alt=""
+                aria-hidden
+                className="h-auto w-full max-w-[18rem] drop-shadow-[0_0_28px_rgba(255,101,0,0.18)]"
+              />
+              <p className="text-sm text-text-muted">
+                Camera off — start scan for door QR, or use the field below.
+              </p>
             </div>
           ) : null}
         </div>
