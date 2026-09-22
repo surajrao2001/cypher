@@ -12,6 +12,7 @@ import { EventPoster } from '@/features/discovery/EventPoster';
 import { RegisterCta } from '@/features/discovery/RegisterCta';
 import { openEventRegister } from '@/features/discovery/register-events';
 import { VenueMapView } from '@/features/discovery/VenueMapView';
+import { EventLiveEntryCta } from '@/features/live/EventLiveEntryCta';
 import { eventDayMoment } from '@/features/shell/event-day';
 import { cn } from '@/lib/utils';
 
@@ -126,6 +127,11 @@ export function EventDetailView({ event }: { event: EventDetailDto }) {
           <span aria-hidden>←</span> Back to events
         </Link>
         <div className="flex items-center gap-2">
+          <EventLiveEntryCta
+            eventId={event.id}
+            eventSlug={event.slug}
+            startTime={event.startTime}
+          />
           <button
             type="button"
             onClick={shareEvent}

@@ -236,7 +236,7 @@ importers:
         version: 7.29.7
       '@testing-library/react-native':
         specifier: ^13.2.0
-        version: 13.3.3(jest@29.7.0)(react-native@0.79.6(@babel/core@7.29.7)(@types/react@19.1.12)(react@19.0.0))(react-test-renderer@19.0.0(react@19.0.0))(react@19.0.0)
+        version: 13.3.3(jest@29.7.0(@types/node@22.20.1))(react-native@0.79.6(@babel/core@7.29.7)(@types/react@19.1.12)(react@19.0.0))(react-test-renderer@19.0.0(react@19.0.0))(react@19.0.0)
       '@types/jest':
         specifier: ^29.5.14
         version: 29.5.14
@@ -254,7 +254,7 @@ importers:
         version: 29.7.0(@types/node@22.20.1)
       jest-expo:
         specifier: ~53.0.14
-        version: 53.0.14(@babel/core@7.29.7)(expo@53.0.27(@babel/core@7.29.7)(@expo/metro-runtime@5.0.5(react-native@0.79.6(@babel/core@7.29.7)(@types/react@19.1.12)(react@19.0.0)))(react-native@0.79.6(@babel/core@7.29.7)(@types/react@19.1.12)(react@19.0.0))(react@19.0.0))(jest@29.7.0)(react-native@0.79.6(@babel/core@7.29.7)(@types/react@19.1.12)(react@19.0.0))(react@19.0.0)
+        version: 53.0.14(@babel/core@7.29.7)(expo@53.0.27(@babel/core@7.29.7)(@expo/metro-runtime@5.0.5(react-native@0.79.6(@babel/core@7.29.7)(@types/react@19.1.12)(react@19.0.0)))(react-native@0.79.6(@babel/core@7.29.7)(@types/react@19.1.12)(react@19.0.0))(react@19.0.0))(jest@29.7.0(@types/node@22.20.1))(react-native@0.79.6(@babel/core@7.29.7)(@types/react@19.1.12)(react@19.0.0))(react@19.0.0)
       react-test-renderer:
         specifier: 19.0.0
         version: 19.0.0(react@19.0.0)
@@ -326,7 +326,7 @@ importers:
         version: 0.542.0(react@19.2.8)
       next:
         specifier: ^15.5.2
-        version: 15.5.25(@types/node@22.20.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+        version: 15.5.25(@babel/core@7.29.7)(@types/node@22.20.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       qrcode:
         specifier: ^1.5.4
         version: 1.5.4
@@ -352,6 +352,9 @@ importers:
       '@types/google.maps':
         specifier: ^3.66.2
         version: 3.66.2
+      '@types/jest':
+        specifier: ^29.5.14
+        version: 29.5.14
       '@types/leaflet':
         specifier: ^1.9.22
         version: 1.9.22
@@ -373,6 +376,9 @@ importers:
       eslint:
         specifier: ^9.34.0
         version: 9.39.5(jiti@1.21.7)
+      jest:
+        specifier: ^29.7.0
+        version: 29.7.0(@types/node@22.20.1)
       postcss:
         specifier: ^8.5.6
         version: 8.5.26
@@ -382,6 +388,9 @@ importers:
       tailwindcss-animate:
         specifier: ^1.0.7
         version: 1.0.7(tailwindcss@3.4.19(tsx@4.23.13))
+      ts-jest:
+        specifier: ^29.4.1
+        version: 29.4.12(@babel/core@7.29.7)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.29.7))(jest-util@29.7.0)(jest@29.7.0(@types/node@22.20.1))(typescript@5.9.3)
       typescript:
         specifier: ^5.9.2
         version: 5.9.3
@@ -516,6 +525,15 @@ importers:
       '@cypher/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
+      '@types/jest':
+        specifier: ^29.5.14
+        version: 29.5.14
+      jest:
+        specifier: ^29.7.0
+        version: 29.7.0(@types/node@22.20.1)
+      ts-jest:
+        specifier: ^29.4.1
+        version: 29.4.12(@babel/core@7.29.7)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.29.7))(jest-util@29.7.0)(jest@29.7.0(@types/node@22.20.1))(typescript@5.9.3)
       typescript:
         specifier: ^5.9.2
         version: 5.9.3
@@ -10043,7 +10061,7 @@ snapshots:
       '@tanstack/query-core': 5.102.8
       react: 19.2.8
 
-  '@testing-library/react-native@13.3.3(jest@29.7.0)(react-native@0.79.6(@babel/core@7.29.7)(@types/react@19.1.12)(react@19.0.0))(react-test-renderer@19.0.0(react@19.0.0))(react@19.0.0)':
+  '@testing-library/react-native@13.3.3(jest@29.7.0(@types/node@22.20.1))(react-native@0.79.6(@babel/core@7.29.7)(@types/react@19.1.12)(react@19.0.0))(react-test-renderer@19.0.0(react@19.0.0))(react@19.0.0)':
     dependencies:
       jest-matcher-utils: 30.5.1
       picocolors: 1.1.1
@@ -12986,7 +13004,7 @@ snapshots:
       jest-mock: 29.7.0
       jest-util: 29.7.0
 
-  jest-expo@53.0.14(@babel/core@7.29.7)(expo@53.0.27(@babel/core@7.29.7)(@expo/metro-runtime@5.0.5(react-native@0.79.6(@babel/core@7.29.7)(@types/react@19.1.12)(react@19.0.0)))(react-native@0.79.6(@babel/core@7.29.7)(@types/react@19.1.12)(react@19.0.0))(react@19.0.0))(jest@29.7.0)(react-native@0.79.6(@babel/core@7.29.7)(@types/react@19.1.12)(react@19.0.0))(react@19.0.0):
+  jest-expo@53.0.14(@babel/core@7.29.7)(expo@53.0.27(@babel/core@7.29.7)(@expo/metro-runtime@5.0.5(react-native@0.79.6(@babel/core@7.29.7)(@types/react@19.1.12)(react@19.0.0)))(react-native@0.79.6(@babel/core@7.29.7)(@types/react@19.1.12)(react@19.0.0))(react@19.0.0))(jest@29.7.0(@types/node@22.20.1))(react-native@0.79.6(@babel/core@7.29.7)(@types/react@19.1.12)(react@19.0.0))(react@19.0.0):
     dependencies:
       '@expo/config': 11.0.13
       '@expo/json-file': 9.1.5
@@ -12998,7 +13016,7 @@ snapshots:
       jest-environment-jsdom: 29.7.0
       jest-snapshot: 29.7.0
       jest-watch-select-projects: 2.0.0
-      jest-watch-typeahead: 2.2.1(jest@29.7.0)
+      jest-watch-typeahead: 2.2.1(jest@29.7.0(@types/node@22.20.1))
       json5: 2.2.3
       lodash: 4.18.1
       react-native: 0.79.6(@babel/core@7.29.7)(@types/react@19.1.12)(react@19.0.0)
@@ -13196,7 +13214,7 @@ snapshots:
       chalk: 3.0.0
       prompts: 2.4.2
 
-  jest-watch-typeahead@2.2.1(jest@29.7.0):
+  jest-watch-typeahead@2.2.1(jest@29.7.0(@types/node@22.20.1)):
     dependencies:
       ansi-escapes: 6.2.1
       chalk: 4.1.2
@@ -13831,7 +13849,7 @@ snapshots:
 
   nested-error-stacks@2.0.1: {}
 
-  next@15.5.25(@types/node@22.20.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8):
+  next@15.5.25(@babel/core@7.29.7)(@types/node@22.20.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8):
     dependencies:
       '@next/env': 15.5.25
       '@swc/helpers': 0.5.15
@@ -13839,7 +13857,7 @@ snapshots:
       postcss: 8.4.31
       react: 19.2.8
       react-dom: 19.2.8(react@19.2.8)
-      styled-jsx: 5.1.6(react@19.2.8)
+      styled-jsx: 5.1.6(@babel/core@7.29.7)(react@19.2.8)
     optionalDependencies:
       '@next/swc-darwin-arm64': 15.5.25
       '@next/swc-darwin-x64': 15.5.25
@@ -15095,10 +15113,12 @@ snapshots:
 
   structured-headers@0.4.1: {}
 
-  styled-jsx@5.1.6(react@19.2.8):
+  styled-jsx@5.1.6(@babel/core@7.29.7)(react@19.2.8):
     dependencies:
       client-only: 0.0.1
       react: 19.2.8
+    optionalDependencies:
+      '@babel/core': 7.29.7
 
   styleq@0.1.3: {}
 

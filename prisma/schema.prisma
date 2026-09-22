@@ -170,6 +170,25 @@ enum AuthProvider {
   APPLE
 }
 
+/// Event-level operational day status (G1). Not category/tournament competition stage.
+enum EventOpsStatus {
+  scheduled
+  check_in_open
+  check_in_closed
+  event_live
+  completed
+}
+
+enum XpRewardScope {
+  EVENT
+  CATEGORY
+  TOURNAMENT
+}
+
+enum XpSourceType {
+  check_in
+}
+
 /// Cypher-owned canonical identity. Domain FKs point here — never at the auth provider.
 model User {
   id        String   @id @default(uuid()) @db.Uuid
@@ -184,8 +203,9 @@ model User {
   registrations     Registration[]
   participants      RegistrationParticipant[]
   auditLogs         AuditLog[]
-  checkIns          CheckIn[]                  @relation("CheckInActor")
-  eventUpdates      EventUpdate[]              @relation("EventUpdateAuthor")
+  checkIns          CheckIn[]                 @relation("CheckInActor")
+  eventUpdates      EventUpdate[]             @relation("EventUpdateAuthor")
+  xpTransactions    XpTransaction[]
 
   @@map("users")
 }
@@ -220,7 +240,7 @@ model Profile {
   createdAt    DateTime      @default(now()) @map("created_at")
   updatedAt    DateTime      @updatedAt @map("updated_at")
 
-  user        User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
   danceStyles ProfileDanceStyle[]
 
   @@map("profiles")
@@ -276,9 +296,9 @@ model Organizer {
   createdAt          DateTime                    @default(now()) @map("created_at")
   updatedAt          DateTime                    @updatedAt @map("updated_at")
 
-  members         OrganizerMember[]
-  events          Event[]
-  paymentAccount  OrganizerPaymentAccount?
+  members        OrganizerMember[]
+  events         Event[]
+  paymentAccount OrganizerPaymentAccount?
 
   @@map("organizers")
 }
@@ -297,7 +317,9 @@ model OrganizerMember {
   @@map("organizer_members")
 }
 
-/** Cashfree Easy Split vendor (or future provider) linked to an organizer for paid events. */
+/**
+ * Cashfree Easy Split vendor (or future provider) linked to an organizer for paid events.
+ */
 model OrganizerPaymentAccount {
   id               String                       @id @default(uuid()) @db.Uuid
   organizerId      String                       @unique @map("organizer_id") @db.Uuid
@@ -320,38 +342,40 @@ model OrganizerPaymentAccount {
 }
 
 model Event {
-  id                   String                      @id @default(uuid()) @db.Uuid
-  organizerId          String                      @map("organizer_id") @db.Uuid
-  slug                 String                      @unique
+  id                   String                                 @id @default(uuid()) @db.Uuid
+  organizerId          String                                 @map("organizer_id") @db.Uuid
+  slug                 String                                 @unique
   title                String
   description          String?
-  eventType            EventType                   @default(battle) @map("event_type")
+  eventType            EventType                              @default(battle) @map("event_type")
   city                 String
   venue                String?
-  venueLatitude        Float?                      @map("venue_latitude")
-  venueLongitude       Float?                      @map("venue_longitude")
+  venueLatitude        Float?                                 @map("venue_latitude")
+  venueLongitude       Float?                                 @map("venue_longitude")
   location             Unsupported("geography(Point, 4326)")?
-  startTime            DateTime                    @map("start_time")
-  endTime              DateTime?                   @map("end_time")
-  registrationOpensAt  DateTime?                   @map("registration_opens_at")
-  registrationClosesAt DateTime?                   @map("registration_closes_at")
-  posterUrl            String?                     @map("poster_url")
-  tags                 String[]                    @default([])
-  featured             Boolean                     @default(false)
-  status               EventStatus                 @default(draft)
-  createdAt            DateTime                    @default(now()) @map("created_at")
-  updatedAt            DateTime                    @updatedAt @map("updated_at")
+  startTime            DateTime                               @map("start_time")
+  endTime              DateTime?                              @map("end_time")
+  registrationOpensAt  DateTime?                              @map("registration_opens_at")
+  registrationClosesAt DateTime?                              @map("registration_closes_at")
+  posterUrl            String?                                @map("poster_url")
+  tags                 String[]                               @default([])
+  featured             Boolean                                @default(false)
+  status               EventStatus                            @default(draft)
+  createdAt            DateTime                               @default(now()) @map("created_at")
+  updatedAt            DateTime                               @updatedAt @map("updated_at")
 
-  organizer     Organizer          @relation(fields: [organizerId], references: [id], onDelete: Cascade)
-  categories    EventCategory[]
-  days          EventDay[]
-  registrations Registration[]
-  videos        Video[]
-  mediaLinks    MediaLink[]
-  danceStyles   EventDanceStyle[]
-  checkIns      CheckIn[]
-  updates       EventUpdate[]
-  lineup        EventLineupPerson[]
+  organizer      Organizer           @relation(fields: [organizerId], references: [id], onDelete: Cascade)
+  categories     EventCategory[]
+  days           EventDay[]
+  registrations  Registration[]
+  videos         Video[]
+  mediaLinks     MediaLink[]
+  danceStyles    EventDanceStyle[]
+  checkIns       CheckIn[]
+  updates        EventUpdate[]
+  lineup         EventLineupPerson[]
+  dayConfig      EventDayConfig?
+  xpTransactions XpTransaction[]
 
   @@index([status, startTime], map: "events_status_start_idx")
   @@index([city, startTime], map: "events_city_start_idx")
@@ -391,13 +415,14 @@ model EventCategory {
   createdAt      DateTime          @default(now()) @map("created_at")
   updatedAt      DateTime          @updatedAt @map("updated_at")
 
-  event         Event                @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  registrations Registration[]
-  videos        Video[]
-  mediaLinks    MediaLink[]
-  priceTiers    CategoryPriceTier[]
-  validDays     EventCategoryDay[]
-  lineupPeople  EventLineupPerson[]
+  event          Event               @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  registrations  Registration[]
+  videos         Video[]
+  mediaLinks     MediaLink[]
+  priceTiers     CategoryPriceTier[]
+  validDays      EventCategoryDay[]
+  lineupPeople   EventLineupPerson[]
+  xpTransactions XpTransaction[]
 
   @@index([eventId], map: "event_categories_event_id_idx")
   @@map("event_categories")
@@ -451,10 +476,10 @@ model Registration {
   updatedAt            DateTime                  @updatedAt @map("updated_at")
   confirmedAt          DateTime?                 @map("confirmed_at")
 
-  user          User                       @relation(fields: [userId], references: [id])
-  event         Event                      @relation(fields: [eventId], references: [id])
-  category      EventCategory              @relation(fields: [categoryId], references: [id])
-  priceTier     CategoryPriceTier?         @relation(fields: [priceTierId], references: [id], onDelete: SetNull)
+  user          User                      @relation(fields: [userId], references: [id])
+  event         Event                     @relation(fields: [eventId], references: [id])
+  category      EventCategory             @relation(fields: [categoryId], references: [id])
+  priceTier     CategoryPriceTier?        @relation(fields: [priceTierId], references: [id], onDelete: SetNull)
   participants  RegistrationParticipant[]
   paymentOrders PaymentOrder[]
   checkIn       CheckIn?
@@ -578,6 +603,11 @@ model MediaLink {
   @@map("media_links")
 }
 
+/// Registration-level attendance only (1:1 Registration).
+/// G1 product rule: a confirmed TEAM registration check-in confirms the registered team roster
+/// as checked in together (not per-participant scanning / no teammate QR). Linked
+/// RegistrationParticipant.userId members are eligible for attendance progression; unlinked
+/// guests (userId null) and viewer registrations get no XP.
 model CheckIn {
   id                String         @id @default(uuid()) @db.Uuid
   eventId           String         @map("event_id") @db.Uuid
@@ -586,12 +616,65 @@ model CheckIn {
   checkedInByUserId String         @map("checked_in_by_user_id") @db.Uuid
   channel           CheckInChannel @default(MANUAL)
 
-  event          Event        @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  registration   Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
-  checkedInBy    User         @relation("CheckInActor", fields: [checkedInByUserId], references: [id])
+  event        Event        @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  registration Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  checkedInBy  User         @relation("CheckInActor", fields: [checkedInByUserId], references: [id])
 
   @@index([eventId, checkedInAt], map: "check_ins_event_checked_at_idx")
   @@map("check_ins")
+}
+
+/// Event-level ops config for G1 (doors / early window / ops status).
+/// Not a category tournament stage model — G2+ competition state stays separate.
+/// Created via PATCH upsert only; GET must not insert rows.
+model EventDayConfig {
+  id                 String         @id @default(uuid()) @db.Uuid
+  eventId            String         @unique @map("event_id") @db.Uuid
+  /// IANA timezone for event-day wall-clock interpretation (authoritative for G1 ops).
+  timezone           String         @default("Asia/Kolkata")
+  checkInOpensAt     DateTime?      @map("check_in_opens_at")
+  checkInClosesAt    DateTime?      @map("check_in_closes_at")
+  earlyCheckInEndsAt DateTime?      @map("early_check_in_ends_at")
+  opsStatus          EventOpsStatus @default(scheduled) @map("ops_status")
+  createdAt          DateTime       @default(now()) @map("created_at")
+  updatedAt          DateTime       @updatedAt @map("updated_at")
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@map("event_day_configs")
+}
+
+/// Append-only progression ledger. Corrections add REVERSAL rows; never mutate earns.
+/// userId ON DELETE CASCADE: kept because User hard-delete is not a product operation today
+/// (no account-deletion API; Registration/Organizer/CheckIn/EventUpdate FKs RESTRICT hard delete).
+/// ProfileStatus.deleted is the only deletion-shaped signal and is unused at runtime.
+/// Revisit SetNull anonymization only when a real account-deletion policy is designed.
+model XpTransaction {
+  id             String        @id @default(uuid()) @db.Uuid
+  userId         String        @map("user_id") @db.Uuid
+  amount         Int
+  ruleKey        String        @map("rule_key")
+  ruleVersion    Int           @default(1) @map("rule_version")
+  scope          XpRewardScope
+  eventId        String?       @map("event_id") @db.Uuid
+  categoryId     String?       @map("category_id") @db.Uuid
+  sourceType     XpSourceType  @map("source_type")
+  sourceId       String        @map("source_id") @db.Uuid
+  idempotencyKey String        @unique @map("idempotency_key")
+  earnedAt       DateTime      @default(now()) @map("earned_at")
+  reversalOfId   String?       @unique @map("reversal_of_id") @db.Uuid
+  createdAt      DateTime      @default(now()) @map("created_at")
+
+  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event      Event?         @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  category   EventCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  reversalOf XpTransaction? @relation("XpReversal", fields: [reversalOfId], references: [id], onDelete: Restrict)
+  reversedBy XpTransaction? @relation("XpReversal")
+
+  @@index([userId, earnedAt], map: "xp_transactions_user_earned_idx")
+  @@index([eventId, ruleKey], map: "xp_transactions_event_rule_idx")
+  @@index([sourceType, sourceId], map: "xp_transactions_source_idx")
+  @@map("xp_transactions")
 }
 
 model EventUpdate {

@@ -11,6 +11,7 @@ import { ByndIcon } from '@/components/icons/bynd8';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { EventPoster } from '@/features/discovery/EventPoster';
+import { isLiveCompanionRelevant } from '@/features/live/live-view-model';
 import { DancerEmptyState } from '@/features/shell/DancerEmptyState';
 import { PageLoading, SoftError } from '@/features/shell/AsyncState';
 import { cn } from '@/lib/utils';
@@ -108,7 +109,14 @@ function EventListRow({ row }: { row: EnrichedRow }) {
         </div>
 
         <div className="flex shrink-0 flex-row gap-2 sm:w-[9.5rem] sm:flex-col sm:justify-center">
-          {confirmed && reg.hasTicket ? (
+          {confirmed && isLiveCompanionRelevant(reg.event.startTime) ? (
+            <Button
+              asChild
+              className="h-10 flex-1 rounded-md bg-accent text-[12px] font-semibold normal-case tracking-normal text-white hover:bg-accent/90 sm:flex-none"
+            >
+              <Link href={routes.eventLive(reg.event.slug)}>Event Live</Link>
+            </Button>
+          ) : confirmed && reg.hasTicket ? (
             <Button
               asChild
               className="h-10 flex-1 rounded-md bg-accent text-[12px] font-semibold normal-case tracking-normal text-white hover:bg-accent/90 sm:flex-none"

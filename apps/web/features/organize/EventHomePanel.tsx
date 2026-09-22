@@ -30,6 +30,7 @@ import {
   type EventTypeGroup,
 } from '@/features/organize/event-type-copy';
 import { EventReadiness } from '@/features/organize/EventReadiness';
+import { EventDayControl } from '@/features/organize/EventDayControl';
 import { useEventUpdatesQuery } from '@/features/organize/queries';
 import { eventDayMoment } from '@/features/shell/event-day';
 import { SignatureMomentPanel } from '@/features/shell/SignatureMoment';
@@ -327,6 +328,8 @@ export function EventHomePanel({
           body={dayMoment === 'tonight' ? 'Doors and check-in matter tonight.' : 'It’s event day — stay close to People and Check-in.'}
         />
       ) : null}
+
+      {!isDraft ? <EventDayControl org={org} event={event} /> : null}
 
       {noEntryBreath ? (
         <p className="text-[15px] text-text-secondary">

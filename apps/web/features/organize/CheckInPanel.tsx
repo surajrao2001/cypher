@@ -1,13 +1,20 @@
 'use client';
 
-import type { CheckInListResponse, OrganizerDto } from '@cypher/contracts';
+import type { CheckInDto, CheckInListResponse, OrganizerDto } from '@cypher/contracts';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/features/auth/AuthProvider';
+import {
+  checkInSuccessFeedback,
+  checkInWindowGuidance,
+  opsStatusLabel,
+} from '@/features/organize/event-day-ops';
+import { useEventDayConfigQuery } from '@/features/organize/queries';
 import { friendlyError, InlineNotice, PageLoading, SoftError } from '@/features/shell/AsyncState';
 import { SignatureMomentPanel } from '@/features/shell/SignatureMoment';
+import { cn } from '@/lib/utils';
 
 type BarcodeDetectorLike = {
   detect: (source: ImageBitmapSource) => Promise<Array<{ rawValue?: string }>>;
@@ -18,6 +25,12 @@ declare global {
     BarcodeDetector?: new (options?: { formats?: string[] }) => BarcodeDetectorLike;
   }
 }
+
+type ScanFeedback = {
+  kind: 'already' | 'success' | 'error';
+  title: string;
+  detail?: string;
+};
 
 export function CheckInPanel({ slug, eventId }: { slug: string; eventId: string }) {
   const auth = useAuth();
@@ -33,9 +46,12 @@ export function CheckInPanel({ slug, eventId }: { slug: string; eventId: string 
   const busyRef = useRef(false);
   const [cameraOn, setCameraOn] = useState(false);
   const [cameraHint, setCameraHint] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<ScanFeedback | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<unknown>(null);
+
+  const dayConfigQuery = useEventDayConfigQuery(org?.id, eventId, Boolean(org?.id));
+  const dayConfig = dayConfigQuery.data;
 
   const load = useCallback(async () => {
     setLoadError(null);
@@ -69,9 +85,10 @@ export function CheckInPanel({ slug, eventId }: { slug: string; eventId: string 
       const value = raw.trim();
       busyRef.current = true;
       setBusy(true);
-      setMessage(null);
+      setFeedback(null);
       try {
-        await auth.api.checkIn(
+        const knownIds = new Set((data?.items ?? []).map((item) => item.registrationId));
+        const dto: CheckInDto = await auth.api.checkIn(
           org.id,
           eventId,
           value.startsWith('cy1.')
@@ -79,21 +96,34 @@ export function CheckInPanel({ slug, eventId }: { slug: string; eventId: string 
             : { registrationCode: value, channel },
         );
         setCode('');
-        setMessage('CHECKED IN');
+        const wasAlready = knownIds.has(dto.registrationId);
+        const result = checkInSuccessFeedback({
+          dto,
+          wasAlreadyCheckedIn: wasAlready,
+          timeZone: dayConfig?.timezone,
+        });
+        setFeedback({
+          kind: result.kind,
+          title: result.title,
+          detail: result.detail,
+        });
         await load();
       } catch (error) {
-        setMessage(friendlyError(error, 'Check-in failed'));
+        setFeedback({
+          kind: 'error',
+          title: friendlyError(error, 'Check-in failed'),
+        });
       } finally {
         busyRef.current = false;
         setBusy(false);
       }
     },
-    [auth.api, eventId, load, org],
+    [auth.api, data?.items, dayConfig?.timezone, eventId, load, org],
   );
 
   async function startCamera() {
     setCameraHint(null);
-    setMessage(null);
+    setFeedback(null);
     if (!window.isSecureContext) {
       setCameraHint('Camera needs HTTPS (or localhost). Use the code field meanwhile.');
       return;
@@ -187,6 +217,8 @@ export function CheckInPanel({ slug, eventId }: { slug: string; eventId: string 
     );
   }
 
+  const windowHint = dayConfig ? checkInWindowGuidance(dayConfig) : null;
+
   return (
     <div className="mx-auto max-w-3xl space-y-6 px-4 py-8 md:px-8">
       <div>
@@ -195,6 +227,23 @@ export function CheckInPanel({ slug, eventId }: { slug: string; eventId: string 
         <p className="mt-2 text-sm text-text-secondary">
           Point the camera at a ticket QR, or type / paste the registration code.
         </p>
+        {dayConfig ? (
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <span
+              className={cn(
+                'inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em]',
+                dayConfig.opsStatus === 'check_in_open' || dayConfig.opsStatus === 'event_live'
+                  ? 'bg-accent-2 text-bg'
+                  : 'bg-[#1e1e1e] text-text-secondary',
+              )}
+            >
+              {opsStatusLabel(dayConfig.opsStatus)}
+            </span>
+            {windowHint ? (
+              <span className="text-[13px] text-text-secondary">{windowHint}</span>
+            ) : null}
+          </div>
+        ) : null}
       </div>
 
       <div className="space-y-3">
@@ -249,15 +298,26 @@ export function CheckInPanel({ slug, eventId }: { slug: string; eventId: string 
           {busy ? 'Checking…' : 'Check in'}
         </Button>
       </form>
-      {message ? (
-        message === 'CHECKED IN' ? (
+      {feedback ? (
+        feedback.kind === 'error' ? (
+          <InlineNotice tone="warn">{feedback.title}</InlineNotice>
+        ) : feedback.kind === 'already' ? (
+          <div className="rounded-xl border border-[#2a2a2a] bg-[#141414] px-4 py-3">
+            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-text-muted">
+              Already checked in
+            </p>
+            {feedback.detail ? (
+              <p className="mt-1 font-display text-2xl tracking-[0.04em] text-text-primary">
+                {feedback.detail}
+              </p>
+            ) : null}
+          </div>
+        ) : (
           <SignatureMomentPanel
             kind="checkedIn"
-            body="Ready for the next scan."
+            body={feedback.detail ?? 'Ready for the next scan.'}
             className="border-accent-2/30"
           />
-        ) : (
-          <InlineNotice tone="warn">{message}</InlineNotice>
         )
       ) : null}
       <div className="grid grid-cols-2 gap-3">
@@ -279,7 +339,14 @@ export function CheckInPanel({ slug, eventId }: { slug: string; eventId: string 
             <li key={item.id} className="flex justify-between gap-3 py-3 text-sm">
               <span>{item.dancerName ?? item.entryName ?? item.registrationCode}</span>
               <span className="text-text-muted">
-                {new Date(item.checkedInAt).toLocaleTimeString()}
+                {dayConfig
+                  ? new Intl.DateTimeFormat('en-US', {
+                      timeZone: dayConfig.timezone,
+                      hour: 'numeric',
+                      minute: '2-digit',
+                      hour12: true,
+                    }).format(new Date(item.checkedInAt))
+                  : new Date(item.checkedInAt).toLocaleTimeString()}
               </span>
             </li>
           ))}

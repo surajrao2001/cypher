@@ -2,11 +2,14 @@
 
 import type {
   CheckInListResponse,
+  EventDayConfigDto,
+  EventOpsStatus,
   EventUpdateDto,
   OrganizerDto,
   OrganizerEventDetailDto,
   OrganizerEventRegistrationsResponse,
   OrganizerPaymentAccountDto,
+  PatchEventDayConfigBody,
 } from '@cypher/contracts';
 import {
   useMutation,
@@ -125,6 +128,46 @@ export function useEventUpdatesQuery(
   });
 }
 
+export function useEventDayConfigQuery(
+  orgId: string | undefined,
+  eventId: string,
+  enabled = true,
+) {
+  const { api, status } = useAuth();
+  return useQuery({
+    queryKey: orgKeys.eventDayConfig(eventId),
+    queryFn: () => api.getEventDayConfig(orgId!, eventId),
+    enabled: enabled && Boolean(orgId) && Boolean(eventId) && status === 'authenticated',
+    staleTime: EVENT_STALE_MS,
+  });
+}
+
+export function usePatchEventDayConfigMutation(orgId: string, eventId: string) {
+  const { api } = useAuth();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: PatchEventDayConfigBody) => api.patchEventDayConfig(orgId, eventId, body),
+    onSuccess: (config) => {
+      queryClient.setQueryData(orgKeys.eventDayConfig(eventId), config);
+    },
+  });
+}
+
+export function useSetEventOpsStatusMutation(orgId: string, eventId: string) {
+  const { api } = useAuth();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (opsStatus: EventOpsStatus) =>
+      api.setEventOpsStatus(orgId, eventId, { opsStatus }),
+    onSuccess: (config) => {
+      queryClient.setQueryData(orgKeys.eventDayConfig(eventId), config);
+    },
+    onError: () => {
+      void queryClient.invalidateQueries({ queryKey: orgKeys.eventDayConfig(eventId) });
+    },
+  });
+}
+
 export function usePayoutAccountQuery(orgId: string | undefined, enabled = true) {
   const { api, status } = useAuth();
   return useQuery({
@@ -168,6 +211,7 @@ export function useInvalidateOrganize() {
       void queryClient.invalidateQueries({ queryKey: orgKeys.eventRegistrations(eventId) });
       void queryClient.invalidateQueries({ queryKey: orgKeys.eventCheckIns(eventId) });
       void queryClient.invalidateQueries({ queryKey: orgKeys.eventUpdates(eventId) });
+      void queryClient.invalidateQueries({ queryKey: orgKeys.eventDayConfig(eventId) });
     },
     invalidateEventUpdates(eventId: string) {
       void queryClient.invalidateQueries({ queryKey: orgKeys.eventUpdates(eventId) });
@@ -175,6 +219,9 @@ export function useInvalidateOrganize() {
     invalidateEventRegistrations(eventId: string) {
       void queryClient.invalidateQueries({ queryKey: orgKeys.eventRegistrations(eventId) });
       void queryClient.invalidateQueries({ queryKey: orgKeys.eventCheckIns(eventId) });
+    },
+    invalidateEventDayConfig(eventId: string) {
+      void queryClient.invalidateQueries({ queryKey: orgKeys.eventDayConfig(eventId) });
     },
     invalidateOrganizerEvents(orgId: string) {
       void queryClient.invalidateQueries({ queryKey: orgKeys.organizerEvents(orgId) });
@@ -184,6 +231,9 @@ export function useInvalidateOrganize() {
     },
     setEventCache(event: OrganizerEventDetailDto) {
       queryClient.setQueryData(orgKeys.event(event.id), event);
+    },
+    setEventDayConfigCache(config: EventDayConfigDto) {
+      queryClient.setQueryData(orgKeys.eventDayConfig(config.eventId), config);
     },
   };
 }
@@ -206,6 +256,7 @@ export function usePublishEventMutation(orgId: string, eventId: string) {
 
 export type {
   CheckInListResponse,
+  EventDayConfigDto,
   EventUpdateDto,
   OrganizerDto,
   OrganizerEventDetailDto,

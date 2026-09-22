@@ -10,4 +10,5 @@ export const orgKeys = {
     [...orgKeys.all, 'event', eventId, 'registrations'] as const,
   eventCheckIns: (eventId: string) => [...orgKeys.all, 'event', eventId, 'check-ins'] as const,
   eventUpdates: (eventId: string) => [...orgKeys.all, 'event', eventId, 'updates'] as const,
+  eventDayConfig: (eventId: string) => [...orgKeys.all, 'event', eventId, 'day-config'] as const,
 };

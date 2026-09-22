@@ -4,6 +4,8 @@ module.exports = {
   rootDir: 'src',
   setupFiles: ['<rootDir>/test-setup.ts'],
   testRegex: '.*\\.spec\\.ts$',
+  // Real-Postgres suites need DATABASE_URL; CI has no DB service.
+  testPathIgnorePatterns: process.env.CI ? ['\\.integration\\.spec\\.ts$'] : [],
   transform: {
     '^.+\\.ts$': 'ts-jest',
   },
