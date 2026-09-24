@@ -14,6 +14,7 @@ import { ByndIcon } from '@/components/icons/bynd8';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { EventPoster } from '@/features/discovery/EventPoster';
+import { isLiveCompanionRelevant } from '@/features/live/live-view-model';
 import { EmptyState } from '@/features/shell/EmptyState';
 import { PageLoading, SoftError } from '@/features/shell/AsyncState';
 import { LEGAL_URLS } from '@/lib/release';
@@ -150,6 +151,14 @@ function PassRowCard({
           )}
           <p className="text-[10px] text-white/40">Show this at the venue.</p>
           <div className="flex w-full flex-col gap-1.5">
+            {status === 'CONFIRMED' && isLiveCompanionRelevant(ticket.event.startTime) ? (
+              <Button
+                asChild
+                className="h-9 rounded-md text-[11px] font-semibold normal-case tracking-normal"
+              >
+                <Link href={routes.eventLive(ticket.event.slug)}>Event Live</Link>
+              </Button>
+            ) : null}
             <Button
               asChild
               variant="outline"

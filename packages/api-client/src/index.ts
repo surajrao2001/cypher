@@ -34,6 +34,10 @@ import type {
   EventUpdateDto,
   UpdateEventUpdateBody,
   UpdateProfileBody,
+  EventDayConfigDto,
+  PatchEventDayConfigBody,
+  SetEventOpsStatusBody,
+  EventLiveDto,
 } from '@cypher/contracts';
 
 export interface ApiClientOptions {
@@ -345,6 +349,34 @@ export class CypherApiClient {
     );
   }
 
+  async getEventDayConfig(organizerId: string, eventId: string): Promise<EventDayConfigDto> {
+    return this.request<EventDayConfigDto>(
+      `/v1/organizers/${encodeURIComponent(organizerId)}/events/${encodeURIComponent(eventId)}/day-config`,
+    );
+  }
+
+  async patchEventDayConfig(
+    organizerId: string,
+    eventId: string,
+    body: PatchEventDayConfigBody,
+  ): Promise<EventDayConfigDto> {
+    return this.request<EventDayConfigDto>(
+      `/v1/organizers/${encodeURIComponent(organizerId)}/events/${encodeURIComponent(eventId)}/day-config`,
+      { method: 'PATCH', body: JSON.stringify(body) },
+    );
+  }
+
+  async setEventOpsStatus(
+    organizerId: string,
+    eventId: string,
+    body: SetEventOpsStatusBody,
+  ): Promise<EventDayConfigDto> {
+    return this.request<EventDayConfigDto>(
+      `/v1/organizers/${encodeURIComponent(organizerId)}/events/${encodeURIComponent(eventId)}/day-config/ops-status`,
+      { method: 'POST', body: JSON.stringify(body) },
+    );
+  }
+
   async listEventUpdates(organizerId: string, eventId: string): Promise<{ items: EventUpdateDto[] }> {
     return this.request<{ items: EventUpdateDto[] }>(
       `/v1/organizers/${encodeURIComponent(organizerId)}/events/${encodeURIComponent(eventId)}/updates`,
@@ -390,6 +422,12 @@ export class CypherApiClient {
 
   async listMyRegistrations(): Promise<RegistrationListResponse> {
     return this.request<RegistrationListResponse>('/v1/registrations/mine');
+  }
+
+  async getMyEventLive(eventId: string): Promise<EventLiveDto> {
+    return this.request<EventLiveDto>(
+      `/v1/me/events/${encodeURIComponent(eventId)}/live`,
+    );
   }
 
   async getRegistration(id: string): Promise<RegistrationDto> {

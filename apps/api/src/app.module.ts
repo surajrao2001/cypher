@@ -11,6 +11,8 @@ import { AdminModule } from './modules/admin/admin.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { CheckInModule } from './modules/check-in/check-in.module';
 import { EventUpdatesModule } from './modules/event-updates/event-updates.module';
+import { EventDayModule } from './modules/event-day/event-day.module';
+import { LiveModule } from './modules/live/live.module';
 import { EventsModule } from './modules/events/events.module';
 import { HealthModule } from './modules/health/health.module';
 import { IdentityModule } from './modules/identity/identity.module';
@@ -40,6 +42,8 @@ import { UsersModule } from './modules/users/users.module';
     OrganizersModule,
     CheckInModule,
     EventUpdatesModule,
+    EventDayModule,
+    LiveModule,
     EventsModule,
     RegistrationsModule,
     PaymentsModule,

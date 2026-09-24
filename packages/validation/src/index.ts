@@ -389,3 +389,25 @@ export type UpdateOrganizerInput = z.infer<typeof updateOrganizerSchema>;
 export type CreateOrganizerEventInput = z.infer<typeof createOrganizerEventSchema>;
 export type UpdateOrganizerEventInput = z.infer<typeof updateOrganizerEventSchema>;
 export type UpsertEventCategoryInput = z.infer<typeof upsertEventCategorySchema>;
+
+export {
+  assertEventDayWindows,
+  assertIanaTimezone,
+  checkInDtoSchema,
+  eventDayConfigDtoSchema,
+  eventDayProgressionDtoSchema,
+  eventLiveDtoSchema,
+  eventLiveEntryDtoSchema,
+  eventOpsStatusSchema,
+  ianaTimezoneSchema,
+  isoDateTimeStringSchema,
+  patchEventDayConfigBodySchema,
+  setEventOpsStatusBodySchema,
+} from './event-day';
+export type {
+  EventDayConfigDtoInput,
+  EventDayProgressionDtoInput,
+  EventLiveDtoInput,
+  PatchEventDayConfigBodyInput,
+  SetEventOpsStatusBodyInput,
+} from './event-day';

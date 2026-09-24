@@ -38,15 +38,22 @@ export function isFreeOnlyEvent(event: OrganizerEventDetailDto): boolean {
   return cats.every((c) => (c.currentPriceMinor ?? c.priceMinor) === 0);
 }
 
-/** Local calendar day of start matches today — safe for check-in prominence. */
-export function isEventDay(startIso: string, now = new Date()): boolean {
+/** Same calendar day in event timezone — not browser-local. */
+export function isEventDay(
+  startIso: string,
+  now = new Date(),
+  timeZone = 'Asia/Kolkata',
+): boolean {
   const start = new Date(startIso);
   if (Number.isNaN(start.getTime())) return false;
-  return (
-    start.getFullYear() === now.getFullYear() &&
-    start.getMonth() === now.getMonth() &&
-    start.getDate() === now.getDate()
-  );
+  const fmt = (d: Date) =>
+    new Intl.DateTimeFormat('en-CA', {
+      timeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(d);
+  return fmt(start) === fmt(now);
 }
 
 export function isPastEvent(event: OrganizerEventDetailDto, now = new Date()): boolean {

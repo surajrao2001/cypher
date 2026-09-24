@@ -584,6 +584,8 @@ export const routes = {
     `/organize/${slug}/events/${eventId}/updates` as const,
   organizeEventUpdate: (slug: string, eventId: string, updateId: string) =>
     `/organize/${slug}/events/${eventId}/updates/${updateId}` as const,
+  /** Dancer event-day companion (authenticated). */
+  eventLive: (slug: string) => `/events/${slug}/live` as const,
 } as const;
 
 export type CheckInChannel = 'SCAN' | 'MANUAL' | 'CODE';
@@ -616,6 +618,12 @@ export interface CheckInDto {
   registrationCode?: string;
   entryName?: string | null;
   dancerName?: string | null;
+  /**
+   * Optional G1 event-day progression summary.
+   * Authoritative reward *state* for this dancer at the event — not “XP inserted by this request”.
+   * Omitted on older clients / when progression is not yet applicable.
+   */
+  progression?: EventDayProgressionDto;
 }
 
 export interface CheckInListResponse {
@@ -627,6 +635,104 @@ export interface CreateCheckInBody {
   qrToken?: string;
   registrationCode?: string;
   channel?: CheckInChannel;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Phase G1 — event day ops / Live / progression (contracts only)             */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Event-day operational status (doors / check-in / live / done).
+ * Not `EventStatus`, not tournament/category/bracket competition state.
+ */
+export type EventOpsStatus =
+  | 'scheduled'
+  | 'check_in_open'
+  | 'check_in_closed'
+  | 'event_live'
+  | 'completed';
+
+/**
+ * Effective event-day configuration.
+ * GET may return defaults when no DB row exists — consumers must not assume persistence.
+ * Window fields are always present; unconfigured windows are explicit `null`.
+ * Timestamps are ISO-8601 instants (UTC offset), not local wall-clock strings.
+ */
+export interface EventDayConfigDto {
+  eventId: string;
+  /** IANA timezone (e.g. Asia/Kolkata) — authoritative for event-day wall-clock. */
+  timezone: string;
+  checkInOpensAt: string | null;
+  earlyCheckInEndsAt: string | null;
+  checkInClosesAt: string | null;
+  opsStatus: EventOpsStatus;
+}
+
+/**
+ * Partial day-config update (windows + timezone only).
+ * Omitted field → leave unchanged.
+ * Explicit `null` on a window field → clear that configured value.
+ * Ops status is not patched here — use `SetEventOpsStatusBody`.
+ */
+export interface PatchEventDayConfigBody {
+  timezone?: string;
+  checkInOpensAt?: string | null;
+  earlyCheckInEndsAt?: string | null;
+  checkInClosesAt?: string | null;
+}
+
+/** Separate operational transition; backend validates legal transitions. */
+export interface SetEventOpsStatusBody {
+  opsStatus: EventOpsStatus;
+}
+
+/**
+ * Event-scoped XP *state* for the current dancer (not per-request award flags).
+ * Amounts are 0 when the reward does not exist yet.
+ * Idempotent re-check-in should return the same numbers without implying a new grant.
+ */
+export interface EventDayProgressionDto {
+  attendanceXp: number;
+  earlyCheckInXp: number;
+  totalEventDayXp: number;
+}
+
+/**
+ * One registration-level entry for Live.
+ * Team check-in is registration-scoped (whole linked roster); no participant-level states in G1.
+ */
+export interface EventLiveEntryDto {
+  registrationId: string;
+  categoryId: string;
+  categoryName: string;
+  entryType: CategoryEntryType;
+  checkedIn: boolean;
+  checkedInAt: string | null;
+}
+
+/**
+ * Read-only dancer Live projection. Not a raw DB dump.
+ * `myEntries` is registration-scoped — a dancer may have multiple categories at one event.
+ */
+export interface EventLiveDto {
+  eventId: string;
+  ops: {
+    status: EventOpsStatus;
+    timezone: string;
+  };
+  checkIn: {
+    opensAt: string | null;
+    earlyEndsAt: string | null;
+    closesAt: string | null;
+    /** True when any of the dancer’s eligible competitor entries is checked in. */
+    attendanceVerified: boolean;
+    /** True when EVENT-scoped early-check-in XP already exists for this user. */
+    earlyCheckInEarned: boolean;
+    myEntries: EventLiveEntryDto[];
+  };
+  progression: EventDayProgressionDto;
+  /** Reuses `EventUpdateDto` — filtered/sliced by the Live endpoint, not a new announcement type. */
+  announcements: EventUpdateDto[];
 }
 
 export interface EventUpdateDto {
